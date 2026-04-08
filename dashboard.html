@@ -1040,6 +1040,11 @@ let D={},LIVE={},MKT=[],FG={value:50,label:'Neutral',yesterday:50,lastWeek:50}
 let currentPage='dash',labFilterMode='all',posTab='open'
 const SYMS=['BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT','XRP/USDT',
             'DOGE/USDT','AVAX/USDT','LINK/USDT','ADA/USDT','DOT/USDT']
+const TV_LAYOUT='53w8NZMb'
+function tvUrl(sym){
+  const s='OKX:'+sym.replace('/USDT','')+'USDT'
+  return'https://www.tradingview.com/chart/'+TV_LAYOUT+'/?symbol='+s
+}
 
 // ═══════════════════════════════════════════════════════════
 // INIT
@@ -1490,9 +1495,8 @@ function renderWatchlist(){
     if(!lv) return''
     const base=sym.replace('/USDT','')
     const chgTxt=(lv.change>=0?'+':'')+lv.change.toFixed(2)+'%'
-    const tvSym='OKX:'+base+'USDT'
-    const tvUrl='https://www.tradingview.com/chart/?symbol='+tvSym
-    return`<a class="wl-row" href="${tvUrl}" target="_blank" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;padding:7px 13px;border-bottom:1px solid var(--border);transition:.12s;" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
+    const url=tvUrl(sym)
+    return`<a class="wl-row" href="${url}" target="_blank" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;padding:7px 13px;border-bottom:1px solid var(--border);transition:.12s;" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
       <span class="wl-sym">${base}</span>
       <span style="font-size:9px;color:var(--t2);opacity:.6">TV↗</span>
       <span class="wl-px" style="flex:1;text-align:right">${pxFmt(lv.price)}</span>
@@ -1635,7 +1639,7 @@ function renderSignals(){
       const sc=r.best_score||0
       const bc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
       const base=r.symbol?.replace('/USDT','')
-      const tvUrl='https://www.tradingview.com/chart/?symbol=OKX:'+base+'USDT'
+      const url=tvUrl(r.symbol)
       // Build "missing" hints for WATCH/IDLE
       const missing=[]
       if(r.status!=='SIGNAL'){
@@ -1651,7 +1655,7 @@ function renderSignals(){
       return`<tr style="${r.status==='SIGNAL'?'background:rgba(0,201,123,.04)':''}">
         <td class="t2">${i+1}</td>
         <td>
-          <a href="${tvUrl}" target="_blank" style="color:inherit;text-decoration:none;font-weight:600;font-family:var(--mono)" title="เปิด TradingView">${base} <span style="font-size:9px;color:var(--t2)">↗</span></a>
+          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:600;font-family:var(--mono)" title="เปิด TradingView — IamKampo">${base} <span style="font-size:9px;color:var(--t2)">↗</span></a>
         </td>
         <td>${sideBadge(r.side)}</td>
         <td>${sBadge(r.status)}</td>
@@ -1666,7 +1670,7 @@ function renderSignals(){
         <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
         <td>${r.htf_bull?'<span class="up">▲ BULL</span>':'<span class="dn">▼ BEAR</span>'}</td>
         <td>${r.in_kz?'<span class="up">⚡ YES</span>':'<span class="t2">—</span>'}</td>
-        <td><a href="${tvUrl}" target="_blank" class="btn-sm" style="font-size:10px">Chart ↗</a></td>
+        <td><a href="${url}" target="_blank" class="btn-sm" style="font-size:10px">Chart ↗</a></td>
       </tr>`
     }).join('')
   }
