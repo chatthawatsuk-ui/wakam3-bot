@@ -2,7 +2,7 @@ name: AI Trade — Scan Every Hour
 
 on:
   schedule:
-    - cron: '0 * * * *'   # ทุก 1 ชั่วโมง (xx:00 UTC)
+    - cron: '*/5 * * * *'  # ทุก 5 นาที
   workflow_dispatch:       # รันมือได้ทุกเมื่อ
 
 permissions:
