@@ -3,502 +3,780 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="dark">
-<title>AI Trade Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Barlow+Condensed:wght@200;300;400&family=Sarabun:wght@300;400&display=swap" rel="stylesheet">
+<title>WAKAM3 — AI Trade System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Barlow+Condensed:wght@200;300;400;600&family=Sarabun:wght@300;400&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#090c12;--s1:#0d1119;--s2:#111620;--s3:#161d2a;
-  --b:#1e2840;--text:#b8c8e0;--t2:#5a7090;--t3:#2a3850;
-  --green:#00d97e;--green2:#00ff9d;--red:#f04060;--red2:#ff6080;
-  --yellow:#f0c040;--accent:#3a7fff;--accent2:#60a0ff;
+  --b:#1e2840;--b2:#243050;
+  --text:#b8c8e0;--t2:#5a7090;--t3:#2a3850;
+  --green:#00d97e;--red:#f04060;--yellow:#f0c040;
+  --accent:#3a7fff;--accent2:#60a0ff;
   --mono:'DM Mono',monospace;--head:'Barlow Condensed',sans-serif;
 }
-html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6;overflow:hidden}
 
-/* ── TOPBAR ── */
+/* ── APP LAYOUT ─────────────────── */
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ────────────────────── */
+.sidebar{
+  width:52px;flex-shrink:0;
+  background:var(--s1);border-right:1px solid var(--b);
+  display:flex;flex-direction:column;align-items:center;
+  padding:12px 0 16px;gap:2px;z-index:20;
+}
+.s-logo{
+  font-family:var(--head);font-size:11px;font-weight:600;
+  color:var(--green);letter-spacing:.1em;margin-bottom:18px;
+  text-align:center;line-height:1.2;
+}
+.nav-btn{
+  width:40px;height:40px;border:none;background:none;
+  color:var(--t2);cursor:pointer;border-radius:4px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  font-size:8px;letter-spacing:.08em;font-family:var(--head);font-weight:400;
+  transition:.15s;position:relative;
+}
+.nav-btn:hover{background:var(--s3);color:var(--text)}
+.nav-btn.active{background:var(--s3);color:var(--green)}
+.nav-btn.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--green);border-radius:0 2px 2px 0}
+.nav-btn svg{width:15px;height:15px;stroke-width:1.5}
+.s-div{width:24px;height:1px;background:var(--b);margin:6px 0}
+
+/* ── MAIN ───────────────────────── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* ── TOPBAR ─────────────────────── */
 .topbar{
+  height:44px;flex-shrink:0;
+  background:var(--s1);border-bottom:1px solid var(--b);
   display:flex;align-items:center;justify-content:space-between;
-  padding:12px 24px;background:var(--s1);border-bottom:1px solid var(--b);
-  position:sticky;top:0;z-index:100;
+  padding:0 20px;gap:16px;
 }
-.logo{font-family:var(--head);font-weight:200;font-size:18px;letter-spacing:.2em;color:var(--green);text-transform:uppercase}
-.logo span{color:var(--t2);font-size:11px;display:block;letter-spacing:.15em;margin-top:-2px}
-.topbar-right{display:flex;align-items:center;gap:16px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.live-label{font-size:10px;color:var(--green);letter-spacing:.15em}
-.time-label{font-size:10px;color:var(--t2);letter-spacing:.08em}
+.tb-brand{font-family:var(--head);font-size:14px;font-weight:300;letter-spacing:.25em;color:var(--text)}
+.tb-brand em{color:var(--green);font-style:normal}
+.tb-right{display:flex;align-items:center;gap:16px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tb-item{font-size:10px;color:var(--t2);letter-spacing:.08em}
+.tb-item span{color:var(--yellow)}
+.tb-clock{font-size:11px;color:var(--t2);letter-spacing:.1em;font-family:var(--mono)}
+.btn-sm{background:none;border:1px solid var(--b);color:var(--t2);padding:3px 10px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.05em;transition:.15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
 
-/* ── LAYOUT ── */
-.page{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+/* ── PAGES ──────────────────────── */
+.pages{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:16px 20px 40px;display:none}
+.page.active{display:block}
+.page::-webkit-scrollbar{width:4px}
+.page::-webkit-scrollbar-thumb{background:var(--b)}
 
-/* ── STAT CARDS ── */
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px}
-.stat{
-  background:var(--s1);border:1px solid var(--b);padding:16px;
-  position:relative;overflow:hidden;
-}
-.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
-.stat.green::before{background:var(--green)}
-.stat.red::before{background:var(--red)}
-.stat.yellow::before{background:var(--yellow)}
-.stat-label{font-size:9px;color:var(--t2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
-.stat-value{font-size:22px;font-weight:500;letter-spacing:.02em;line-height:1}
-.stat-sub{font-size:10px;color:var(--t2);margin-top:4px}
-.up{color:var(--green)}
-.dn{color:var(--red)}
+/* ── STAT CARDS ─────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin-bottom:12px}
+.stat-card{background:var(--s1);border:1px solid var(--b);padding:14px 16px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.stat-card.g::before{background:var(--green)}
+.stat-card.r::before{background:var(--red)}
+.stat-card.y::before{background:var(--yellow)}
+.s-label{font-size:9px;color:var(--t2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:5px}
+.s-val{font-size:22px;font-weight:500;line-height:1;letter-spacing:.02em}
+.s-sub{font-size:10px;color:var(--t2);margin-top:4px}
 
-/* ── SECTION ── */
-.section{margin-bottom:20px}
-.section-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 14px;background:var(--s2);border:1px solid var(--b);
-  border-bottom:none;
-}
-.section-title{font-family:var(--head);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--t2)}
-.section-badge{font-size:10px;color:var(--accent);border:1px solid var(--accent);padding:1px 8px;border-radius:2px}
+/* ── SECTION ────────────────────── */
+.section{background:var(--s1);border:1px solid var(--b);margin-bottom:12px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--b)}
+.sec-title{font-family:var(--head);font-size:12px;font-weight:300;letter-spacing:.2em;text-transform:uppercase;color:var(--text)}
+.sec-badge{font-size:9px;color:var(--accent);border:1px solid var(--accent);padding:1px 8px;letter-spacing:.1em}
 
-/* ── TABLE ── */
-.tbl-wrap{background:var(--s1);border:1px solid var(--b);overflow-x:auto}
+/* ── TABLES ─────────────────────── */
+.tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{background:var(--s2);color:var(--t2);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:8px 12px;text-align:left;font-weight:400;white-space:nowrap}
-td{padding:8px 12px;border-top:1px solid var(--b);white-space:nowrap;font-size:11px}
-tr:hover td{background:rgba(58,127,255,.04)}
-.badge{display:inline-block;padding:2px 8px;font-size:9px;letter-spacing:.08em;border-radius:2px}
-.badge.long{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.3)}
-.badge.short{background:rgba(240,64,96,.12);color:var(--red);border:1px solid rgba(240,64,96,.3)}
-.badge.open{background:rgba(58,127,255,.12);color:var(--accent);border:1px solid rgba(58,127,255,.3)}
-.badge.win{background:rgba(0,217,126,.12);color:var(--green)}
-.badge.loss{background:rgba(240,64,96,.12);color:var(--red)}
+th{padding:7px 12px;text-align:left;font-size:9px;color:var(--t2);letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--b);background:var(--s2);font-weight:400;white-space:nowrap}
+td{padding:8px 12px;border-bottom:1px solid var(--t3);font-size:11px;vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(30,40,64,.4)}
 
-/* ── SCORE BAR ── */
-.score-bar{display:flex;align-items:center;gap:6px}
-.score-fill{height:4px;border-radius:2px;background:var(--accent);transition:.3s}
-.score-max{height:4px;border-radius:2px;background:var(--b);flex:1}
+/* ── GRID ───────────────────────── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
 
-/* ── EQUITY CHART ── */
-.chart-wrap{background:var(--s1);border:1px solid var(--b);padding:16px}
-canvas{width:100%!important}
+/* ── SCORE BAR ──────────────────── */
+.score-bar{display:flex;align-items:center;gap:7px}
+.score-track{flex:1;height:3px;background:var(--t3);border-radius:2px;min-width:44px}
+.score-fill{height:100%;border-radius:2px;transition:width .4s}
 
-/* ── SIGNAL FEED ── */
-.feed{background:var(--s1);border:1px solid var(--b);max-height:320px;overflow-y:auto}
-.feed-item{
-  display:grid;grid-template-columns:100px 1fr;
-  padding:10px 14px;border-bottom:1px solid var(--b);
-  align-items:start;gap:12px;
+/* ── BADGES ─────────────────────── */
+.badge{display:inline-block;padding:2px 8px;font-size:9px;letter-spacing:.07em;border-radius:2px;font-weight:500}
+.b-sig{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.25)}
+.b-watch{background:rgba(240,192,64,.12);color:var(--yellow);border:1px solid rgba(240,192,64,.25)}
+.b-idle{color:var(--t2);border:1px solid var(--t3)}
+.b-long{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.25)}
+.b-short{background:rgba(240,64,96,.12);color:var(--red);border:1px solid rgba(240,64,96,.25)}
+.b-win{background:rgba(0,217,126,.12);color:var(--green)}
+.b-loss{background:rgba(240,64,96,.12);color:var(--red)}
+
+/* ── COLORS ─────────────────────── */
+.up{color:var(--green)}.dn{color:var(--red)}.yl{color:var(--yellow)}.t2{color:var(--t2)}
+
+/* ── FEED ───────────────────────── */
+.feed-item{padding:9px 16px;border-bottom:1px solid var(--t3);display:flex;gap:12px;align-items:flex-start}
+.feed-item:last-child{border-bottom:none}
+.feed-time{font-size:9px;color:var(--t2);white-space:nowrap;padding-top:2px;min-width:86px}
+.feed-body{flex:1;font-size:11px;line-height:1.6}
+
+/* ── HEATMAP ────────────────────── */
+.heatmap{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px}
+.hm-cell{background:var(--s2);border:1px solid var(--b);padding:11px 8px;text-align:center}
+.hm-sym{font-family:var(--head);font-size:13px;letter-spacing:.08em;margin-bottom:3px}
+.hm-px{font-size:10px;color:var(--t2);margin-bottom:5px}
+.hm-bar{height:2px;border-radius:1px;margin-bottom:4px}
+.hm-score{font-size:9px;letter-spacing:.1em}
+
+/* ── SENTIMENT RING ─────────────── */
+.sent-ring{
+  width:90px;height:90px;border-radius:50%;border:3px solid var(--b);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:12px auto 8px;
 }
-.feed-time{font-size:10px;color:var(--t2)}
-.feed-body{font-size:11px}
-.feed-body strong{color:var(--text)}
-.feed-tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:2px;margin-right:4px}
-.tag-signal{background:rgba(0,217,126,.15);color:var(--green)}
-.tag-close{background:rgba(240,64,96,.15);color:var(--red)}
-.tag-scan{background:rgba(58,127,255,.1);color:var(--t2)}
 
-/* ── 2-COL ── */
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:640px){
-  .grid2{grid-template-columns:1fr}
-  .stats{grid-template-columns:1fr 1fr}
-  .topbar{padding:10px 14px}
-  .page{padding:12px 10px 48px}
-}
+/* ── EMPTY ──────────────────────── */
+.empty{padding:22px;text-align:center;color:var(--t2);font-size:11px}
 
-/* ── EMPTY STATE ── */
-.empty{padding:32px;text-align:center;color:var(--t2);font-size:11px}
-.empty .icon{font-size:28px;margin-bottom:8px;opacity:.4}
-
-/* ── REFRESH BTN ── */
-.btn{
-  background:transparent;border:1px solid var(--b);color:var(--t2);
-  padding:5px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
-  cursor:pointer;transition:.15s;text-transform:uppercase;
-}
-.btn:hover{border-color:var(--accent);color:var(--accent)}
-
-/* ── NO DATA BANNER ── */
-.banner{
-  background:rgba(58,127,255,.08);border:1px solid rgba(58,127,255,.2);
-  padding:14px 16px;margin-bottom:16px;font-size:11px;color:var(--accent2);
-}
-.banner code{background:var(--s2);padding:1px 6px;border-radius:2px;font-size:10px}
+/* ── CHART ──────────────────────── */
+.chart-wrap{padding:12px 16px}
 </style>
 </head>
 <body>
+<div class="app">
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div>
-    <div class="logo">AI Trade <span>PAPER TRADING SYSTEM</span></div>
-  </div>
-  <div class="topbar-right">
-    <span class="dot" id="dot"></span>
-    <span class="live-label">LIVE</span>
-    <span class="time-label" id="clock">--:-- UTC</span>
-    <button class="btn" onclick="loadData()">⟳ Refresh</button>
-  </div>
-</div>
+<!-- ═══ SIDEBAR ═════════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="s-logo">W<br>3</div>
 
-<div class="page">
+  <button class="nav-btn active" onclick="nav('dashboard')" id="btn-dashboard" title="Dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    DASH
+  </button>
 
-  <!-- BANNER (แสดงเมื่อไม่มีข้อมูล) -->
-  <div class="banner" id="banner" style="display:none">
-    📂 ไม่พบข้อมูล — รัน <code>bash run.sh</code> ก่อน แล้วกด Refresh
-  </div>
+  <button class="nav-btn" onclick="nav('scanner')" id="btn-scanner" title="Scanner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    SCAN
+  </button>
 
-  <!-- STAT CARDS -->
-  <div class="stats" id="stats">
-    <div class="stat green">
-      <div class="stat-label">Balance</div>
-      <div class="stat-value" id="s-balance">$1,000.00</div>
-      <div class="stat-sub" id="s-pct">+0.0%</div>
-    </div>
-    <div class="stat" id="s-wr-card">
-      <div class="stat-label">Win Rate</div>
-      <div class="stat-value" id="s-wr">0.0%</div>
-      <div class="stat-sub" id="s-trades">0 trades</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Total PnL</div>
-      <div class="stat-value" id="s-pnl">$0.00</div>
-      <div class="stat-sub">Closed trades</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Open Trades</div>
-      <div class="stat-value" id="s-open">0</div>
-      <div class="stat-sub">Active positions</div>
-    </div>
-    <div class="stat yellow">
-      <div class="stat-label">Last Scan</div>
-      <div class="stat-value" style="font-size:14px" id="s-scan">—</div>
-      <div class="stat-sub">Auto every 1h</div>
-    </div>
-  </div>
+  <button class="nav-btn" onclick="nav('signals')" id="btn-signals" title="Signals">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    SIG
+  </button>
 
-  <!-- OPEN TRADES -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Open Positions</div>
-      <div class="section-badge" id="open-count">0 open</div>
+  <button class="nav-btn" onclick="nav('positions')" id="btn-positions" title="Positions">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+    POS
+  </button>
+
+  <div class="s-div"></div>
+
+  <button class="nav-btn" onclick="nav('markets')" id="btn-markets" title="Markets">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    MKT
+  </button>
+</aside>
+
+<!-- ═══ MAIN ════════════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="live-dot"></div>
+      <div class="tb-brand">WAKAM3 · <em>AI TRADE SYSTEM</em></div>
     </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>Symbol</th><th>Side</th><th>Entry</th>
-            <th>SL</th><th>TP1</th><th>TP2</th><th>Score</th><th>TP1?</th><th>Opened</th>
-          </tr>
-        </thead>
-        <tbody id="open-tbody">
-          <tr><td colspan="10"><div class="empty"><div class="icon">○</div>ไม่มี open trade</div></td></tr>
-        </tbody>
-      </table>
+    <div class="tb-right">
+      <div class="tb-item">Last Scan <span id="tb-scan">—</span></div>
+      <div class="tb-item">Scan every <span>5m</span></div>
+      <div class="tb-clock" id="clock">00:00:00 UTC</div>
+      <button class="btn-sm" onclick="loadData()">⟳ Refresh</button>
     </div>
   </div>
 
-  <!-- GRID: EQUITY + SESSION -->
-  <div class="grid2">
+  <!-- PAGES -->
+  <div class="pages">
 
-    <!-- EQUITY CURVE -->
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Equity Curve</div>
+    <!-- ══ DASHBOARD ══════════════════════════════════════════════════════════ -->
+    <div class="page active" id="page-dashboard">
+
+      <div class="stat-grid">
+        <div class="stat-card g">
+          <div class="s-label">Portfolio Balance</div>
+          <div class="s-val up" id="d-balance">$1,000.00</div>
+          <div class="s-sub" id="d-pct">+0.0% from start</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Total PnL</div>
+          <div class="s-val" id="d-pnl">$0.00</div>
+          <div class="s-sub" id="d-trades">0 closed trades</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Win Rate</div>
+          <div class="s-val" id="d-wr">—</div>
+          <div class="s-sub" id="d-wl">W:0  L:0</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Open Positions</div>
+          <div class="s-val" id="d-open">0</div>
+          <div class="s-sub">Active trades</div>
+        </div>
+        <div class="stat-card y">
+          <div class="s-label">🔔 Active Signals</div>
+          <div class="s-val yl" id="d-sigs">0</div>
+          <div class="s-sub">Score ≥ 8/26</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">👁 Watching</div>
+          <div class="s-val" id="d-watch">0</div>
+          <div class="s-sub">Score 5–7/26</div>
+        </div>
       </div>
-      <div class="chart-wrap" style="height:200px;display:flex;align-items:center;justify-content:center">
-        <canvas id="equity-chart" height="180"></canvas>
+
+      <div class="grid2">
+        <div class="section">
+          <div class="sec-head"><div class="sec-title">Equity Curve</div></div>
+          <div class="chart-wrap" style="height:185px">
+            <canvas id="equity-chart"></canvas>
+          </div>
+        </div>
+        <div class="section">
+          <div class="sec-head"><div class="sec-title">Win Rate by Session</div></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
+              <tbody id="sess-tbody"><tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Market Snapshot — Signal Strength</div>
+          <div class="sec-badge" id="d-mkt-badge">— bullish</div>
+        </div>
+        <div id="heatmap-dash" class="heatmap"></div>
+      </div>
+
+    </div>
+
+    <!-- ══ SCANNER ════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-scanner">
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Market Scanner — 10 Symbols</div>
+          <div class="sec-badge" id="sc-badge">—</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Direction</th>
+                <th>Score L</th>
+                <th>Score S</th>
+                <th>Best / 26</th>
+                <th>RSI</th>
+                <th>4H Bias</th>
+                <th>Kill Zone</th>
+              </tr>
+            </thead>
+            <tbody id="scanner-tbody">
+              <tr><td colspan="10"><div class="empty">รอผลการ scan ครั้งแรก — GitHub Actions รันทุก 5 นาที</div></td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-    <!-- SESSION WIN RATE -->
-    <div class="section">
-      <div class="section-head">
-        <div class="section-title">Win Rate by Session</div>
+    <!-- ══ SIGNALS ════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-signals">
+      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="stat-card g">
+          <div class="s-label">Total Signals</div>
+          <div class="s-val" id="sig-total">0</div>
+          <div class="s-sub">Detected this session</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Long Signals</div>
+          <div class="s-val up" id="sig-long">0</div>
+          <div class="s-sub">Bullish setups</div>
+        </div>
+        <div class="stat-card r">
+          <div class="s-label">Short Signals</div>
+          <div class="s-val dn" id="sig-short">0</div>
+          <div class="s-sub">Bearish setups</div>
+        </div>
       </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
-          <tbody id="sess-tbody">
-            <tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>
-          </tbody>
-        </table>
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Signal Log</div>
+          <div class="sec-badge" id="sig-badge">0 signals</div>
+        </div>
+        <div id="sig-feed"><div class="empty">รอ signal ครั้งแรก — ระบบ scan ทุก 5 นาที</div></div>
       </div>
     </div>
-  </div>
 
-  <!-- CLOSED TRADES -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Closed Trades</div>
-      <div class="section-badge" id="closed-count">0 closed</div>
+    <!-- ══ POSITIONS ══════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-positions">
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Open Positions</div>
+          <div class="sec-badge" id="pos-open-badge">0 open</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Symbol</th><th>Side</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th><th>Score</th><th>TP1?</th><th>Opened</th></tr>
+            </thead>
+            <tbody id="open-tbody">
+              <tr><td colspan="10"><div class="empty">ไม่มี open trade</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Closed Trades</div>
+          <div class="sec-badge" id="pos-closed-badge">0 closed</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>Outcome</th><th>PnL</th><th>TP1?</th><th>Closed</th></tr>
+            </thead>
+            <tbody id="closed-tbody">
+              <tr><td colspan="9"><div class="empty">ยังไม่มี closed trade</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th>
-            <th>Outcome</th><th>PnL</th><th>TP1?</th><th>Closed</th>
-          </tr>
-        </thead>
-        <tbody id="closed-tbody">
-          <tr><td colspan="9"><div class="empty"><div class="icon">○</div>ยังไม่มี closed trade</div></td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- SIGNAL LOG -->
-  <div class="section">
-    <div class="section-head">
-      <div class="section-title">Signal Log</div>
-      <div class="section-badge" id="sig-count">0 signals</div>
-    </div>
-    <div class="feed" id="feed">
-      <div class="empty">รัน live_trader.py เพื่อเริ่ม scan</div>
-    </div>
-  </div>
+    <!-- ══ MARKETS ════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-markets">
 
-</div>
+      <div class="grid3">
+        <!-- Sentiment -->
+        <div class="section">
+          <div class="sec-head"><div class="sec-title">Market Sentiment</div></div>
+          <div style="padding:8px 16px 16px;text-align:center">
+            <div class="sent-ring" id="sent-ring">
+              <div style="font-size:22px;font-weight:500" id="sent-pct">—</div>
+              <div style="font-size:9px;color:var(--t2);letter-spacing:.1em" id="sent-lbl">—</div>
+            </div>
+            <div style="font-size:10px;color:var(--t2)">Bullish HTF / Total coins</div>
+            <div style="font-size:9px;color:var(--t3);margin-top:2px">based on 4H EMA7 &gt; EMA30</div>
+          </div>
+        </div>
+
+        <!-- BTC -->
+        <div class="section">
+          <div class="sec-head"><div class="sec-title">BTC / USDT</div></div>
+          <div style="padding:18px 16px;text-align:center">
+            <div style="font-size:26px;font-weight:500;letter-spacing:.02em" id="btc-price">—</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:3px">Current Price</div>
+            <div style="margin-top:16px;display:flex;justify-content:space-around">
+              <div>
+                <div style="font-size:15px;font-weight:500" id="btc-rsi">—</div>
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.1em">RSI</div>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:500" id="btc-score">—</div>
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.1em">SCORE</div>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:500" id="btc-htf">—</div>
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.1em">4H BIAS</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ETH -->
+        <div class="section">
+          <div class="sec-head"><div class="sec-title">ETH / USDT</div></div>
+          <div style="padding:18px 16px;text-align:center">
+            <div style="font-size:26px;font-weight:500;letter-spacing:.02em" id="eth-price">—</div>
+            <div style="font-size:10px;color:var(--t2);margin-top:3px">Current Price</div>
+            <div style="margin-top:16px;display:flex;justify-content:space-around">
+              <div>
+                <div style="font-size:15px;font-weight:500" id="eth-rsi">—</div>
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.1em">RSI</div>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:500" id="eth-score">—</div>
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.1em">SCORE</div>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:500" id="eth-htf">—</div>
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.1em">4H BIAS</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Long / Short -->
+      <div class="grid2">
+        <div class="section">
+          <div class="sec-head">
+            <div class="sec-title">Top Bullish Setup</div>
+            <div class="sec-badge">by Long Score</div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Symbol</th><th>Price</th><th>Score L</th><th>RSI</th><th>KZ</th></tr></thead>
+              <tbody id="top-long-tbody"><tr><td colspan="5"><div class="empty">—</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section">
+          <div class="sec-head">
+            <div class="sec-title">Top Bearish Setup</div>
+            <div class="sec-badge">by Short Score</div>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Symbol</th><th>Price</th><th>Score S</th><th>RSI</th><th>KZ</th></tr></thead>
+              <tbody id="top-short-tbody"><tr><td colspan="5"><div class="empty">—</div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Full Heatmap -->
+      <div class="section">
+        <div class="sec-head"><div class="sec-title">Coin Heatmap — Signal Strength</div></div>
+        <div id="heatmap-full" class="heatmap"></div>
+      </div>
+
+    </div>
+
+  </div><!-- /pages -->
+</div><!-- /main -->
+</div><!-- /app -->
 
 <script>
-// ── DATA ─────────────────────────────────────────────────────────────────────
-// Dashboard อ่านข้อมูลจาก dashboard_data.json ที่ generate โดย generate_dashboard.py
-// ถ้าไม่มีไฟล์ → แสดง demo data
-
-const DEMO = {
-  balance: 1000,
-  pnl: 0,
-  win_rate: 0,
-  total_trades: 0,
-  open_trades: [],
-  closed_trades: [],
-  sessions: [],
-  equity: [1000],
-  last_scan: null,
-  signals: []
-}
-
-let DATA = DEMO
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const DEMO={balance:1000,pnl:0,win_rate:0,total_trades:0,open_trades:[],closed_trades:[],sessions:[],equity:[1000],last_scan:null,signals:[],scan_results:[]}
+let DATA=DEMO
 
 // ── CLOCK ─────────────────────────────────────────────────────────────────────
-function updateClock(){
-  const now = new Date()
-  const h   = String(now.getUTCHours()).padStart(2,'0')
-  const m   = String(now.getUTCMinutes()).padStart(2,'0')
-  const s   = String(now.getUTCSeconds()).padStart(2,'0')
-  document.getElementById('clock').textContent = `${h}:${m}:${s} UTC`
+function tick(){
+  const n=new Date(),p=v=>String(v).padStart(2,'0')
+  document.getElementById('clock').textContent=`${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC`
 }
-setInterval(updateClock,1000)
-updateClock()
+setInterval(tick,1000);tick()
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function nav(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'))
+  document.getElementById('page-'+id).classList.add('active')
+  document.getElementById('btn-'+id).classList.add('active')
+  if(id==='dashboard') setTimeout(()=>drawEquity(DATA.equity||[1000]),50)
+}
 
 // ── LOAD DATA ─────────────────────────────────────────────────────────────────
 async function loadData(){
-  try {
-    const r = await fetch('dashboard_data.json?t=' + Date.now())
-    if(!r.ok) throw new Error('no file')
-    DATA = await r.json()
-    document.getElementById('banner').style.display = 'none'
-  } catch(e) {
-    document.getElementById('banner').style.display = 'block'
-    DATA = DEMO
-  }
+  try{
+    const r=await fetch('dashboard_data.json?t='+Date.now())
+    if(!r.ok) throw ''
+    DATA=await r.json()
+  }catch{DATA=DEMO}
   render()
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function render(){
-  const d = DATA
-
-  // Stats
-  const bal    = d.balance || 1000
-  const pct    = ((bal/1000)-1)*100
-  const pnl    = d.pnl || 0
-  const wr     = d.win_rate || 0
-  const opens  = d.open_trades || []
+  const d=DATA
+  const scan   = d.scan_results  || []
+  const sigs   = d.signals       || []
+  const opens  = d.open_trades   || []
   const closed = d.closed_trades || []
+  const wins   = closed.filter(t=>t.outcome==='WIN').length
 
-  document.getElementById('s-balance').textContent = '$' + bal.toFixed(2)
-  const pctEl = document.getElementById('s-pct')
-  pctEl.textContent = (pct>=0?'+':'') + pct.toFixed(1) + '%'
-  pctEl.className = 'stat-sub ' + (pct>=0?'up':'dn')
+  // Topbar
+  document.getElementById('tb-scan').textContent = d.last_scan ? timeAgo(d.last_scan) : '—'
 
-  document.getElementById('s-wr').textContent = wr.toFixed(1) + '%'
-  document.getElementById('s-trades').textContent = (d.total_trades||0) + ' trades'
+  // ── DASHBOARD STATS ───────────────────────────────────────────────────────
+  const bal=d.balance||1000, pct=((bal/1000)-1)*100
+  const watching   = scan.filter(r=>r.status==='WATCH').length
+  const sigCount   = scan.filter(r=>r.status==='SIGNAL').length
+  const bullCount  = scan.filter(r=>r.htf_bull).length
 
-  const pnlEl = document.getElementById('s-pnl')
-  pnlEl.textContent = (pnl>=0?'+':'') + '$' + Math.abs(pnl).toFixed(2)
-  pnlEl.className = 'stat-value ' + (pnl>=0?'up':'dn')
+  const balEl=document.getElementById('d-balance')
+  balEl.textContent='$'+bal.toFixed(2)
+  balEl.className='s-val '+(pct>=0?'up':'dn')
+  document.getElementById('d-pct').textContent=(pct>=0?'+':'')+pct.toFixed(1)+'% from start'
 
-  document.getElementById('s-open').textContent = opens.length
-  document.getElementById('s-scan').textContent = d.last_scan ? timeAgo(d.last_scan) : '—'
+  const pnlEl=document.getElementById('d-pnl')
+  pnlEl.textContent=(d.pnl>=0?'+':'')+'$'+Math.abs(d.pnl||0).toFixed(2)
+  pnlEl.className='s-val '+(d.pnl>=0?'up':'dn')
+  document.getElementById('d-trades').textContent=(d.total_trades||0)+' closed trades'
+  document.getElementById('d-wr').textContent=d.total_trades>0?(d.win_rate||0).toFixed(1)+'%':'—'
+  document.getElementById('d-wl').textContent=`W:${wins}  L:${(d.total_trades||0)-wins}`
+  document.getElementById('d-open').textContent=opens.length
+  document.getElementById('d-sigs').textContent=sigCount
+  document.getElementById('d-watch').textContent=watching
+  document.getElementById('d-mkt-badge').textContent=bullCount+' / '+scan.length+' bullish'
 
-  // Open trades
-  document.getElementById('open-count').textContent = opens.length + ' open'
-  const otb = document.getElementById('open-tbody')
-  if(opens.length===0){
-    otb.innerHTML = '<tr><td colspan="10"><div class="empty"><div class="icon">○</div>ไม่มี open trade</div></td></tr>'
-  } else {
-    otb.innerHTML = opens.map(t=>`
-      <tr>
-        <td class="t2">#${t.id}</td>
-        <td><strong>${t.symbol}</strong></td>
-        <td><span class="badge ${t.side==='LONG'?'long':'short'}">${t.side}</span></td>
-        <td>${fmt(t.entry_px)}</td>
-        <td class="dn">${fmt(t.sl_px)}</td>
-        <td class="up">${fmt(t.tp1_px)}</td>
-        <td class="up">${fmt(t.tp2_px)}</td>
-        <td>
-          <div class="score-bar">
-            <span>${t.score}</span>
-            <div class="score-max"><div class="score-fill" style="width:${(t.score/26*100).toFixed(0)}%"></div></div>
-          </div>
-        </td>
-        <td>${t.tp1_hit?'✅':'-'}</td>
-        <td class="t2">${shortDt(t.opened_at)}</td>
-      </tr>
-    `).join('')
-  }
-
-  // Closed trades
-  document.getElementById('closed-count').textContent = closed.length + ' closed'
-  const ctb = document.getElementById('closed-tbody')
-  if(closed.length===0){
-    ctb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="icon">○</div>ยังไม่มี closed trade</div></td></tr>'
-  } else {
-    const recent = [...closed].reverse().slice(0,50)
-    ctb.innerHTML = recent.map(t=>`
-      <tr>
-        <td class="t2">#${t.id}</td>
-        <td><strong>${t.symbol}</strong></td>
-        <td><span class="badge ${t.side==='LONG'?'long':'short'}">${t.side}</span></td>
-        <td>${fmt(t.entry_px)}</td>
-        <td>${fmt(t.exit_px)}</td>
-        <td><span class="badge ${t.outcome==='WIN'?'win':'loss'}">${t.outcome}</span></td>
-        <td class="${t.pnl_usd>=0?'up':'dn'}">${t.pnl_usd>=0?'+':''}$${Math.abs(t.pnl_usd).toFixed(2)}</td>
-        <td>${t.tp1_hit?'✅':'-'}</td>
-        <td class="t2">${shortDt(t.closed_at)}</td>
-      </tr>
-    `).join('')
-  }
+  // Equity
+  drawEquity(d.equity||[1000])
 
   // Session
-  const stb = document.getElementById('sess-tbody')
-  const sess = d.sessions || []
-  if(sess.length===0){
-    stb.innerHTML = '<tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'
-  } else {
-    stb.innerHTML = sess.map(s=>`
-      <tr>
-        <td>${s.name}</td>
-        <td>${s.trades}</td>
-        <td>${s.wins}</td>
-        <td class="${s.wr>=50?'up':s.wr>=40?'yellow':''}">${s.wr.toFixed(1)}%</td>
-      </tr>
-    `).join('')
-  }
+  const stb=document.getElementById('sess-tbody'), sess=d.sessions||[]
+  stb.innerHTML=sess.length===0
+    ?'<tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'
+    :sess.map(s=>`<tr><td>${s.name}</td><td>${s.trades}</td><td>${s.wins}</td><td class="${s.wr>=50?'up':s.wr>=40?'yl':''}">${s.wr.toFixed(1)}%</td></tr>`).join('')
 
-  // Equity chart
-  drawEquity(d.equity || [1000])
+  // Dashboard heatmap
+  renderHeatmap('heatmap-dash', scan)
 
-  // Signal feed
-  const signals = d.signals || []
-  const feed = document.getElementById('feed')
-  document.getElementById('sig-count').textContent = signals.length + ' signals'
-  if(signals.length===0){
-    feed.innerHTML = '<div class="empty">รัน live_trader.py เพื่อเริ่ม scan</div>'
-  } else {
-    feed.innerHTML = [...signals].reverse().slice(0,30).map(s=>`
+  // ── SCANNER ───────────────────────────────────────────────────────────────
+  document.getElementById('sc-badge').textContent=`${sigCount} signals · ${watching} watching · ${scan.length-sigCount-watching} idle`
+  const scTb=document.getElementById('scanner-tbody')
+  scTb.innerHTML=scan.length===0
+    ?'<tr><td colspan="10"><div class="empty">รอผลการ scan ครั้งแรก...</div></td></tr>'
+    :scan.map(r=>{
+      const sc=r.best_score||0
+      const bw=Math.round(sc/26*100)
+      const bc=sc>=8?'#00d97e':sc>=5?'#f0c040':'#2a3850'
+      return `<tr>
+        <td><strong>${r.symbol}</strong></td>
+        <td class="t2">$${fmtPx(r.price)}</td>
+        <td>${sBadge(r.status)}</td>
+        <td><span class="badge ${r.side==='LONG'?'b-long':'b-short'}">${r.side}</span></td>
+        <td class="${r.score_long>=8?'up':''}">${r.score_long}</td>
+        <td class="${r.score_short>=8?'dn':''}">${r.score_short}</td>
+        <td>
+          <div class="score-bar">
+            <span style="min-width:30px">${sc}/26</span>
+            <div class="score-track"><div class="score-fill" style="width:${bw}%;background:${bc}"></div></div>
+          </div>
+        </td>
+        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi}</td>
+        <td>${r.htf_bull?'<span class="up">▲ BULL</span>':'<span class="dn">▼ BEAR</span>'}</td>
+        <td>${r.in_kz?'<span class="up">⚡ YES</span>':'<span class="t2">—</span>'}</td>
+      </tr>`
+    }).join('')
+
+  // ── SIGNALS ───────────────────────────────────────────────────────────────
+  const longS=sigs.filter(s=>s.side==='LONG').length
+  const shortS=sigs.filter(s=>s.side==='SHORT').length
+  document.getElementById('sig-total').textContent=sigs.length
+  document.getElementById('sig-long').textContent=longS
+  document.getElementById('sig-short').textContent=shortS
+  document.getElementById('sig-badge').textContent=sigs.length+' signals'
+  const feed=document.getElementById('sig-feed')
+  feed.innerHTML=sigs.length===0
+    ?'<div class="empty">รอ signal ครั้งแรก — ระบบ scan ทุก 5 นาที</div>'
+    :[...sigs].reverse().slice(0,50).map(s=>`
       <div class="feed-item">
         <div class="feed-time">${shortDt(s.ts)}</div>
         <div class="feed-body">
-          <span class="feed-tag tag-signal">SIGNAL</span>
-          <strong>${s.symbol}</strong> ${s.side} — Score ${s.score}/26
-          px=${s.price} sl=${s.sl} tp1=${s.tp1}
+          <span class="badge ${s.side==='LONG'?'b-long':'b-short'}">${s.side}</span>
+          &nbsp;<strong>${s.symbol}</strong>
+          &nbsp;Score <span class="up">${s.score}/26</span>
+          &nbsp;· $${s.price}
+          &nbsp;· SL <span class="dn">$${s.sl}</span>
+          &nbsp;· TP1 <span class="up">$${s.tp1}</span>
+          &nbsp;· TP2 <span class="up">$${s.tp2}</span>
+          &nbsp;· RSI ${s.rsi}
+          ${s.in_kz?'&nbsp;<span class="yl">⚡ KZ</span>':''}
         </div>
-      </div>
-    `).join('')
+      </div>`).join('')
+
+  // ── POSITIONS ─────────────────────────────────────────────────────────────
+  document.getElementById('pos-open-badge').textContent=opens.length+' open'
+  document.getElementById('pos-closed-badge').textContent=closed.length+' closed'
+  const otb=document.getElementById('open-tbody')
+  otb.innerHTML=opens.length===0
+    ?'<tr><td colspan="10"><div class="empty">ไม่มี open trade</div></td></tr>'
+    :opens.map(t=>`<tr>
+      <td class="t2">#${t.id}</td>
+      <td><strong>${t.symbol}</strong></td>
+      <td><span class="badge ${t.side==='LONG'?'b-long':'b-short'}">${t.side}</span></td>
+      <td>${fmt(t.entry_px)}</td>
+      <td class="dn">${fmt(t.sl_px)}</td>
+      <td class="up">${fmt(t.tp1_px)}</td>
+      <td class="up">${fmt(t.tp2_px)}</td>
+      <td>
+        <div class="score-bar">
+          <span>${t.score}</span>
+          <div class="score-track"><div class="score-fill" style="width:${Math.round((t.score||0)/26*100)}%;background:var(--accent)"></div></div>
+        </div>
+      </td>
+      <td>${t.tp1_hit?'✅':'—'}</td>
+      <td class="t2">${shortDt(t.opened_at)}</td>
+    </tr>`).join('')
+  const ctb=document.getElementById('closed-tbody')
+  ctb.innerHTML=closed.length===0
+    ?'<tr><td colspan="9"><div class="empty">ยังไม่มี closed trade</div></td></tr>'
+    :[...closed].reverse().slice(0,50).map(t=>`<tr>
+      <td class="t2">#${t.id}</td>
+      <td><strong>${t.symbol}</strong></td>
+      <td><span class="badge ${t.side==='LONG'?'b-long':'b-short'}">${t.side}</span></td>
+      <td>${fmt(t.entry_px)}</td>
+      <td>${fmt(t.exit_px)}</td>
+      <td><span class="badge ${t.outcome==='WIN'?'b-win':'b-loss'}">${t.outcome}</span></td>
+      <td class="${(t.pnl_usd||0)>=0?'up':'dn'}">${(t.pnl_usd||0)>=0?'+':''}$${Math.abs(t.pnl_usd||0).toFixed(2)}</td>
+      <td>${t.tp1_hit?'✅':'—'}</td>
+      <td class="t2">${shortDt(t.closed_at)}</td>
+    </tr>`).join('')
+
+  // ── MARKETS ───────────────────────────────────────────────────────────────
+  const sentPct=scan.length>0?Math.round(bullCount/scan.length*100):50
+  const sentCol=sentPct>=60?'var(--green)':sentPct<=40?'var(--red)':'var(--yellow)'
+  const sentRing=document.getElementById('sent-ring')
+  sentRing.style.borderColor=sentCol
+  document.getElementById('sent-pct').textContent=sentPct+'%'
+  document.getElementById('sent-pct').style.color=sentCol
+  document.getElementById('sent-lbl').textContent=sentPct>=60?'BULLISH':sentPct<=40?'BEARISH':'NEUTRAL'
+
+  const btc=scan.find(r=>r.symbol==='BTC/USDT')
+  const eth=scan.find(r=>r.symbol==='ETH/USDT')
+  if(btc){
+    const el=document.getElementById('btc-price')
+    el.textContent='$'+fmtPx(btc.price); el.style.color=btc.htf_bull?'var(--green)':'var(--red)'
+    document.getElementById('btc-rsi').textContent=btc.rsi
+    document.getElementById('btc-score').textContent=btc.best_score+'/26'
+    const bh=document.getElementById('btc-htf')
+    bh.textContent=btc.htf_bull?'▲ BULL':'▼ BEAR'; bh.style.color=btc.htf_bull?'var(--green)':'var(--red)'
   }
+  if(eth){
+    const el=document.getElementById('eth-price')
+    el.textContent='$'+fmtPx(eth.price); el.style.color=eth.htf_bull?'var(--green)':'var(--red)'
+    document.getElementById('eth-rsi').textContent=eth.rsi
+    document.getElementById('eth-score').textContent=eth.best_score+'/26'
+    const eh=document.getElementById('eth-htf')
+    eh.textContent=eth.htf_bull?'▲ BULL':'▼ BEAR'; eh.style.color=eth.htf_bull?'var(--green)':'var(--red)'
+  }
+
+  const topLong=[...scan].sort((a,b)=>(b.score_long||0)-(a.score_long||0)).slice(0,5)
+  const topShort=[...scan].sort((a,b)=>(b.score_short||0)-(a.score_short||0)).slice(0,5)
+  document.getElementById('top-long-tbody').innerHTML=topLong.length===0
+    ?'<tr><td colspan="5"><div class="empty">—</div></td></tr>'
+    :topLong.map(r=>`<tr>
+      <td><strong>${r.symbol}</strong></td>
+      <td class="t2">$${fmtPx(r.price)}</td>
+      <td class="${r.score_long>=8?'up':''}">${r.score_long}/26</td>
+      <td class="${r.rsi<40?'up':''}">${r.rsi}</td>
+      <td>${r.in_kz?'<span class="up">⚡</span>':'—'}</td>
+    </tr>`).join('')
+  document.getElementById('top-short-tbody').innerHTML=topShort.length===0
+    ?'<tr><td colspan="5"><div class="empty">—</div></td></tr>'
+    :topShort.map(r=>`<tr>
+      <td><strong>${r.symbol}</strong></td>
+      <td class="t2">$${fmtPx(r.price)}</td>
+      <td class="${r.score_short>=8?'dn':''}">${r.score_short}/26</td>
+      <td class="${r.rsi>60?'dn':''}">${r.rsi}</td>
+      <td>${r.in_kz?'<span class="up">⚡</span>':'—'}</td>
+    </tr>`).join('')
+
+  renderHeatmap('heatmap-full', scan)
+}
+
+// ── HEATMAP ───────────────────────────────────────────────────────────────────
+function renderHeatmap(id, scan){
+  const el=document.getElementById(id)
+  if(!el) return
+  if(scan.length===0){el.innerHTML='<div class="empty" style="grid-column:1/-1">รอข้อมูล scan...</div>';return}
+  el.innerHTML=scan.map(r=>{
+    const sc=r.best_score||0
+    const col=sc>=8?'rgba(0,217,126,.8)':sc>=5?'rgba(240,192,64,.8)':'rgba(42,56,80,.9)'
+    const txtCol=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
+    const sym=r.symbol.replace('/USDT','')
+    return `<div class="hm-cell">
+      <div class="hm-sym" style="color:${txtCol}">${sym}</div>
+      <div class="hm-px">$${fmtPxShort(r.price)}</div>
+      <div class="hm-bar" style="background:${col}"></div>
+      <div class="hm-score" style="color:${txtCol}">${sc}/26</div>
+    </div>`
+  }).join('')
 }
 
 // ── EQUITY CHART ──────────────────────────────────────────────────────────────
-function drawEquity(points){
-  const canvas = document.getElementById('equity-chart')
-  const wrap   = canvas.parentElement
-  canvas.width  = wrap.clientWidth - 32
-  canvas.height = 180
-  const ctx = canvas.getContext('2d')
-  const W = canvas.width, H = canvas.height
-  const pad = {t:10,b:24,l:60,r:10}
-
-  const min = Math.min(...points) * 0.995
-  const max = Math.max(...points) * 1.005
-  const toX = i => pad.l + (i/(points.length-1||1)) * (W-pad.l-pad.r)
-  const toY = v => pad.t + (1-(v-min)/(max-min||1)) * (H-pad.t-pad.b)
-
+function drawEquity(pts){
+  const cv=document.getElementById('equity-chart')
+  if(!cv) return
+  const wrap=cv.parentElement
+  cv.width=wrap.clientWidth-32; cv.height=155
+  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height
+  const pad={t:8,b:22,l:56,r:8}
+  const mn=Math.min(...pts)*.995, mx=Math.max(...pts)*1.005
+  const toX=i=>pad.l+(i/(pts.length-1||1))*(W-pad.l-pad.r)
+  const toY=v=>pad.t+(1-(v-mn)/(mx-mn||1))*(H-pad.t-pad.b)
   ctx.clearRect(0,0,W,H)
-
-  // Grid
-  ctx.strokeStyle = '#1e2840'
-  ctx.lineWidth = 1
-  for(let i=0;i<=4;i++){
-    const y = pad.t + i*(H-pad.t-pad.b)/4
+  for(let i=0;i<=3;i++){
+    const y=pad.t+i*(H-pad.t-pad.b)/3
+    ctx.strokeStyle='#1e2840';ctx.lineWidth=1
     ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke()
-    const val = max - i*(max-min)/4
-    ctx.fillStyle = '#3a4860'
-    ctx.font = '9px DM Mono'
-    ctx.fillText('$'+val.toFixed(0), 2, y+3)
+    ctx.fillStyle='#3a4860';ctx.font='9px DM Mono'
+    ctx.fillText('$'+(mx-i*(mx-mn)/3).toFixed(0),2,y+3)
   }
-
-  // Area fill
-  const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b)
-  const isUp = points[points.length-1] >= points[0]
-  grad.addColorStop(0, isUp?'rgba(0,217,126,.25)':'rgba(240,64,96,.25)')
-  grad.addColorStop(1, 'rgba(0,0,0,0)')
-
-  ctx.beginPath()
-  ctx.moveTo(toX(0),H-pad.b)
-  points.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)))
-  ctx.lineTo(toX(points.length-1),H-pad.b)
-  ctx.closePath()
-  ctx.fillStyle = grad
-  ctx.fill()
-
-  // Line
-  ctx.beginPath()
-  ctx.strokeStyle = isUp?'#00d97e':'#f04060'
-  ctx.lineWidth = 2
-  points.forEach((v,i)=>i===0?ctx.moveTo(toX(0),toY(v)):ctx.lineTo(toX(i),toY(v)))
+  const isUp=pts[pts.length-1]>=pts[0]
+  const g=ctx.createLinearGradient(0,pad.t,0,H-pad.b)
+  g.addColorStop(0,isUp?'rgba(0,217,126,.18)':'rgba(240,64,96,.18)')
+  g.addColorStop(1,'rgba(0,0,0,0)')
+  ctx.beginPath();ctx.moveTo(toX(0),H-pad.b)
+  pts.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)))
+  ctx.lineTo(toX(pts.length-1),H-pad.b);ctx.closePath()
+  ctx.fillStyle=g;ctx.fill()
+  ctx.beginPath();ctx.strokeStyle=isUp?'#00d97e':'#f04060';ctx.lineWidth=2
+  pts.forEach((v,i)=>i===0?ctx.moveTo(toX(0),toY(v)):ctx.lineTo(toX(i),toY(v)))
   ctx.stroke()
-
-  // Last dot
-  const lx = toX(points.length-1), ly = toY(points[points.length-1])
-  ctx.beginPath()
-  ctx.arc(lx,ly,4,0,Math.PI*2)
-  ctx.fillStyle = isUp?'#00d97e':'#f04060'
-  ctx.fill()
+  const lx=toX(pts.length-1),ly=toY(pts[pts.length-1])
+  ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2)
+  ctx.fillStyle=isUp?'#00d97e':'#f04060';ctx.fill()
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function fmt(v){ return v ? parseFloat(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:4}) : '—' }
+function sBadge(s){
+  if(s==='SIGNAL') return '<span class="badge b-sig">🔔 SIGNAL</span>'
+  if(s==='WATCH')  return '<span class="badge b-watch">👁 WATCH</span>'
+  return '<span class="badge b-idle">— IDLE</span>'
+}
+function fmt(v){return v?parseFloat(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:4}):'—'}
+function fmtPx(v){
+  if(!v||v===0) return '—'
+  return v>100?v.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})
+              :v.toLocaleString('en',{minimumFractionDigits:4,maximumFractionDigits:4})
+}
+function fmtPxShort(v){
+  if(!v||v===0) return '—'
+  if(v>10000) return (v/1000).toFixed(1)+'K'
+  if(v>100)   return v.toFixed(0)
+  return v.toFixed(3)
+}
 function shortDt(s){
   if(!s) return '—'
   try{
-    const d = new Date(s)
+    const d=new Date(s)
     return d.toLocaleString('en',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'UTC'})
   }catch{return s.substring(0,16)}
 }
 function timeAgo(s){
   if(!s) return '—'
-  const diff = (Date.now() - new Date(s).getTime()) / 60000
+  const diff=(Date.now()-new Date(s).getTime())/60000
   if(diff<1) return 'just now'
-  if(diff<60) return Math.floor(diff) + 'm ago'
-  return Math.floor(diff/60) + 'h ago'
+  if(diff<60) return Math.floor(diff)+'m ago'
+  return Math.floor(diff/60)+'h ago'
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 loadData()
-setInterval(loadData, 60000)  // auto refresh ทุก 1 นาที
+setInterval(loadData, 300000)  // auto-refresh ทุก 5 นาที
 </script>
 </body>
 </html>

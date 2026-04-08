@@ -77,6 +77,16 @@ def main():
                 signals = json.load(f)
         except: pass
 
+    # Scan results (all coins + scores)
+    scan_results = []
+    if os.path.exists("scan_results.json"):
+        try:
+            with open("scan_results.json") as f:
+                raw = json.load(f)
+            # เรียงจาก score สูงสุด
+            scan_results = sorted(raw, key=lambda x: x.get("best_score", 0), reverse=True)
+        except: pass
+
     last_scan = None
     if os.path.exists("signals.log"):
         try:
@@ -89,17 +99,18 @@ def main():
         except: pass
 
     data = {
-        "balance":   round(balance, 2),
-        "pnl":       round(total_pnl, 2),
-        "win_rate":  round(wr, 1),
+        "balance":      round(balance, 2),
+        "pnl":          round(total_pnl, 2),
+        "win_rate":     round(wr, 1),
         "total_trades": total,
         "open_trades":  opens,
         "closed_trades": closed,
-        "sessions":  sessions,
-        "equity":    equity,
-        "signals":   signals,
-        "last_scan": last_scan,
-        "generated": datetime.now(timezone.utc).isoformat(),
+        "sessions":     sessions,
+        "equity":       equity,
+        "signals":      signals,
+        "scan_results": scan_results,
+        "last_scan":    last_scan,
+        "generated":    datetime.now(timezone.utc).isoformat(),
     }
 
     with open(OUT_PATH, "w") as f:

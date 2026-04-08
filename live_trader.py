@@ -169,7 +169,8 @@ def score_short(r):
 
 # ── SCAN ──────────────────────────────────────────────────────────────────────
 def scan():
-    signals = []
+    signals     = []
+    scan_results = []   # ← เก็บ score ทุกเหรียญ (สำหรับ dashboard scanner)
     log("─" * 50)
     log(f"SCAN เริ่ม — {len(SYMBOLS)} symbols")
 
@@ -179,6 +180,11 @@ def scan():
             d4h = fetch(sym, TF_4H)
             if d1h.empty or len(d1h) < 150:
                 log(f"  {sym}: ข้อมูลไม่พอ")
+                scan_results.append({"symbol": sym, "status": "NO_DATA",
+                                     "score_long": 0, "score_short": 0,
+                                     "best_score": 0, "price": 0, "rsi": 0,
+                                     "htf_bull": False, "in_kz": False,
+                                     "ts": datetime.now(timezone.utc).isoformat()})
                 continue
 
             d1h = indicators(d1h)
@@ -191,12 +197,39 @@ def scan():
             sl  = score_long(r)
             ss  = score_short(r)
 
+            # ── บันทึก scan result ทุกเหรียญ ──────────────────────────────
+            best        = max(sl, ss)
+            best_side   = "LONG" if sl >= ss else "SHORT"
+            pct         = round(best / 26 * 100, 1)
+            if best >= MIN_SCORE:
+                status  = "SIGNAL"
+            elif best >= 5:
+                status  = "WATCH"      # ใกล้ signal (5-7 คะแนน)
+            else:
+                status  = "IDLE"
+
+            scan_results.append({
+                "symbol":      sym,
+                "status":      status,
+                "side":        best_side,
+                "score_long":  sl,
+                "score_short": ss,
+                "best_score":  best,
+                "score_pct":   pct,
+                "price":       round(float(px), 4),
+                "rsi":         round(float(r["rsi"]), 1),
+                "htf_bull":    bool(r["htf_bull"]),
+                "in_kz":       bool(r["kz"]),
+                "ts":          datetime.now(timezone.utc).isoformat(),
+            })
+
             if sl >= MIN_SCORE and sl >= ss:
                 side, score = "LONG", sl
             elif ss >= MIN_SCORE and ss > sl:
                 side, score = "SHORT", ss
             else:
-                log(f"  {sym}: no signal (L={sl} S={ss})")
+                log(f"  {sym}: watch (L={sl} S={ss}) px={px:.4f}")
+                time.sleep(0.3)
                 continue
 
             # คำนวณ levels
@@ -237,7 +270,7 @@ def scan():
             log(f"  [ERR] {sym}: {e}")
 
     log(f"SCAN เสร็จ — พบ {len(signals)} signals")
-    return signals
+    return signals, scan_results
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
@@ -247,12 +280,16 @@ if __name__ == "__main__":
     log("EMA7/30 · SMA99 · BOS/CHoCH/QM")
     log("=" * 50)
 
-    signals = scan()
+    signals, scan_results = scan()
+
+    # บันทึก scan results ทุกเหรียญ (สำหรับ dashboard)
+    with open("scan_results.json", "w") as f:
+        json.dump(scan_results, f, indent=2, ensure_ascii=False)
+    log(f"บันทึก → scan_results.json ({len(scan_results)} coins)")
 
     if signals:
-        # บันทึกลงไฟล์ JSON
         with open("latest_signals.json", "w") as f:
             json.dump(signals, f, indent=2, ensure_ascii=False)
-        log(f"บันทึก → latest_signals.json")
+        log(f"บันทึก → latest_signals.json ({len(signals)} signals)")
     else:
         log("ไม่มี signal รอบนี้")
