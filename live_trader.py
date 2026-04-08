@@ -280,16 +280,30 @@ if __name__ == "__main__":
     log("EMA7/30 · SMA99 · BOS/CHoCH/QM")
     log("=" * 50)
 
-    signals, scan_results = scan()
+    signals      = []
+    scan_results = []
 
-    # บันทึก scan results ทุกเหรียญ (สำหรับ dashboard)
-    with open("scan_results.json", "w") as f:
-        json.dump(scan_results, f, indent=2, ensure_ascii=False)
-    log(f"บันทึก → scan_results.json ({len(scan_results)} coins)")
+    try:
+        signals, scan_results = scan()
+    except Exception as e:
+        log(f"[FATAL] scan() failed: {e}")
+        import traceback
+        log(traceback.format_exc())
+    finally:
+        # บันทึก scan_results เสมอ — แม้ error จะต้องมีไฟล์ให้ dashboard
+        try:
+            with open("scan_results.json", "w") as f:
+                json.dump(scan_results, f, indent=2, ensure_ascii=False)
+            log(f"บันทึก → scan_results.json ({len(scan_results)} coins)")
+        except Exception as e:
+            log(f"[ERR] write scan_results.json: {e}")
 
     if signals:
-        with open("latest_signals.json", "w") as f:
-            json.dump(signals, f, indent=2, ensure_ascii=False)
-        log(f"บันทึก → latest_signals.json ({len(signals)} signals)")
+        try:
+            with open("latest_signals.json", "w") as f:
+                json.dump(signals, f, indent=2, ensure_ascii=False)
+            log(f"บันทึก → latest_signals.json ({len(signals)} signals)")
+        except Exception as e:
+            log(f"[ERR] write latest_signals.json: {e}")
     else:
         log("ไม่มี signal รอบนี้")
