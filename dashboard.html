@@ -2,649 +2,1074 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>WAKAM3 — AI Trade System</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Barlow+Condensed:wght@200;300;400;600&family=Sarabun:wght@300;400&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>WAKAM3 — AI Trade</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0b0f1a;--s1:#111827;--s2:#162030;--s3:#1c2a3e;
-  --b:#1e3050;--b2:#243660;
-  --text:#d0e0f5;--t2:#6888aa;--t3:#2a3e5a;
-  --green:#00d97e;--red:#f04060;--yellow:#f5c842;
-  --accent:#4488ff;--purple:#a855f7;
-  --mono:'DM Mono',monospace;--head:'Barlow Condensed',sans-serif;
-  --sidebar-w:52px;
+  --bg:#080c14;--s1:#0d1220;--s2:#111827;--s3:#151f30;--s4:#1a2638;
+  --border:#1e2d45;--border2:#253550;
+  --text:#b8cce0;--t2:#4a6685;--t3:#1a2638;
+  --green:#00c97b;--red:#e83c5a;--yellow:#f0b429;
+  --blue:#3b82f6;--purple:#7c3aed;--orange:#f97316;--cyan:#06b6d4;
+  --font:'Inter',sans-serif;--mono:'DM Mono',monospace;
+  --sidebar-w:210px;
 }
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;overflow:hidden}
-
-/* ── APP ───────────────────────────────────── */
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:12px;overflow:hidden}
 .app{display:flex;height:100vh}
 
-/* ── SIDEBAR ───────────────────────────────── */
+/* ─── SIDEBAR ─────────────────────────────── */
 .sidebar{
   width:var(--sidebar-w);flex-shrink:0;
-  background:var(--s1);border-right:1px solid var(--b);
-  display:flex;flex-direction:column;align-items:center;
-  padding:10px 0 16px;gap:2px;z-index:20;
+  background:var(--s1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:0 0 12px;overflow-y:auto;overflow-x:hidden;
+  scrollbar-width:none;
 }
-.s-logo{font-family:var(--head);font-size:12px;font-weight:600;color:var(--green);
-  letter-spacing:.08em;margin-bottom:14px;text-align:center;line-height:1.1}
+.sidebar::-webkit-scrollbar{display:none}
+.s-logo{
+  padding:14px 16px 12px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);margin-bottom:8px;flex-shrink:0;
+}
+.s-logo-icon{
+  width:30px;height:30px;background:var(--green);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;color:#000;letter-spacing:-.5px;flex-shrink:0;
+}
+.s-logo-text{font-size:13px;font-weight:600;color:var(--text);letter-spacing:.04em}
+.s-logo-sub{font-size:9px;color:var(--t2);letter-spacing:.1em;margin-top:1px}
+.nav-sec{
+  font-size:9px;color:var(--t2);letter-spacing:.15em;text-transform:uppercase;
+  padding:10px 16px 4px;font-weight:600;
+}
 .nav-btn{
-  width:42px;height:40px;border:none;background:none;color:var(--t2);
-  cursor:pointer;border-radius:5px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  font-size:8px;letter-spacing:.06em;font-family:var(--head);
-  transition:.15s;position:relative;
+  width:100%;padding:7px 16px 7px 14px;border:none;background:none;
+  color:var(--t2);cursor:pointer;
+  display:flex;align-items:center;gap:9px;
+  font-size:11.5px;font-family:var(--font);font-weight:400;
+  transition:.12s;position:relative;text-align:left;
+  border-left:2px solid transparent;
 }
-.nav-btn:hover{background:var(--s3);color:var(--text)}
-.nav-btn.active{background:var(--s2);color:var(--green)}
-.nav-btn.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;background:var(--green);border-radius:0 2px 2px 0}
-.nav-btn svg{width:14px;height:14px;stroke-width:1.5}
-.s-sep{width:26px;height:1px;background:var(--b);margin:5px 0}
+.nav-btn:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-btn.active{color:var(--text);background:rgba(0,201,123,.06);border-left-color:var(--green)}
+.nav-btn.dim{opacity:.4;cursor:default}
+.nav-icon{width:14px;height:14px;flex-shrink:0;opacity:.8}
+.nav-badge{margin-left:auto;background:var(--green);color:#000;font-size:9px;
+  padding:1px 5px;border-radius:10px;font-weight:600}
 
-/* ── MAIN ──────────────────────────────────── */
+/* ─── MAIN ────────────────────────────────── */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
 
-/* ── TOPBAR ────────────────────────────────── */
+/* ─── TOPBAR ──────────────────────────────── */
 .topbar{
-  height:46px;flex-shrink:0;
-  background:var(--s1);border-bottom:1px solid var(--b);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 18px;gap:12px;
+  height:44px;flex-shrink:0;
+  background:var(--s1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 14px;gap:0;overflow-x:auto;
+  scrollbar-width:none;
 }
-.tb-brand{font-family:var(--head);font-size:15px;font-weight:300;letter-spacing:.2em}
-.tb-brand em{color:var(--green);font-style:normal}
-.tb-r{display:flex;align-items:center;gap:14px}
-.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 2s infinite;flex-shrink:0}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-.tb-info{font-size:10px;color:var(--t2)}
-.tb-info b{color:var(--yellow)}
-.tb-clocks{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
-.tb-clk-bkk{font-size:12px;color:var(--text);font-weight:500;letter-spacing:.08em}
-.tb-clk-utc{font-size:9px;color:var(--t2);letter-spacing:.06em}
-.btn-ref{background:none;border:1px solid var(--b);color:var(--t2);padding:3px 10px;
-  cursor:pointer;font-family:var(--mono);font-size:10px;transition:.15s}
-.btn-ref:hover{border-color:var(--accent);color:var(--accent)}
+.topbar::-webkit-scrollbar{display:none}
+.tb-seg{
+  display:flex;align-items:center;gap:6px;padding:0 14px;
+  border-right:1px solid var(--border);height:100%;flex-shrink:0;
+}
+.tb-seg:first-child{padding-left:0}
+.tb-seg:last-child{border-right:none;margin-left:auto}
+.tb-lbl{font-size:9px;color:var(--t2);letter-spacing:.1em;text-transform:uppercase}
+.tb-val{font-size:12px;font-weight:500;color:var(--text)}
+.tb-chg{font-size:11px;font-weight:500}
+.tb-tag{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;letter-spacing:.05em}
+.tag-side{background:rgba(0,201,123,.15);color:var(--green);border:1px solid rgba(0,201,123,.3)}
+.tag-bear{background:rgba(232,60,90,.15);color:var(--red);border:1px solid rgba(232,60,90,.3)}
+.tag-side-y{background:rgba(240,180,41,.15);color:var(--yellow);border:1px solid rgba(240,180,41,.3)}
+.tag-off{background:rgba(74,102,133,.15);color:var(--t2);border:1px solid var(--border)}
+.tag-on{background:rgba(0,201,123,.15);color:var(--green);border:1px solid rgba(0,201,123,.3)}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 8px var(--green);animation:blink 2s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-/* ── PAGES ─────────────────────────────────── */
+/* ─── PAGES ───────────────────────────────── */
 .pages{flex:1;overflow:hidden;position:relative}
-.page{position:absolute;inset:0;overflow-y:auto;padding:14px 18px 36px;display:none}
+.page{position:absolute;inset:0;overflow-y:auto;padding:14px 16px 40px;display:none}
 .page.active{display:block}
 .page::-webkit-scrollbar{width:4px}
-.page::-webkit-scrollbar-thumb{background:var(--b)}
+.page::-webkit-scrollbar-thumb{background:var(--border)}
 
-/* ── STAT CARDS ────────────────────────────── */
-.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
-.sc{background:var(--s1);border:1px solid var(--b);padding:13px 15px;position:relative;overflow:hidden}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
-.sc.g::before{background:var(--green)}.sc.r::before{background:var(--red)}
-.sc.y::before{background:var(--yellow)}.sc.p::before{background:var(--purple)}
-.sc-lbl{font-size:9px;color:var(--t2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px}
-.sc-val{font-size:21px;font-weight:500;line-height:1;letter-spacing:.02em}
-.sc-sub{font-size:10px;color:var(--t2);margin-top:4px}
+/* ─── WIDGET GRID ─────────────────────────── */
+.dash-grid{display:grid;grid-template-columns:280px 1fr 280px;gap:10px;align-items:start}
+.col{display:flex;flex-direction:column;gap:10px}
 
-/* ── SECTION ───────────────────────────────── */
-.sec{background:var(--s1);border:1px solid var(--b);margin-bottom:12px}
-.sec-h{display:flex;align-items:center;justify-content:space-between;padding:9px 15px;border-bottom:1px solid var(--b)}
-.sec-t{font-family:var(--head);font-size:12px;font-weight:300;letter-spacing:.2em;text-transform:uppercase}
-.sec-b{font-size:9px;color:var(--accent);border:1px solid var(--accent);padding:1px 8px;letter-spacing:.08em}
+/* ─── CARD ────────────────────────────────── */
+.card{background:var(--s2);border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.card-h{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 13px;border-bottom:1px solid var(--border);
+}
+.card-title{font-size:11px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:7px}
+.card-title .icon{font-size:13px}
+.card-meta{font-size:10px;color:var(--t2)}
+.card-body{padding:12px 13px}
 
-/* ── TABLE ─────────────────────────────────── */
+/* ─── STAT GRID ───────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.stat-card{background:var(--s2);border:1px solid var(--border);padding:12px 14px;border-radius:4px}
+.stat-lbl{font-size:9px;color:var(--t2);letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+.stat-val{font-size:20px;font-weight:500;line-height:1;letter-spacing:-.01em}
+.stat-sub{font-size:10px;color:var(--t2);margin-top:4px}
+
+/* ─── TABLE ───────────────────────────────── */
 .tw{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{padding:6px 12px;text-align:left;font-size:9px;color:var(--t2);letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--b);background:var(--s2);font-weight:400;white-space:nowrap}
-td{padding:8px 12px;border-bottom:1px solid var(--t3);font-size:11px;vertical-align:middle;white-space:nowrap}
+th{padding:6px 10px;text-align:left;font-size:9px;color:var(--t2);
+  letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid var(--border);
+  background:var(--s3);font-weight:500;white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:11px;
+  vertical-align:middle;white-space:nowrap;font-family:var(--mono)}
+td.txt{font-family:var(--font)}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(36,54,96,.3)}
+tr:hover td{background:rgba(255,255,255,.02)}
 
-/* ── GRID ──────────────────────────────────── */
-.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+/* ─── BADGE ───────────────────────────────── */
+.bdg{display:inline-block;padding:2px 7px;font-size:9px;font-weight:600;
+  border-radius:3px;letter-spacing:.04em;font-family:var(--font)}
+.b-sig{background:rgba(0,201,123,.15);color:var(--green);border:1px solid rgba(0,201,123,.3)}
+.b-wat{background:rgba(240,180,41,.15);color:var(--yellow);border:1px solid rgba(240,180,41,.3)}
+.b-idl{background:rgba(74,102,133,.1);color:var(--t2);border:1px solid var(--border)}
+.b-long{background:rgba(0,201,123,.15);color:var(--green);border:1px solid rgba(0,201,123,.3)}
+.b-short{background:rgba(232,60,90,.15);color:var(--red);border:1px solid rgba(232,60,90,.3)}
+.b-win{background:rgba(0,201,123,.15);color:var(--green)}
+.b-los{background:rgba(232,60,90,.15);color:var(--red)}
+.b-run{background:rgba(0,201,123,.15);color:var(--green);border:1px solid rgba(0,201,123,.3)}
+.b-stale{background:rgba(240,180,41,.15);color:var(--yellow);border:1px solid rgba(240,180,41,.3)}
+.b-stop{background:rgba(232,60,90,.15);color:var(--red);border:1px solid rgba(232,60,90,.3)}
+.b-rej{background:rgba(232,60,90,.15);color:var(--red);border:1px solid rgba(232,60,90,.3)}
+.b-yes{background:rgba(0,201,123,.15);color:var(--green);border:1px solid rgba(0,201,123,.3)}
 
-/* ── SCORE BAR ─────────────────────────────── */
-.sb{display:flex;align-items:center;gap:6px}
-.st{flex:1;height:3px;background:var(--t3);border-radius:2px;min-width:40px}
-.sf{height:100%;border-radius:2px;transition:width .4s}
-
-/* ── BADGES ────────────────────────────────── */
-.bdg{display:inline-block;padding:2px 8px;font-size:9px;letter-spacing:.06em;border-radius:2px;font-weight:500}
-.b-sig{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.25)}
-.b-wat{background:rgba(245,200,66,.12);color:var(--yellow);border:1px solid rgba(245,200,66,.25)}
-.b-idl{color:var(--t2);border:1px solid var(--t3)}
-.b-lng{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.25)}
-.b-sht{background:rgba(240,64,96,.12);color:var(--red);border:1px solid rgba(240,64,96,.25)}
-.b-win{background:rgba(0,217,126,.12);color:var(--green)}
-.b-los{background:rgba(240,64,96,.12);color:var(--red)}
-
-/* ── COLORS ────────────────────────────────── */
+/* ─── UP / DOWN / NEUTRAL ────────────────── */
 .up{color:var(--green)}.dn{color:var(--red)}.yl{color:var(--yellow)}.t2{color:var(--t2)}
 
-/* ── FEED ──────────────────────────────────── */
-.fi{padding:9px 15px;border-bottom:1px solid var(--t3);display:flex;gap:11px}
-.fi:last-child{border-bottom:none}
-.fi-t{font-size:9px;color:var(--t2);white-space:nowrap;min-width:80px;padding-top:2px}
-.fi-b{flex:1;font-size:11px;line-height:1.6}
+/* ─── SCORE BAR ───────────────────────────── */
+.sbar{display:flex;align-items:center;gap:6px}
+.sbar-track{flex:1;height:3px;background:var(--border);border-radius:2px;min-width:40px}
+.sbar-fill{height:100%;border-radius:2px;transition:width .4s}
 
-/* ── HEATMAP ───────────────────────────────── */
-.hm{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:14px}
-.hmc{background:var(--s2);border:1px solid var(--b);padding:11px 8px;text-align:center;transition:.2s}
-.hmc:hover{border-color:var(--accent)}
-.hmc-sym{font-family:var(--head);font-size:13px;letter-spacing:.08em;margin-bottom:3px}
-.hmc-px{font-size:10px;color:var(--t2);margin-bottom:4px}
-.hmc-chg{font-size:10px;margin-bottom:4px}
-.hmc-bar{height:2px;border-radius:1px;margin-bottom:3px}
-.hmc-sc{font-size:9px;letter-spacing:.08em}
+/* ─── SPARKLINE ───────────────────────────── */
+.spark{width:60px;height:20px;display:inline-block;vertical-align:middle}
 
-/* ── FEAR & GREED GAUGE ─────────────────────── */
-.fg-wrap{padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px}
-.fg-gauge{position:relative;width:130px;height:68px;overflow:hidden}
-.fg-arc{width:130px;height:130px;border-radius:50%;border:10px solid var(--b);border-bottom-color:transparent;border-right-color:transparent;transform:rotate(225deg)}
-.fg-needle-wrap{position:absolute;bottom:0;left:50%;transform:translateX(-50%)}
-.fg-val{font-size:28px;font-weight:600;text-align:center}
-.fg-lbl{font-size:10px;letter-spacing:.15em;text-align:center}
-.fg-range{display:flex;justify-content:space-between;width:100%;font-size:9px;color:var(--t2)}
+/* ─── MINI ROW (positions) ───────────────── */
+.pos-row{padding:8px 13px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;font-size:11px}
+.pos-row:last-child{border-bottom:none}
+.pos-sym{font-weight:600;min-width:50px;font-family:var(--mono);color:var(--text)}
+.pos-side-l{color:var(--green);font-size:10px;font-weight:600}
+.pos-side-s{color:var(--red);font-size:10px;font-weight:600}
+.pos-ml{margin-left:auto}
+.pos-pnl{font-family:var(--mono);font-size:11px}
 
-/* ── AGENT CARD ────────────────────────────── */
-.ag-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px}
-.ag-card{background:var(--s2);border:1px solid var(--b);padding:14px;position:relative;overflow:hidden}
-.ag-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
-.ag-run::before{background:var(--green)}
-.ag-idle::before{background:var(--yellow)}
-.ag-off::before{background:var(--red)}
-.ag-name{font-family:var(--head);font-size:14px;font-weight:400;letter-spacing:.15em;margin-bottom:4px}
-.ag-role{font-size:10px;color:var(--t2);margin-bottom:10px}
-.ag-stat{display:flex;gap:12px;flex-wrap:wrap}
-.ag-pill{font-size:9px;padding:2px 8px;border-radius:10px;letter-spacing:.06em}
-.ag-run .ag-status-pill{background:rgba(0,217,126,.15);color:var(--green)}
-.ag-idle .ag-status-pill{background:rgba(245,200,66,.15);color:var(--yellow)}
-.ag-off .ag-status-pill{background:rgba(240,64,96,.15);color:var(--red)}
-
-/* ── HEALTH ────────────────────────────────── */
-.h-items{padding:0 15px 15px}
-.h-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--t3)}
-.h-row:last-child{border-bottom:none}
-.h-lbl{font-size:11px;display:flex;align-items:center;gap:8px}
-.h-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.h-ok{background:var(--green);box-shadow:0 0 6px var(--green)}
-.h-warn{background:var(--yellow)}
-.h-err{background:var(--red)}
-.h-val{font-size:11px;color:var(--t2);text-align:right}
-
-/* ── EMPTY ─────────────────────────────────── */
-.empty{padding:22px;text-align:center;color:var(--t2);font-size:11px}
-
-/* ── BOTTOM NAV (mobile) ───────────────────── */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;height:52px;
-  background:var(--s1);border-top:1px solid var(--b);z-index:100;
-  justify-content:space-around;align-items:center;padding:0 4px}
-.bn-btn{flex:1;height:100%;border:none;background:none;color:var(--t2);
-  cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  font-size:7px;letter-spacing:.05em;font-family:var(--head);transition:.15s}
-.bn-btn.active{color:var(--green)}
-.bn-btn svg{width:16px;height:16px;stroke-width:1.5}
-
-/* ── LIVE PRICE ROW ────────────────────────── */
-.mkt-row{display:grid;grid-template-columns:repeat(5,1fr);gap:0;border-bottom:1px solid var(--b)}
-.mkt-row:last-child{border-bottom:none}
-.mkt-cell{padding:9px 12px;border-right:1px solid var(--t3);font-size:11px}
-.mkt-cell:last-child{border-right:none}
-.mkt-sym{font-weight:500;margin-bottom:2px}
-.mkt-px{font-size:13px;font-weight:500;letter-spacing:.02em}
-.mkt-chg{font-size:10px;margin-top:2px}
-
-/* ── PAPER LAB ─────────────────────────────── */
-.lab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px}
-.lab-stat{background:var(--s2);border:1px solid var(--b);padding:12px;text-align:center}
-.lab-val{font-size:18px;font-weight:500;margin-bottom:2px}
-.lab-lbl{font-size:9px;color:var(--t2);letter-spacing:.1em}
-
-/* ── RESPONSIVE ─────────────────────────────── */
-@media (max-width:768px){
-  .sidebar{display:none}
-  .bottom-nav{display:flex}
-  .page{padding:10px 12px 64px}
-  .g2,.g3{grid-template-columns:1fr}
-  .sg{grid-template-columns:repeat(2,1fr)}
-  .hm{grid-template-columns:repeat(3,1fr);padding:10px;gap:6px}
-  .ag-grid{grid-template-columns:1fr}
-  .lab-grid{grid-template-columns:repeat(2,1fr)}
-  .tb-brand{font-size:12px;letter-spacing:.1em}
-  .mkt-row{grid-template-columns:repeat(2,1fr)}
-  table{font-size:10px}
-  th,td{padding:6px 8px}
-  .fg-wrap{padding:10px}
+/* ─── SIGNAL CARD (top opportunities) ────── */
+.sig-cards{display:flex;gap:8px;overflow-x:auto;padding:12px;scrollbar-width:none}
+.sig-cards::-webkit-scrollbar{display:none}
+.sig-card{
+  min-width:170px;background:var(--s3);border:1px solid var(--border);
+  border-radius:4px;padding:11px 13px;flex-shrink:0;position:relative;overflow:hidden;
 }
-@media (max-width:480px){
-  .sg{grid-template-columns:1fr 1fr}
-  .hm{grid-template-columns:repeat(2,1fr)}
+.sig-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.sig-card.lng::before{background:var(--green)}
+.sig-card.sht::before{background:var(--red)}
+.sig-num{position:absolute;top:10px;right:10px;background:var(--s4);
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:10px;font-weight:700;color:var(--yellow)}
+.sig-sym{font-size:15px;font-weight:600;font-family:var(--mono);margin-bottom:4px}
+.sig-type{font-size:9px;color:var(--t2);letter-spacing:.08em;margin-bottom:8px}
+.sig-score{font-size:22px;font-weight:600;line-height:1;color:var(--yellow)}
+.sig-score-lbl{font-size:9px;color:var(--t2)}
+.sig-meta{display:flex;gap:10px;margin-top:8px;font-size:10px;color:var(--t2)}
+
+/* ─── QUALITY DIST ────────────────────────── */
+.qdist{display:flex;gap:12px;padding:12px 13px}
+.qdist-item{flex:1;text-align:center}
+.qdist-val{font-size:20px;font-weight:600;line-height:1}
+.qdist-lbl{font-size:9px;letter-spacing:.08em;color:var(--t2);margin-top:4px}
+.qdist-bar{height:3px;border-radius:2px;margin-top:6px}
+
+/* ─── STRAT BAR ───────────────────────────── */
+.strat-rows{padding:8px 13px}
+.strat-row{display:flex;align-items:center;gap:8px;padding:6px 0;
+  border-bottom:1px solid var(--border)}
+.strat-row:last-child{border-bottom:none}
+.strat-name{font-size:11px;min-width:100px;font-family:var(--mono)}
+.strat-bar-track{flex:1;height:5px;background:var(--border);border-radius:3px}
+.strat-bar-fill{height:100%;border-radius:3px;background:var(--purple)}
+.strat-cnt{font-size:11px;color:var(--t2);min-width:30px;text-align:right}
+.strat-score{font-size:11px;color:var(--yellow);min-width:40px;text-align:right}
+
+/* ─── HEATMAP ─────────────────────────────── */
+.hm{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px}
+.hmc{background:var(--s3);border:1px solid var(--border);border-radius:4px;
+  padding:10px 6px;text-align:center;transition:.15s;cursor:pointer}
+.hmc:hover{border-color:var(--blue)}
+.hmc-sym{font-size:12px;font-weight:600;font-family:var(--mono);margin-bottom:2px}
+.hmc-px{font-size:10px;color:var(--t2);margin-bottom:3px}
+.hmc-chg{font-size:10px;margin-bottom:4px;font-weight:500}
+.hmc-bar{height:2px;border-radius:1px;margin:4px 0}
+.hmc-sc{font-size:9px;color:var(--t2)}
+
+/* ─── FEAR & GREED ───────────────────────── */
+.fg-wrap{padding:12px 13px;display:flex;align-items:center;gap:14px}
+.fg-gauge-wrap{position:relative;width:100px;height:56px}
+.fg-gauge-wrap canvas{display:block}
+.fg-info{flex:1}
+.fg-num{font-size:26px;font-weight:600;line-height:1}
+.fg-lbl{font-size:10px;letter-spacing:.1em;margin-top:2px}
+.fg-hist{display:flex;gap:10px;margin-top:6px;font-size:10px;color:var(--t2)}
+.fg-hist span b{color:var(--text)}
+
+/* ─── MARKET ROW ─────────────────────────── */
+.mkt-row{padding:7px 10px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px}
+.mkt-row:last-child{border-bottom:none}
+.mkt-rank{font-size:10px;color:var(--t2);min-width:18px;text-align:right}
+.mkt-sym{font-size:12px;font-weight:600;font-family:var(--mono);min-width:60px}
+.mkt-px{font-size:11px;font-family:var(--mono);flex:1}
+.mkt-chg{font-size:11px;font-weight:600;min-width:60px;text-align:right}
+.mkt-vol{font-size:10px;color:var(--t2);min-width:70px;text-align:right}
+.mkt-spark{margin-left:6px}
+
+/* ─── AGENT CARDS ────────────────────────── */
+.ag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;padding:12px}
+.ag-card{
+  background:var(--s3);border:1px solid var(--border);border-radius:4px;
+  padding:14px;position:relative;overflow:hidden;
+}
+.ag-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.ag-run::after{background:var(--green)}
+.ag-stale::after{background:var(--yellow)}
+.ag-stop::after{background:var(--red)}
+.ag-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.ag-avatar{
+  width:44px;height:44px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+  background:var(--s4);
+}
+.ag-info{flex:1}
+.ag-name{font-size:13px;font-weight:600;margin-bottom:3px}
+.ag-desc{font-size:10px;color:var(--t2);line-height:1.5}
+.ag-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ag-stat{background:var(--s4);border-radius:4px;padding:7px 8px}
+.ag-stat-lbl{font-size:9px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px}
+.ag-stat-val{font-size:11px;font-weight:600;font-family:var(--mono)}
+.ag-log{margin-top:10px;background:var(--s4);border-radius:4px;padding:8px 10px;
+  font-size:10px;color:var(--t2);font-family:var(--mono);line-height:1.5;
+  max-height:40px;overflow:hidden}
+
+/* ─── HEALTH ─────────────────────────────── */
+.health-banner{
+  margin-bottom:10px;border-radius:4px;padding:14px 16px;
+  display:flex;align-items:center;gap:14px;
+  border:1px solid;
+}
+.health-ok{background:rgba(0,201,123,.08);border-color:rgba(0,201,123,.3)}
+.health-warn{background:rgba(240,180,41,.08);border-color:rgba(240,180,41,.3)}
+.health-err{background:rgba(232,60,90,.08);border-color:rgba(232,60,90,.3)}
+.health-num{font-size:32px;font-weight:700;width:48px;height:48px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.h-ok-n{background:rgba(0,201,123,.2);color:var(--green)}
+.h-warn-n{background:rgba(240,180,41,.2);color:var(--yellow)}
+.h-err-n{background:rgba(232,60,90,.2);color:var(--red)}
+.health-title{font-size:18px;font-weight:700;letter-spacing:.1em}
+.health-sub{font-size:11px;color:var(--t2);margin-top:3px}
+.health-meta{margin-left:auto;text-align:right;font-size:10px;color:var(--t2)}
+.h-section{background:var(--s2);border:1px solid var(--border);border-radius:4px;margin-bottom:10px;overflow:hidden}
+.h-sec-h{display:flex;align-items:center;justify-content:space-between;
+  padding:9px 14px;border-bottom:1px solid var(--border);background:var(--s3)}
+.h-sec-title{font-size:11px;font-weight:600;display:flex;align-items:center;gap:8px}
+.h-sec-score{font-size:10px;padding:2px 8px;border-radius:10px}
+.h-all-ok{background:rgba(0,201,123,.15);color:var(--green)}
+.h-has-warn{background:rgba(240,180,41,.15);color:var(--yellow)}
+.h-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border)}
+.h-row:last-child{border-bottom:none}
+.h-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:10px}
+.h-dot-ok{background:var(--green);box-shadow:0 0 5px var(--green)}
+.h-dot-warn{background:var(--yellow)}
+.h-dot-err{background:var(--red)}
+.h-name{font-size:11px;flex:1}
+.h-val{font-size:10px;color:var(--t2);font-family:var(--mono)}
+
+/* ─── PILLS (summary) ───────────────────── */
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.pill{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;
+  display:flex;align-items:center;gap:6px;border:1px solid}
+.pill-run{background:rgba(0,201,123,.1);border-color:rgba(0,201,123,.3);color:var(--green)}
+.pill-stale{background:rgba(240,180,41,.1);border-color:rgba(240,180,41,.3);color:var(--yellow)}
+.pill-stop{background:rgba(232,60,90,.1);border-color:rgba(232,60,90,.3);color:var(--red)}
+.pill-unk{background:rgba(74,102,133,.1);border-color:var(--border);color:var(--t2)}
+.pill-dot{width:8px;height:8px;border-radius:50%}
+
+/* ─── EMPTY ───────────────────────────────── */
+.empty{padding:30px;text-align:center;color:var(--t2);font-size:11px;font-family:var(--font)}
+.empty-ico{font-size:28px;margin-bottom:8px;opacity:.4}
+
+/* ─── LEGEND ──────────────────────────────── */
+.legend{display:flex;gap:16px;flex-wrap:wrap;padding:10px 13px;
+  border-top:1px solid var(--border);font-size:10px;color:var(--t2)}
+.legend-item{display:flex;align-items:center;gap:5px}
+.legend-dot{width:8px;height:8px;border-radius:50%}
+
+/* ─── SECTION HEADER ──────────────────────── */
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.sec-title{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
+.sec-sub{font-size:10px;color:var(--t2)}
+.btn-sm{
+  padding:4px 10px;background:none;border:1px solid var(--border);
+  color:var(--t2);font-size:10px;font-family:var(--font);cursor:pointer;
+  border-radius:3px;transition:.12s;
+}
+.btn-sm:hover{border-color:var(--blue);color:var(--blue)}
+.btn-sm.active{background:var(--blue);border-color:var(--blue);color:#fff}
+
+/* ─── AI DECISION ROW ─────────────────────── */
+.ai-dec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.ai-dec-card{background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:12px 13px}
+.ai-dec-type{font-size:11px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ai-dec-stat{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ai-dec-item{background:var(--s3);padding:5px 8px;border-radius:3px}
+.ai-dec-item-lbl{font-size:9px;color:var(--t2);letter-spacing:.08em}
+.ai-dec-item-val{font-size:12px;font-weight:600;font-family:var(--mono)}
+
+/* ─── TABS ────────────────────────────────── */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:10px}
+.tab{padding:8px 14px;font-size:11px;font-weight:500;cursor:pointer;
+  border-bottom:2px solid transparent;transition:.12s;color:var(--t2);background:none;border-top:none;border-left:none;border-right:none}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--green);border-bottom-color:var(--green)}
+
+/* ─── WATCHLIST TABLE ─────────────────────── */
+.wl-row{padding:7px 13px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px}
+.wl-row:last-child{border-bottom:none}
+.wl-sym{font-size:12px;font-weight:600;font-family:var(--mono);min-width:60px}
+.wl-px{font-size:12px;font-family:var(--mono);flex:1;text-align:right}
+.wl-chg{font-size:11px;font-weight:600;min-width:55px;text-align:right}
+.wl-vol{font-size:10px;color:var(--t2);min-width:60px;text-align:right}
+
+/* ─── EQUITY CHART ────────────────────────── */
+#eq-canvas{display:block;width:100%;height:100px}
+
+/* ─── MACRO DATA ──────────────────────────── */
+.macro-row{padding:7px 13px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center}
+.macro-row:last-child{border-bottom:none}
+.macro-key{font-size:10px;color:var(--t2)}
+.macro-val{font-size:11px;font-family:var(--mono);font-weight:500}
+.macro-sub{font-size:9px;color:var(--t2)}
+
+/* ─── BTC LIVE PAGE ───────────────────────── */
+.btc-hero{padding:20px;text-align:center}
+.btc-hero-px{font-size:42px;font-weight:700;letter-spacing:-.02em;font-family:var(--mono)}
+.btc-hero-sub{font-size:13px;color:var(--t2);margin-top:4px}
+.btc-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.btc-stat{background:var(--s3);border-radius:4px;padding:12px}
+.btc-stat-lbl{font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:4px}
+.btc-stat-val{font-size:14px;font-weight:600;font-family:var(--mono)}
+
+/* ─── COMING SOON ─────────────────────────── */
+.coming-soon{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:300px;gap:10px;color:var(--t2);
+}
+.coming-soon-ico{font-size:36px;opacity:.3}
+.coming-soon-t{font-size:14px;font-weight:500;opacity:.5}
+.coming-soon-s{font-size:11px;opacity:.4}
+
+/* ─── RESPONSIVE ──────────────────────────── */
+@media(max-width:900px){
+  .sidebar{width:48px;padding:8px 0}
+  .s-logo-text,.s-logo-sub,.nav-sec{display:none}
+  .s-logo{padding:10px;justify-content:center}
+  .nav-btn{padding:10px;justify-content:center}
+  .nav-btn span{display:none}
+  .dash-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 <div class="app">
 
-<!-- SIDEBAR (desktop) -->
+<!-- ═══════════ SIDEBAR ═══════════ -->
 <aside class="sidebar">
-  <div class="s-logo">W<br>3</div>
-  <button class="nav-btn active" onclick="nav('dash')" id="btn-dash" title="Dashboard">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>DASH
+  <div class="s-logo">
+    <div class="s-logo-icon">W3</div>
+    <div>
+      <div class="s-logo-text">AI TRADE</div>
+      <div class="s-logo-sub">WAKAM3 SYSTEM</div>
+    </div>
+  </div>
+
+  <div class="nav-sec">CORE</div>
+  <button class="nav-btn active" onclick="nav('dash')" id="nb-dash">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    <span>Dashboard</span>
   </button>
-  <button class="nav-btn" onclick="nav('scanner')" id="btn-scanner" title="Scanner">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>SCAN
+  <button class="nav-btn" onclick="nav('sig')" id="nb-sig">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>Signals</span>
+    <span class="nav-badge" id="nb-sig-cnt">0</span>
   </button>
-  <button class="nav-btn" onclick="nav('signals')" id="btn-signals" title="Signals">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>SIG
+  <button class="nav-btn dim" onclick="nav('realpos')" id="nb-realpos">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    <span>Real Positions</span>
   </button>
-  <button class="nav-btn" onclick="nav('lab')" id="btn-lab" title="Paper Lab">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>LAB
+  <button class="nav-btn" onclick="nav('pos')" id="nb-pos">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span>Paper Positions</span>
   </button>
-  <div class="s-sep"></div>
-  <button class="nav-btn" onclick="nav('markets')" id="btn-markets" title="Markets">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>MKT
+  <button class="nav-btn" onclick="nav('btc')" id="nb-btc">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M9.5 9h4a2 2 0 010 4h-4m4 0h-4a2 2 0 010 4h4M12 7v2m0 6v2"/></svg>
+    <span>BTC Live</span>
   </button>
-  <button class="nav-btn" onclick="nav('agents')" id="btn-agents" title="Agent Team">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>TEAM
+
+  <div class="nav-sec">MARKET</div>
+  <button class="nav-btn" onclick="nav('markets')" id="nb-markets">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    <span>Markets</span>
   </button>
-  <button class="nav-btn" onclick="nav('health')" id="btn-health" title="System Health">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>SYS
+  <button class="nav-btn" onclick="nav('scan')" id="nb-scan">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Scanner</span>
+  </button>
+  <button class="nav-btn dim" onclick="nav('watchlist')" id="nb-watchlist">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    <span>Watchlist</span>
+  </button>
+
+  <div class="nav-sec">ANALYTICS</div>
+  <button class="nav-btn" onclick="nav('lab')" id="nb-lab">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+    <span>Paper Lab</span>
+  </button>
+  <button class="nav-btn dim" onclick="nav('backtest')" id="nb-backtest">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+    <span>Backtest</span>
+  </button>
+
+  <div class="nav-sec">SYSTEM</div>
+  <button class="nav-btn" onclick="nav('agents')" id="nb-agents">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+    <span>Agent Team</span>
+  </button>
+  <button class="nav-btn" onclick="nav('health')" id="nb-health">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    <span>Health Check</span>
   </button>
 </aside>
 
-<!-- MAIN -->
+<!-- ═══════════ MAIN ═══════════ -->
 <div class="main">
 
-<!-- TOPBAR -->
-<div class="topbar">
-  <div style="display:flex;align-items:center;gap:9px">
-    <div class="live-dot"></div>
-    <div class="tb-brand">WAKAM3 · <em>AI TRADE</em></div>
-  </div>
-  <div class="tb-r">
-    <div class="tb-info">Scan <b id="tb-scan">—</b> · every 5m</div>
-    <div class="tb-clocks">
-      <div class="tb-clk-bkk" id="clk-bkk">00:00:00</div>
-      <div class="tb-clk-utc" id="clk-utc">UTC 00:00</div>
-    </div>
-    <button class="btn-ref" onclick="loadAll()">⟳</button>
-  </div>
-</div>
-
-<!-- PAGES -->
-<div class="pages">
-
-<!-- ═══ DASHBOARD ══════════════════════════════════════════════════════════ -->
-<div class="page active" id="page-dash">
-  <div class="sg">
-    <div class="sc g">
-      <div class="sc-lbl">Portfolio Balance</div>
-      <div class="sc-val up" id="d-bal">$1,000.00</div>
-      <div class="sc-sub" id="d-pct">+0.0% จากเริ่มต้น</div>
-    </div>
-    <div class="sc">
-      <div class="sc-lbl">Total PnL</div>
-      <div class="sc-val" id="d-pnl">$0.00</div>
-      <div class="sc-sub" id="d-trades">0 trades</div>
-    </div>
-    <div class="sc">
-      <div class="sc-lbl">Win Rate</div>
-      <div class="sc-val" id="d-wr">—</div>
-      <div class="sc-sub" id="d-wl">W:0 L:0</div>
-    </div>
-    <div class="sc">
-      <div class="sc-lbl">Open Positions</div>
-      <div class="sc-val" id="d-open">0</div>
-      <div class="sc-sub">Active trades</div>
-    </div>
-    <div class="sc y">
-      <div class="sc-lbl">🔔 Signals</div>
-      <div class="sc-val yl" id="d-sigs">0</div>
-      <div class="sc-sub">Score ≥ 8/26</div>
-    </div>
-    <div class="sc">
-      <div class="sc-lbl">👁 Watching</div>
-      <div class="sc-val" id="d-watch">0</div>
-      <div class="sc-sub">Score 5–7/26</div>
-    </div>
-  </div>
-
-  <div class="g2">
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Equity Curve</div></div>
-      <div style="padding:12px 15px;height:185px">
-        <canvas id="equity-chart"></canvas>
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="tb-seg">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4a6685"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>
+        <div class="tb-lbl">PORTFOLIO</div>
+        <div class="tb-val" id="tb-bal">$1,000.00</div>
       </div>
     </div>
-    <div class="sec">
-      <div class="sec-h">
-        <div class="sec-t">BTC Live</div>
-        <div class="sec-b" id="btc-badge">loading...</div>
-      </div>
-      <div style="padding:18px 15px;text-align:center">
-        <div style="font-size:28px;font-weight:500" id="btc-px-d">—</div>
-        <div style="font-size:10px;color:var(--t2);margin-top:3px">BTC / USDT</div>
-        <div style="margin-top:14px;display:flex;justify-content:space-around">
-          <div><div style="font-size:14px;font-weight:500" id="btc-chg-d">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.1em">24H CHG</div></div>
-          <div><div style="font-size:14px;font-weight:500" id="btc-vol-d">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.1em">VOLUME</div></div>
-          <div><div style="font-size:14px;font-weight:500" id="btc-cap-d">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.1em">MKT CAP</div></div>
+    <div class="tb-seg">
+      <div>
+        <div class="tb-lbl">BITCOIN</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="tb-val" id="tb-btc-px">—</span>
+          <span class="tb-chg" id="tb-btc-chg">—</span>
         </div>
       </div>
     </div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-h">
-      <div class="sec-t">Market Snapshot</div>
-      <div class="sec-b" id="d-mkt-b">— bullish</div>
-    </div>
-    <div id="hm-dash" class="hm"></div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">Win Rate by Session</div></div>
-    <div class="tw">
-      <table><thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
-      <tbody id="sess-tb"><tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ SCANNER ═════════════════════════════════════════════════════════════ -->
-<div class="page" id="page-scanner">
-  <div class="sec">
-    <div class="sec-h">
-      <div class="sec-t">Market Scanner — 10 Symbols</div>
-      <div class="sec-b" id="sc-b">—</div>
-    </div>
-    <div class="tw">
-      <table>
-        <thead><tr>
-          <th>Symbol</th><th>Live Price</th><th>24h</th><th>Status</th>
-          <th>Dir.</th><th>Score L</th><th>Score S</th><th>Best/26</th>
-          <th>RSI</th><th>4H Bias</th><th>Kill Zone</th>
-        </tr></thead>
-        <tbody id="sc-tb"><tr><td colspan="11"><div class="empty">รอผล scan ครั้งแรก...</div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ SIGNALS ══════════════════════════════════════════════════════════════ -->
-<div class="page" id="page-signals">
-  <div class="sg" style="grid-template-columns:repeat(3,1fr)">
-    <div class="sc g"><div class="sc-lbl">Total Signals</div><div class="sc-val" id="sig-tot">0</div><div class="sc-sub">This session</div></div>
-    <div class="sc"><div class="sc-lbl">Long</div><div class="sc-val up" id="sig-lng">0</div><div class="sc-sub">Bullish</div></div>
-    <div class="sc r"><div class="sc-lbl">Short</div><div class="sc-val dn" id="sig-sht">0</div><div class="sc-sub">Bearish</div></div>
-  </div>
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">Signal Log</div><div class="sec-b" id="sig-b">0 signals</div></div>
-    <div id="sig-feed"><div class="empty">รอ signal ครั้งแรก — scan ทุก 5 นาที</div></div>
-  </div>
-</div>
-
-<!-- ═══ PAPER LAB ═════════════════════════════════════════════════════════════ -->
-<div class="page" id="page-lab">
-  <div class="sg">
-    <div class="sc g"><div class="sc-lbl">Balance</div><div class="sc-val up" id="lb-bal">$1,000</div><div class="sc-sub" id="lb-pct">+0.0%</div></div>
-    <div class="sc"><div class="sc-lbl">Win Rate</div><div class="sc-val" id="lb-wr">—</div><div class="sc-sub" id="lb-wl">W:0 L:0</div></div>
-    <div class="sc y"><div class="sc-lbl">Total PnL</div><div class="sc-val" id="lb-pnl">$0.00</div><div class="sc-sub">Realized</div></div>
-    <div class="sc"><div class="sc-lbl">Expectancy</div><div class="sc-val" id="lb-exp">—</div><div class="sc-sub">Per trade</div></div>
-    <div class="sc"><div class="sc-lbl">Best Trade</div><div class="sc-val up" id="lb-best">—</div><div class="sc-sub">Max win</div></div>
-    <div class="sc r"><div class="sc-lbl">Worst Trade</div><div class="sc-val dn" id="lb-worst">—</div><div class="sc-sub">Max loss</div></div>
-  </div>
-
-  <div class="g2">
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Win Rate by Symbol</div></div>
-      <div class="tw">
-        <table><thead><tr><th>Symbol</th><th>Trades</th><th>Win</th><th>Win Rate</th><th>PnL</th></tr></thead>
-        <tbody id="lb-sym-tb"><tr><td colspan="5"><div class="empty">ยังไม่มีข้อมูล</div></td></tr></tbody>
-        </table>
+    <div class="tb-seg">
+      <div>
+        <div class="tb-lbl">REGIME</div>
+        <div id="tb-regime"><span class="tb-tag tag-side-y">SIDEWAY / RANGING</span></div>
       </div>
     </div>
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Win Rate by Session</div></div>
-      <div class="tw">
-        <table><thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
-        <tbody id="lb-sess-tb"><tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">Open Positions</div><div class="sec-b" id="lb-open-b">0</div></div>
-    <div class="tw">
-      <table><thead><tr><th>#</th><th>Symbol</th><th>Side</th><th>Entry</th><th>SL</th><th>TP1</th><th>TP2</th><th>Score</th><th>TP1?</th><th>Opened</th></tr></thead>
-      <tbody id="open-tb"><tr><td colspan="10"><div class="empty">ไม่มี open trade</div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">Closed Trades</div><div class="sec-b" id="lb-cls-b">0</div></div>
-    <div class="tw">
-      <table><thead><tr><th>#</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>Outcome</th><th>PnL</th><th>TP1?</th><th>Closed</th></tr></thead>
-      <tbody id="closed-tb"><tr><td colspan="9"><div class="empty">ยังไม่มี trade</div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ MARKETS ══════════════════════════════════════════════════════════════ -->
-<div class="page" id="page-markets">
-  <div class="g3">
-    <!-- Fear & Greed -->
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Fear & Greed Index</div><div class="sec-b" id="fg-upd">loading...</div></div>
-      <div class="fg-wrap">
-        <canvas id="fg-canvas" width="160" height="90"></canvas>
-        <div class="fg-val" id="fg-val">—</div>
-        <div class="fg-lbl" id="fg-lbl" style="color:var(--t2)">LOADING</div>
-        <div class="fg-range"><span class="dn">0 Fear</span><span class="yl">50</span><span class="up">100 Greed</span></div>
-      </div>
-    </div>
-    <!-- BTC -->
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">BTC / USDT</div></div>
-      <div style="padding:18px 15px;text-align:center">
-        <div style="font-size:26px;font-weight:500" id="btc-px">—</div>
-        <div class="sc-sub" style="margin-top:3px">Current Price</div>
-        <div style="margin-top:14px;display:flex;justify-content:space-around">
-          <div><div style="font-size:13px;font-weight:500" id="btc-chg">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">24H</div></div>
-          <div><div style="font-size:13px;font-weight:500" id="btc-rsi">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">RSI</div></div>
-          <div><div style="font-size:13px;font-weight:500" id="btc-sc">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">SCORE</div></div>
-          <div><div style="font-size:13px;font-weight:500" id="btc-htf">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">4H</div></div>
+    <div class="tb-seg">
+      <div>
+        <div class="tb-lbl">MODE</div>
+        <div style="display:flex;gap:5px;margin-top:2px">
+          <span class="tb-tag tag-off">Real: OFF</span>
+          <span class="tb-tag tag-on">Paper: ON</span>
         </div>
       </div>
     </div>
-    <!-- ETH -->
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">ETH / USDT</div></div>
-      <div style="padding:18px 15px;text-align:center">
-        <div style="font-size:26px;font-weight:500" id="eth-px">—</div>
-        <div class="sc-sub" style="margin-top:3px">Current Price</div>
-        <div style="margin-top:14px;display:flex;justify-content:space-around">
-          <div><div style="font-size:13px;font-weight:500" id="eth-chg">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">24H</div></div>
-          <div><div style="font-size:13px;font-weight:500" id="eth-rsi">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">RSI</div></div>
-          <div><div style="font-size:13px;font-weight:500" id="eth-sc">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">SCORE</div></div>
-          <div><div style="font-size:13px;font-weight:500" id="eth-htf">—</div><div style="font-size:9px;color:var(--t2);letter-spacing:.08em">4H</div></div>
+    <div class="tb-seg">
+      <div><div class="tb-lbl">P&amp;L</div><div class="tb-val" id="tb-pnl">+$0.00</div></div>
+    </div>
+    <div class="tb-seg">
+      <div><div class="tb-lbl">WIN RATE</div><div class="tb-val" id="tb-wr">—</div></div>
+    </div>
+    <div class="tb-seg">
+      <div><div class="tb-lbl">TRADES</div><div class="tb-val" id="tb-trades">0</div></div>
+    </div>
+    <div class="tb-seg">
+      <div><div class="tb-lbl">SIGNALS</div><div class="tb-val" id="tb-sigs">0</div></div>
+    </div>
+    <div class="tb-seg" style="margin-left:auto;border-right:none">
+      <div class="live-dot"></div>
+      <div>
+        <div class="tb-lbl">LIVE</div>
+        <div class="tb-val" id="tb-clk">—</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGES -->
+  <div class="pages">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div id="pg-dash" class="page active">
+      <div class="dash-grid">
+
+        <!-- LEFT COL -->
+        <div class="col">
+          <!-- Portfolio -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">💼</span> PAPER PORTFOLIO</div>
+              <div class="card-meta" id="d-scan-ago">—</div>
+            </div>
+            <div class="card-body" style="padding:14px">
+              <div style="font-size:28px;font-weight:700;font-family:var(--mono)" id="d-bal">$1,000.00</div>
+              <div style="font-size:11px;color:var(--t2);margin-top:3px" id="d-bal-pct">+0.0% from start</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+                <div style="background:var(--s3);border-radius:4px;padding:10px">
+                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">TOTAL P&L</div>
+                  <div style="font-size:14px;font-weight:600;font-family:var(--mono)" id="d-pnl">+$0.00</div>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;padding:10px">
+                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">WIN RATE</div>
+                  <div style="font-size:14px;font-weight:600" id="d-wr">—</div>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;padding:10px">
+                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">OPEN</div>
+                  <div style="font-size:14px;font-weight:600;font-family:var(--mono)" id="d-open">0</div>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;padding:10px">
+                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">CLOSED</div>
+                  <div style="font-size:14px;font-weight:600;font-family:var(--mono)" id="d-closed">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Real Positions -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">📈</span> REAL POSITIONS</div>
+              <div class="card-meta">0 open</div>
+            </div>
+            <div class="empty"><div class="empty-ico">🔒</div>No real trades — auto trade is off</div>
+          </div>
+
+          <!-- Paper Positions mini -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">📝</span> PAPER POSITIONS</div>
+              <div id="d-pos-cnt" class="card-meta">0 open</div>
+            </div>
+            <div id="d-pos-list"><div class="empty">No open positions</div></div>
+          </div>
+
+          <!-- Equity Curve -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">📊</span> EQUITY CURVE</div>
+              <div class="card-meta">30D</div>
+            </div>
+            <div style="padding:10px 13px 13px">
+              <canvas id="eq-canvas" height="80"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- MIDDLE COL -->
+        <div class="col">
+          <!-- Recent Signals -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">⚡</span> RECENT SIGNALS</div>
+              <button class="btn-sm" onclick="nav('sig')">View All</button>
+            </div>
+            <div class="tw"><table>
+              <thead><tr>
+                <th>Symbol</th><th>Signal</th><th>Side</th><th>Score</th><th>Price</th><th>RSI</th>
+              </tr></thead>
+              <tbody id="d-sig-tb"></tbody>
+            </table></div>
+          </div>
+
+          <!-- Top Quality -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">🏆</span> TOP QUALITY SIGNALS</div>
+              <div class="card-meta" id="d-tq-cnt">—</div>
+            </div>
+            <div class="tw"><table>
+              <thead><tr>
+                <th>Symbol</th><th>Side</th><th>Score</th><th>RSI</th><th>HTF</th><th>KZ</th>
+              </tr></thead>
+              <tbody id="d-tq-tb"></tbody>
+            </table></div>
+          </div>
+
+          <!-- Strategy Performance -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">🎯</span> STRATEGY PERFORMANCE (7D)</div>
+            </div>
+            <div id="d-strat-body">
+              <div class="empty">No trade history yet</div>
+            </div>
+          </div>
+
+          <!-- Session Stats -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">🕐</span> WIN RATE BY SESSION</div>
+            </div>
+            <div class="tw"><table>
+              <thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
+              <tbody id="d-sess-tb"><tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- RIGHT COL -->
+        <div class="col">
+          <!-- BTC Live -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">₿</span> BTC LIVE</div>
+              <div id="btc-badge" class="card-meta">—</div>
+            </div>
+            <div style="padding:16px 14px;text-align:center">
+              <div style="font-size:30px;font-weight:700;font-family:var(--mono)" id="btc-px-d">—</div>
+              <div style="font-size:11px;color:var(--t2);margin:3px 0">BTC / USDT</div>
+              <div style="font-size:12px;margin-top:6px">
+                <span id="btc-chg-d" style="font-weight:600">—</span>
+                <span style="color:var(--t2);margin:0 6px">24H CHG</span>
+                <span id="btc-vol-d" style="color:var(--t2)">—</span>
+                <span style="color:var(--t2);margin:0 6px">VOL</span>
+              </div>
+              <div style="font-size:10px;color:var(--t2);margin-top:4px" id="btc-cap-d">—</div>
+            </div>
+          </div>
+
+          <!-- Fear & Greed -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">😱</span> FEAR &amp; GREED INDEX</div>
+              <div class="card-meta" id="fg-upd">—</div>
+            </div>
+            <div class="fg-wrap">
+              <div class="fg-gauge-wrap">
+                <canvas id="fg-canvas" width="100" height="56"></canvas>
+              </div>
+              <div class="fg-info">
+                <div class="fg-num" id="fg-val">—</div>
+                <div class="fg-lbl t2" id="fg-lbl">LOADING...</div>
+                <div class="fg-hist">
+                  <span>Yesterday: <b id="fg-yst">—</b></span>
+                  <span>Week: <b id="fg-week">—</b></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Macro Data -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">🌍</span> MARKET DATA</div>
+              <div class="card-meta" id="mkt-upd">—</div>
+            </div>
+            <div id="macro-body">
+              <div class="macro-row"><span class="macro-key">BTC Dominance</span><span class="macro-val t2">—</span></div>
+              <div class="macro-row"><span class="macro-key">BTC 24H High</span><span class="macro-val" id="btc-high">—</span></div>
+              <div class="macro-row"><span class="macro-key">BTC 24H Low</span><span class="macro-val" id="btc-low">—</span></div>
+              <div class="macro-row"><span class="macro-key">BTC 24H Vol</span><span class="macro-val" id="btc-vol2">—</span></div>
+            </div>
+          </div>
+
+          <!-- Top Gainers mini -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">🚀</span> TOP GAINERS</div>
+              <button class="btn-sm" onclick="nav('markets')">All →</button>
+            </div>
+            <div id="d-gainers-list"><div class="empty">Loading...</div></div>
+          </div>
+
+          <!-- Watchlist -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title"><span class="icon">★</span> WATCHLIST</div>
+              <div class="card-meta">10 coins</div>
+            </div>
+            <div id="d-wl-list"><div class="empty">Loading...</div></div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+    </div><!-- end dash -->
 
-  <div class="g2">
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Top Bullish Setup</div><div class="sec-b">by Long Score</div></div>
-      <div class="tw"><table><thead><tr><th>Symbol</th><th>Price</th><th>24h</th><th>Score L</th><th>RSI</th><th>KZ</th></tr></thead>
-      <tbody id="top-lng"><tr><td colspan="6"><div class="empty">—</div></td></tr></tbody></table></div>
-    </div>
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Top Bearish Setup</div><div class="sec-b">by Short Score</div></div>
-      <div class="tw"><table><thead><tr><th>Symbol</th><th>Price</th><th>24h</th><th>Score S</th><th>RSI</th><th>KZ</th></tr></thead>
-      <tbody id="top-sht"><tr><td colspan="6"><div class="empty">—</div></td></tr></tbody></table></div>
-    </div>
-  </div>
+    <!-- ══ SIGNALS ══ -->
+    <div id="pg-sig" class="page">
+      <!-- Top opportunities -->
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-h">
+          <div class="card-title"><span class="icon">🏆</span> BEST TOP OPPORTUNITIES</div>
+          <div id="sig-top-cnt" class="card-meta">—</div>
+        </div>
+        <div class="sig-cards" id="sig-top-cards"></div>
+      </div>
 
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">10 Coins — Live + Signal Strength</div><div class="sec-b" id="mkt-upd">updating...</div></div>
-    <div id="hm-full" class="hm"></div>
-  </div>
-</div>
+      <!-- Stats row -->
+      <div class="stat-grid" style="grid-template-columns:repeat(5,1fr)">
+        <div class="stat-card"><div class="stat-lbl">ALL</div><div class="stat-val" id="sig-all">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">SIGNAL</div><div class="stat-val up" id="sig-sig-cnt">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">WATCH</div><div class="stat-val yl" id="sig-watch-cnt">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">IDLE</div><div class="stat-val t2" id="sig-idle-cnt">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">BULLISH</div><div class="stat-val" id="sig-bull-cnt">0</div></div>
+      </div>
 
-<!-- ═══ AGENT TEAM ════════════════════════════════════════════════════════════ -->
-<div class="page" id="page-agents">
-  <div class="sec" style="margin-bottom:12px">
-    <div class="sec-h"><div class="sec-t">Agent Team Status</div><div class="sec-b" id="ag-status">checking...</div></div>
-    <div class="ag-grid" id="ag-grid"></div>
-  </div>
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">Trading Strategy Config</div></div>
-    <div class="tw">
-      <table>
-        <thead><tr><th>Parameter</th><th>Value</th><th>Description</th></tr></thead>
-        <tbody>
-          <tr><td>Symbols</td><td class="up">10 coins</td><td class="t2">BTC ETH SOL BNB XRP DOGE AVAX LINK ADA DOT</td></tr>
-          <tr><td>Timeframe</td><td class="up">1H + 4H HTF</td><td class="t2">1H entry, 4H bias filter</td></tr>
-          <tr><td>Indicators</td><td class="up">EMA7/30 + SMA99</td><td class="t2">+ BOS/CHoCH/QM + RSI/Stoch/MACD</td></tr>
-          <tr><td>Min Score</td><td class="yl">≥ 8 / 26</td><td class="t2">Threshold สำหรับ trigger signal</td></tr>
-          <tr><td>Risk per Trade</td><td>1%</td><td class="t2">ของ Portfolio</td></tr>
-          <tr><td>SL</td><td class="dn">Swing Low/High + ATR</td><td class="t2">Dynamic stop loss</td></tr>
-          <tr><td>TP1</td><td class="up">RR 1.2</td><td class="t2">ปิด 50% ของ position</td></tr>
-          <tr><td>TP2</td><td class="up">RR 2.0</td><td class="t2">ปิด 50% ที่เหลือ</td></tr>
-          <tr><td>Leverage</td><td>100x</td><td class="t2">Paper trade (ไม่ใช้เงินจริง)</td></tr>
-          <tr><td>Mode</td><td class="yl">Paper Trade</td><td class="t2">ทดสอบก่อน → Real trade ทีหลัง</td></tr>
-          <tr><td>Notification</td><td class="up">Telegram @Wakam3_bot</td><td class="t2">แจ้งเตือนทุก signal</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <!-- Quality Distribution -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">QUALITY DISTRIBUTION</div></div>
+          <div class="qdist" id="sig-qdist"></div>
+        </div>
+        <!-- By Strategy -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">SCORE RANGE</div></div>
+          <div class="strat-rows" id="sig-strat-rows"></div>
+        </div>
+      </div>
 
-<!-- ═══ SYSTEM HEALTH ══════════════════════════════════════════════════════════ -->
-<div class="page" id="page-health">
-  <div class="g2">
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">System Status</div><div class="sec-b" id="sys-overall">checking...</div></div>
-      <div class="h-items" id="sys-items"></div>
-    </div>
-    <div class="sec">
-      <div class="sec-h"><div class="sec-t">Data Summary</div></div>
-      <div class="h-items" id="data-items"></div>
-    </div>
-  </div>
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">GitHub Actions — Next Runs (estimate)</div></div>
-    <div style="padding:14px 15px">
-      <div style="font-size:11px;color:var(--t2);line-height:2">
-        ⏱ Cron: <span style="color:var(--text)">*/5 * * * *</span> — ทุก 5 นาที (UTC)<br>
-        🌏 ตามเวลา BKK: รันที่ :00, :05, :10, :15 ... :55 ทุกชั่วโมง<br>
-        ⚠️ GitHub อาจ delay 1–3 นาทีในช่วง traffic สูง<br>
-        📦 Repo: <a href="https://github.com/chatthawatsuk-ui/wakam3-bot" target="_blank" style="color:var(--accent)">chatthawatsuk-ui/wakam3-bot</a><br>
-        📊 Dashboard: <a href="https://chatthawatsuk-ui.github.io/wakam3-bot/" target="_blank" style="color:var(--accent)">chatthawatsuk-ui.github.io/wakam3-bot</a>
+      <!-- Full signal list -->
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title"><span class="icon">⚡</span> ALL SIGNALS</div>
+          <div class="card-meta" id="sig-scan-time">—</div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th>#</th><th>Symbol</th><th>Side</th><th>Status</th>
+            <th>Score</th><th>Price</th><th>RSI</th><th>HTF</th><th>Key Zone</th>
+          </tr></thead>
+          <tbody id="sig-tb"></tbody>
+        </table></div>
+      </div>
+    </div><!-- end signals -->
+
+    <!-- ══ REAL POSITIONS (stub) ══ -->
+    <div id="pg-realpos" class="page">
+      <div class="coming-soon">
+        <div class="coming-soon-ico">🔒</div>
+        <div class="coming-soon-t">Real Trading Disabled</div>
+        <div class="coming-soon-s">Enable real API credentials to activate live trading</div>
       </div>
     </div>
-  </div>
-  <div class="sec">
-    <div class="sec-h"><div class="sec-t">Backtest Results Summary (v5 Mode A)</div></div>
-    <div class="tw">
-      <table><thead><tr><th>Metric</th><th>Value</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td>Win Rate</td><td class="yl">46.7%</td><td class="t2">Mode A TP2=2.0R</td></tr>
-        <tr><td>Expectancy</td><td class="up">+$2.14</td><td class="t2">Per trade (1% risk)</td></tr>
-        <tr><td>3-Year Return</td><td class="up">+182%</td><td class="t2">$1,000 → $2,825</td></tr>
-        <tr><td>Data Period</td><td>3 Years</td><td class="t2">339,550 rows</td></tr>
-        <tr><td>Symbols Tested</td><td>10 coins</td><td class="t2">BTC ETH SOL BNB XRP DOGE AVAX LINK ADA DOT</td></tr>
-        <tr><td>Timeframes</td><td>1H, 4H, 1D</td><td class="t2">1H entry + 4H HTF bias</td></tr>
-      </tbody>
-      </table>
+
+    <!-- ══ PAPER POSITIONS ══ -->
+    <div id="pg-pos" class="page">
+      <!-- Stats -->
+      <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:10px">
+        <div class="stat-card"><div class="stat-lbl">OPEN</div><div class="stat-val up" id="pos-open">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">CLOSED</div><div class="stat-val" id="pos-closed">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">WIN RATE</div><div class="stat-val" id="pos-wr">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">TOTAL P&L</div><div class="stat-val" id="pos-pnl">$0.00</div></div>
+        <div class="stat-card"><div class="stat-lbl">AVG P&L</div><div class="stat-val" id="pos-avg-pnl">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">W:L</div><div class="stat-val" id="pos-wl">—</div></div>
+      </div>
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" id="tab-open" onclick="switchTab('open')">Open (<span id="tab-open-cnt">0</span>)</button>
+        <button class="tab" id="tab-closed" onclick="switchTab('closed')">Closed (<span id="tab-closed-cnt">0</span>)</button>
+      </div>
+      <!-- Table -->
+      <div class="card">
+        <div class="tw"><table>
+          <thead id="pos-thead"></thead>
+          <tbody id="pos-tb"></tbody>
+        </table></div>
+      </div>
+    </div><!-- end positions -->
+
+    <!-- ══ BTC LIVE ══ -->
+    <div id="pg-btc" class="page">
+      <div class="card" style="max-width:700px;margin:0 auto">
+        <div class="card-h">
+          <div class="card-title"><span class="icon">₿</span> BTC / USDT — LIVE DATA</div>
+          <div class="live-dot"></div>
+        </div>
+        <div class="btc-hero">
+          <div class="btc-hero-px" id="btc-live-px">—</div>
+          <div class="btc-hero-sub">
+            <span id="btc-live-chg" style="font-weight:600">—</span>
+            <span style="margin-left:6px">24H Change</span>
+          </div>
+          <div class="btc-stats-row">
+            <div class="btc-stat"><div class="btc-stat-lbl">24H HIGH</div><div class="btc-stat-val up" id="btc-live-hi">—</div></div>
+            <div class="btc-stat"><div class="btc-stat-lbl">24H LOW</div><div class="btc-stat-val dn" id="btc-live-lo">—</div></div>
+            <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (USDT)</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
+            <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (BTC)</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end btc -->
+
+    <!-- ══ MARKETS ══ -->
+    <div id="pg-markets" class="page">
+      <!-- Fear & Greed + BTC row -->
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:10px;margin-bottom:10px">
+        <div class="card">
+          <div class="card-h"><div class="card-title">FEAR &amp; GREED</div></div>
+          <div class="fg-wrap" style="flex-direction:column;padding:16px">
+            <canvas id="fg-canvas2" width="140" height="80"></canvas>
+            <div style="text-align:center;margin-top:8px">
+              <div class="fg-num" id="fg-val2" style="font-size:32px">—</div>
+              <div class="fg-lbl t2" id="fg-lbl2">—</div>
+            </div>
+            <div class="fg-hist" style="justify-content:center;margin-top:8px">
+              <span>Yesterday: <b id="fg-yst2">—</b></span>
+              <span style="margin-left:8px">Week: <b id="fg-week2">—</b></span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title"><span class="icon">₿</span> BITCOIN</div>
+            <div class="card-meta" id="mkt-btc-upd">—</div>
+          </div>
+          <div style="padding:20px">
+            <div style="font-size:36px;font-weight:700;font-family:var(--mono)" id="mkt-btc-px">—</div>
+            <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+              <div><span class="t2" style="font-size:10px">24H CHANGE</span> <span id="mkt-btc-chg" style="font-size:14px;font-weight:600;margin-left:4px">—</span></div>
+              <div><span class="t2" style="font-size:10px">VOLUME</span> <span id="mkt-btc-vol" style="font-size:13px;margin-left:4px">—</span></div>
+              <div><span class="t2" style="font-size:10px">HIGH</span> <span id="mkt-btc-hi" class="up" style="font-size:13px;margin-left:4px">—</span></div>
+              <div><span class="t2" style="font-size:10px">LOW</span> <span id="mkt-btc-lo" class="dn" style="font-size:13px;margin-left:4px">—</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gainers & Losers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">🚀 TRENDING — TOP GAINERS</div>
+            <div class="card-meta" id="gainers-cnt">—</div>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24H %</th><th>Volume</th></tr></thead>
+            <tbody id="gainers-tb"></tbody>
+          </table></div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title">📉 FALLING — TOP LOSERS</div>
+            <div class="card-meta" id="losers-cnt">—</div>
+          </div>
+          <div class="tw"><table>
+            <thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24H %</th><th>Volume</th></tr></thead>
+            <tbody id="losers-tb"></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Top Volume -->
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title">📊 TOP VOLUME</div>
+          <div class="card-meta" id="vol-cnt">—</div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24H %</th><th>Volume (USDT)</th></tr></thead>
+          <tbody id="vol-tb"></tbody>
+        </table></div>
+      </div>
+    </div><!-- end markets -->
+
+    <!-- ══ SCANNER ══ -->
+    <div id="pg-scan" class="page">
+      <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:10px">
+        <div class="stat-card"><div class="stat-lbl">TOTAL COINS</div><div class="stat-val" id="sc-total">10</div></div>
+        <div class="stat-card"><div class="stat-lbl">SIGNAL</div><div class="stat-val up" id="sc-sig">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">WATCHING</div><div class="stat-val yl" id="sc-watch">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">HTF BULL</div><div class="stat-val" id="sc-bull">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">LAST SCAN</div><div class="stat-val t2" style="font-size:12px" id="sc-last">—</div></div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-h"><div class="card-title">SCORE HEATMAP</div></div>
+        <div class="hm" id="hm-scan"></div>
+      </div>
+
+      <!-- Full table -->
+      <div class="card">
+        <div class="card-h">
+          <div class="card-title">FULL SCANNER</div>
+          <div class="card-meta">Score threshold: ≥8 = SIGNAL, 5-7 = WATCH</div>
+        </div>
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Symbol</th><th>Price</th><th>24H%</th>
+            <th>Status</th><th>Side</th>
+            <th>Long Score</th><th>Short Score</th>
+            <th>Best</th><th>RSI</th><th>HTF</th><th>Key Zone</th>
+          </tr></thead>
+          <tbody id="sc-tb"></tbody>
+        </table></div>
+      </div>
+    </div><!-- end scanner -->
+
+    <!-- ══ PAPER LAB ══ -->
+    <div id="pg-lab" class="page">
+      <!-- Time filter -->
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="btn-sm active" id="lab-btn-all" onclick="labFilter('all')">ALL</button>
+        <button class="btn-sm" id="lab-btn-7d" onclick="labFilter('7d')">7D</button>
+        <button class="btn-sm" id="lab-btn-30d" onclick="labFilter('30d')">30D</button>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:10px">
+        <div class="stat-card"><div class="stat-lbl">TOTAL TRADES</div><div class="stat-val" id="lb-total">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">CLOSED</div><div class="stat-val" id="lb-closed">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">WIN RATE</div><div class="stat-val" id="lb-wr">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">AVG P&L</div><div class="stat-val" id="lb-avg">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">TOTAL P&L</div><div class="stat-val" id="lb-pnl">$0.00</div></div>
+        <div class="stat-card"><div class="stat-lbl">EXPECTANCY</div><div class="stat-val" id="lb-exp">—</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <!-- Strategy Breakdown -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">PERFORMANCE BY COIN</div></div>
+          <div class="tw"><table>
+            <thead><tr><th>Coin</th><th>Trades</th><th>Wins</th><th>Win Rate</th><th>Total P&L</th></tr></thead>
+            <tbody id="lb-coin-tb"><tr><td colspan="5"><div class="empty">No data</div></td></tr></tbody>
+          </table></div>
+        </div>
+
+        <!-- Session heatmap -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">WIN RATE BY SESSION</div></div>
+          <div class="tw"><table>
+            <thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
+            <tbody id="lb-sess-tb"><tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <!-- Profit Factor -->
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="stat-card"><div class="stat-lbl">PROFIT FACTOR</div><div class="stat-val" id="lb-pf">—</div><div class="stat-sub">Gross Win / Gross Loss</div></div>
+        <div class="stat-card"><div class="stat-lbl">AVG WIN</div><div class="stat-val up" id="lb-avgw">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">AVG LOSS</div><div class="stat-val dn" id="lb-avgl">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">W:L RATIO</div><div class="stat-val" id="lb-wlr">—</div></div>
+      </div>
+    </div><!-- end lab -->
+
+    <!-- ══ WATCHLIST (stub) ══ -->
+    <div id="pg-watchlist" class="page">
+      <div class="coming-soon">
+        <div class="coming-soon-ico">⭐</div>
+        <div class="coming-soon-t">Watchlist</div>
+        <div class="coming-soon-s">Custom watchlist feature — coming soon</div>
+      </div>
     </div>
-  </div>
-</div>
 
-</div><!-- /pages -->
-</div><!-- /main -->
-</div><!-- /app -->
+    <!-- ══ BACKTEST (stub) ══ -->
+    <div id="pg-backtest" class="page">
+      <div class="coming-soon">
+        <div class="coming-soon-ico">🔄</div>
+        <div class="coming-soon-t">Backtest Engine</div>
+        <div class="coming-soon-s">Strategy backtesting — coming soon</div>
+      </div>
+    </div>
 
-<!-- BOTTOM NAV (mobile) -->
-<nav class="bottom-nav">
-  <button class="bn-btn active" onclick="nav('dash')" id="bn-dash">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>DASH
-  </button>
-  <button class="bn-btn" onclick="nav('scanner')" id="bn-scanner">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>SCAN
-  </button>
-  <button class="bn-btn" onclick="nav('signals')" id="bn-signals">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>SIG
-  </button>
-  <button class="bn-btn" onclick="nav('lab')" id="bn-lab">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>LAB
-  </button>
-  <button class="bn-btn" onclick="nav('markets')" id="bn-markets">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>MKT
-  </button>
-  <button class="bn-btn" onclick="nav('agents')" id="bn-agents">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>TEAM
-  </button>
-  <button class="bn-btn" onclick="nav('health')" id="bn-health">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>SYS
-  </button>
-</nav>
+    <!-- ══ AGENT TEAM ══ -->
+    <div id="pg-agents" class="page">
+      <div class="pills" id="ag-pills">
+        <div class="pill pill-run"><div class="pill-dot" style="background:var(--green)"></div>0 Running</div>
+        <div class="pill pill-stale"><div class="pill-dot" style="background:var(--yellow)"></div>0 Stale</div>
+        <div class="pill pill-stop"><div class="pill-dot" style="background:var(--red)"></div>0 Stopped</div>
+      </div>
+      <div class="ag-grid" id="ag-grid"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>RUNNING — active</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>STALE — ไม่มี supervisor</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>STOPPED</div>
+      </div>
+    </div><!-- end agents -->
+
+    <!-- ══ HEALTH CHECK ══ -->
+    <div id="pg-health" class="page">
+      <div id="health-banner" class="health-banner health-ok">
+        <div class="health-num h-ok-n" id="h-warn-cnt">0</div>
+        <div>
+          <div class="health-title" id="h-status-txt">ALL SYSTEMS OK</div>
+          <div class="health-sub" id="h-status-sub">All checks passed</div>
+        </div>
+        <div class="health-meta">
+          <div>Last check: <b id="h-last">—</b></div>
+          <div style="margin-top:2px">Auto-refresh ทุก 1 ชั่วโมง</div>
+        </div>
+      </div>
+      <div id="health-sections"></div>
+    </div><!-- end health -->
+
+  </div><!-- end pages -->
+</div><!-- end main -->
+</div><!-- end app -->
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════════════
-// DATA & STATE
-// ═══════════════════════════════════════════════════════════════════════════════
-const EMPTY={balance:1000,pnl:0,win_rate:0,total_trades:0,open_trades:[],closed_trades:[],sessions:[],equity:[1000],last_scan:null,signals:[],scan_results:[]}
-let D=EMPTY
-let LIVE={} // live prices from OKX public API
-let FG=null  // fear & greed
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let D={},LIVE={},MKT=[],FG={value:50,label:'Neutral',yesterday:50,lastWeek:50}
+let currentPage='dash',labFilterMode='all',posTab='open'
+const SYMS=['BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT','XRP/USDT',
+            'DOGE/USDT','AVAX/USDT','LINK/USDT','ADA/USDT','DOT/USDT']
 
-// OKX instId format: "BTC-USDT" → key stored as "BTC/USDT"
-const SYMS=['BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT','XRP/USDT','DOGE/USDT','AVAX/USDT','LINK/USDT','ADA/USDT','DOT/USDT']
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CLOCK — Bangkok (UTC+7)
-// ═══════════════════════════════════════════════════════════════════════════════
-function tick(){
-  const n=new Date(),p=v=>String(v).padStart(2,'0')
-  const bkk=new Date(n.getTime()+7*3600000)
-  document.getElementById('clk-bkk').textContent=`${p(bkk.getUTCHours())}:${p(bkk.getUTCMinutes())}:${p(bkk.getUTCSeconds())} BKK`
-  document.getElementById('clk-utc').textContent=`UTC ${p(n.getUTCHours())}:${p(n.getUTCMinutes())}`
-}
-setInterval(tick,1000);tick()
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════════════════════════════════════
-function nav(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
-  document.querySelectorAll('.nav-btn,.bn-btn').forEach(b=>b.classList.remove('active'))
-  document.getElementById('page-'+id).classList.add('active')
-  const sb=document.getElementById('btn-'+id), bb=document.getElementById('bn-'+id)
-  if(sb) sb.classList.add('active')
-  if(bb) bb.classList.add('active')
-  if(id==='dash') setTimeout(()=>drawEquity(D.equity||[1000]),60)
-  if(id==='markets') drawFG(FG)
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOAD — dashboard data
-// ═══════════════════════════════════════════════════════════════════════════════
-async function loadDash(){
-  try{
-    const r=await fetch('dashboard_data.json?t='+Date.now())
-    if(!r.ok) throw ''
-    D=await r.json()
-  }catch{D=EMPTY}
+// ═══════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════
+async function init(){
+  startClock()
+  await loadDashData()
+  loadLive()
+  loadFG()
+  loadMarkets()
   render()
+  setInterval(loadDashData,5*60*1000)
+  setInterval(loadLive,30*1000)
+  setInterval(loadFG,10*60*1000)
+  setInterval(loadMarkets,60*1000)
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOAD — Live prices from OKX public API (ไม่ต้องใช้ API Key)
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// DATA LOADING
+// ═══════════════════════════════════════════════════════════
+async function loadDashData(){
+  try{
+    const r=await fetch('dashboard_data.json?_='+Date.now())
+    if(!r.ok) return
+    D=await r.json()
+    render()
+    updateTopBar()
+  }catch(e){}
+}
+
 async function loadLive(){
   try{
     const r=await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT')
@@ -652,496 +1077,991 @@ async function loadLive(){
     const j=await r.json()
     if(j.code!=='0') throw ''
     for(const t of j.data){
-      const key=t.instId.replace('-','/') // "BTC-USDT" → "BTC/USDT"
+      const key=t.instId.replace('-','/')
       if(SYMS.includes(key)){
         const last=parseFloat(t.last)
         const open24h=parseFloat(t.open24h)
         const chg=open24h>0?(last-open24h)/open24h*100:0
-        LIVE[key]={
-          price:last,
-          change:chg,
-          high:parseFloat(t.high24h),
-          low:parseFloat(t.low24h),
-          vol:parseFloat(t.volCcy24h),
-          volBase:parseFloat(t.vol24h),
-        }
+        LIVE[key]={price:last,change:chg,
+          high:parseFloat(t.high24h),low:parseFloat(t.low24h),
+          vol:parseFloat(t.volCcy24h),volBase:parseFloat(t.vol24h)}
       }
     }
     renderLive()
-  }catch(e){console.warn('OKX API error:',e)}
+  }catch(e){console.warn('OKX live error:',e)}
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOAD — Fear & Greed
-// ═══════════════════════════════════════════════════════════════════════════════
-async function loadFG(){
+async function loadMarkets(){
   try{
-    const r=await fetch('https://api.alternative.me/fng/?limit=1')
+    const r=await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT')
     if(!r.ok) throw ''
     const j=await r.json()
-    FG=parseInt(j.data[0].value)
-    const lbl=j.data[0].value_classification
-    document.getElementById('fg-upd').textContent=lbl
-    document.getElementById('fg-val').textContent=FG
-    document.getElementById('fg-val').style.color=FG>=60?'var(--green)':FG<=40?'var(--red)':'var(--yellow)'
-    document.getElementById('fg-lbl').textContent=lbl.toUpperCase()
-    document.getElementById('fg-lbl').style.color=FG>=60?'var(--green)':FG<=40?'var(--red)':'var(--yellow)'
-    drawFG(FG)
-  }catch{document.getElementById('fg-upd').textContent='unavailable'}
+    if(j.code!=='0') throw ''
+    MKT=j.data
+      .filter(t=>t.instId.endsWith('-USDT'))
+      .map(t=>{
+        const last=parseFloat(t.last)
+        const open24h=parseFloat(t.open24h)
+        const chg=open24h>0?(last-open24h)/open24h*100:0
+        const vol=parseFloat(t.volCcy24h)
+        return{sym:t.instId.replace('-USDT',''),price:last,change:chg,vol,open24h}
+      })
+      .filter(t=>t.vol>500000&&t.price>0)
+    renderMarkets()
+  }catch(e){}
 }
 
-function loadAll(){loadDash();loadLive();loadFG()}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// RENDER LIVE (prices from OKX public API)
-// ═══════════════════════════════════════════════════════════════════════════════
-function renderLive(){
-  const btcData=LIVE['BTC/USDT']
-  if(btcData){
-    const px=btcData.price, chg=btcData.change, vol=btcData.vol
-    const chgCls=chg>=0?'up':'dn'
-    const chgTxt=(chg>=0?'+':'')+chg.toFixed(2)+'%'
-    // dashboard BTC
-    document.getElementById('btc-px-d').textContent='$'+numFmt(px)
-    document.getElementById('btc-px-d').style.color=chg>=0?'var(--green)':'var(--red)'
-    document.getElementById('btc-chg-d').textContent=chgTxt
-    document.getElementById('btc-chg-d').className=chgCls
-    document.getElementById('btc-vol-d').textContent='$'+shortNum(vol)
-    document.getElementById('btc-cap-d').textContent='Hi $'+numFmt(btcData.high)+' / Lo $'+numFmt(btcData.low)
-    document.getElementById('btc-badge').textContent=chgTxt+' 24h'
-    document.getElementById('btc-badge').style.color=chg>=0?'var(--green)':'var(--red)'
-    // markets BTC
-    document.getElementById('btc-px').textContent='$'+numFmt(px)
-    document.getElementById('btc-px').style.color=chg>=0?'var(--green)':'var(--red)'
-    document.getElementById('btc-chg').textContent=chgTxt
-    document.getElementById('btc-chg').className=chgCls
-  }
-  const ethData=LIVE['ETH/USDT']
-  if(ethData){
-    const px=ethData.price, chg=ethData.change
-    document.getElementById('eth-px').textContent='$'+numFmt(px)
-    document.getElementById('eth-px').style.color=chg>=0?'var(--green)':'var(--red)'
-    document.getElementById('eth-chg').textContent=(chg>=0?'+':'')+chg.toFixed(2)+'%'
-    document.getElementById('eth-chg').className=chg>=0?'up':'dn'
-  }
-  // update market updated badge
-  document.getElementById('mkt-upd').textContent='Live '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'})+' BKK'
-  // re-render heatmaps with live prices
-  renderHeatmap('hm-dash', D.scan_results||[])
-  renderHeatmap('hm-full', D.scan_results||[])
-  renderScanner()
-  renderTopLongShort()
+async function loadFG(){
+  try{
+    const r=await fetch('https://api.alternative.me/fng/?limit=7')
+    if(!r.ok) throw ''
+    const j=await r.json()
+    const d=j.data
+    FG={value:parseInt(d[0].value),label:d[0].value_classification,
+        yesterday:parseInt(d[1]?.value||d[0].value),
+        lastWeek:parseInt(d[6]?.value||d[0].value)}
+    renderFG()
+  }catch(e){}
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// RENDER DASHBOARD DATA
-// ═══════════════════════════════════════════════════════════════════════════════
-function render(){
-  const scan=D.scan_results||[], sigs=D.signals||[], opens=D.open_trades||[], closed=D.closed_trades||[]
-  const wins=closed.filter(t=>t.outcome==='WIN').length
-  const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
-  const watchCnt=scan.filter(r=>r.status==='WATCH').length
-  const bullCnt=scan.filter(r=>r.htf_bull).length
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function nav(page){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'))
+  const nb=document.getElementById('nb-'+page)
+  if(nb) nb.classList.add('active')
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  const pg=document.getElementById('pg-'+page)
+  if(pg) pg.classList.add('active')
+  currentPage=page
+  if(page==='markets') renderMarkets()
+  if(page==='scan') renderScanner()
+  if(page==='sig') renderSignals()
+  if(page==='pos') renderPositions()
+  if(page==='lab') renderLab()
+  if(page==='agents') renderAgents()
+  if(page==='health') renderHealth()
+  if(page==='btc') renderBTCLive()
+}
 
-  // Topbar last scan
-  document.getElementById('tb-scan').textContent=D.last_scan?timeAgo(D.last_scan):'—'
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function numFmt(n){
+  if(!n&&n!==0) return'—'
+  if(n>=1000) return n.toLocaleString('en',{maximumFractionDigits:2})
+  if(n>=1) return n.toFixed(2)
+  if(n>=0.01) return n.toFixed(4)
+  return n.toFixed(6)
+}
+function shortNum(n){
+  if(!n) return'—'
+  if(n>=1e9) return(n/1e9).toFixed(1)+'B'
+  if(n>=1e6) return(n/1e6).toFixed(1)+'M'
+  if(n>=1e3) return(n/1e3).toFixed(1)+'K'
+  return n.toFixed(0)
+}
+function pxFmt(n){
+  if(!n) return'—'
+  if(n>1000) return'$'+n.toLocaleString('en',{maximumFractionDigits:2})
+  if(n>1) return'$'+n.toFixed(4)
+  return'$'+n.toFixed(6)
+}
+function chgFmt(c){
+  if(c===null||c===undefined) return'<span class="t2">—</span>'
+  const cls=c>=0?'up':'dn'
+  return`<span class="${cls}">${c>=0?'+':''}${c.toFixed(2)}%</span>`
+}
+function timeAgo(iso){
+  if(!iso) return'—'
+  const diff=(Date.now()-new Date(iso))/1000
+  if(diff<60) return Math.floor(diff)+'s ago'
+  if(diff<3600) return Math.floor(diff/60)+'m ago'
+  if(diff<86400) return Math.floor(diff/3600)+'h ago'
+  return Math.floor(diff/86400)+'d ago'
+}
+function fmtTime(iso){
+  if(!iso) return'—'
+  return new Date(iso).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'})
+}
+function spark(chg){
+  const up=chg>=0
+  const c=up?'#00c97b':'#e83c5a'
+  const y1=up?18:2, y2=up?2:18
+  return`<svg class="spark" viewBox="0 0 60 20"><line x1="2" y1="${y1}" x2="58" y2="${y2}" stroke="${c}" stroke-width="1.5" opacity=".8"/><circle cx="58" cy="${y2}" r="2" fill="${c}"/></svg>`
+}
+function sBadge(s){
+  if(s==='SIGNAL') return'<span class="bdg b-sig">SIGNAL</span>'
+  if(s==='WATCH') return'<span class="bdg b-wat">WATCH</span>'
+  return'<span class="bdg b-idl">IDLE</span>'
+}
+function sideBadge(s){
+  return s==='LONG'?'<span class="bdg b-long">LONG</span>':'<span class="bdg b-short">SHORT</span>'
+}
 
-  // ── DASH STATS ───────────────────────────────────────────
-  const bal=D.balance||1000, pct=((bal/1000)-1)*100
+// ═══════════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════════
+function startClock(){
+  setInterval(()=>{
+    const n=new Date()
+    const bkk=new Date(n.getTime()+7*3600000)
+    const h=String(bkk.getUTCHours()).padStart(2,'0')
+    const m=String(bkk.getUTCMinutes()).padStart(2,'0')
+    const s=String(bkk.getUTCSeconds()).padStart(2,'0')
+    const el=document.getElementById('tb-clk')
+    if(el) el.textContent=`${h}:${m}:${s}`
+  },1000)
+}
+
+// ═══════════════════════════════════════════════════════════
+// TOP BAR
+// ═══════════════════════════════════════════════════════════
+function updateTopBar(){
+  const bal=D.balance||1000
   const pnl=D.pnl||0
-  setText('d-bal','$'+bal.toFixed(2),'s-val '+(pct>=0?'up':'dn'))
-  document.getElementById('d-pct').textContent=(pct>=0?'+':'')+pct.toFixed(1)+'% จากเริ่มต้น'
-  setText('d-pnl',(pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2),'sc-val '+(pnl>=0?'up':'dn'))
-  document.getElementById('d-trades').textContent=(D.total_trades||0)+' trades'
-  document.getElementById('d-wr').textContent=D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—'
-  document.getElementById('d-wl').textContent=`W:${wins} L:${(D.total_trades||0)-wins}`
-  document.getElementById('d-open').textContent=opens.length
-  document.getElementById('d-sigs').textContent=sigCnt
-  document.getElementById('d-watch').textContent=watchCnt
-  document.getElementById('d-mkt-b').textContent=bullCnt+'/'+scan.length+' bullish'
+  const wr=D.win_rate||0
+  const trades=D.total_trades||0
+  const scan=D.scan_results||[]
+  const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
+
+  setText('tb-bal','$'+bal.toFixed(2))
+  const pnlEl=document.getElementById('tb-pnl')
+  if(pnlEl){pnlEl.textContent=(pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);pnlEl.className='tb-val '+(pnl>=0?'up':'dn')}
+  setText('tb-wr',trades>0?wr.toFixed(1)+'%':'—')
+  setText('tb-trades',trades)
+  setText('tb-sigs',sigCnt)
+  const nb=document.getElementById('nb-sig-cnt')
+  if(nb) nb.textContent=sigCnt
+
+  // Regime from BTC
+  const btc=LIVE['BTC/USDT']
+  if(btc){
+    const el=document.getElementById('tb-regime')
+    if(el){
+      const chg=btc.change
+      if(chg>3) el.innerHTML='<span class="tb-tag tag-side">BULLISH / TRENDING</span>'
+      else if(chg<-3) el.innerHTML='<span class="tb-tag tag-bear">BEARISH / TRENDING</span>'
+      else el.innerHTML='<span class="tb-tag tag-side-y">SIDEWAY / RANGING</span>'
+    }
+  }
+}
+
+function setText(id,val,cls){
+  const el=document.getElementById(id)
+  if(!el) return
+  el.textContent=val
+  if(cls!==undefined) el.className=cls
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER LIVE PRICES
+// ═══════════════════════════════════════════════════════════
+function renderLive(){
+  const btc=LIVE['BTC/USDT']
+  if(btc){
+    const px=btc.price,chg=btc.change,vol=btc.vol
+    const chgTxt=(chg>=0?'+':'')+chg.toFixed(2)+'%'
+    const cls=chg>=0?'up':'dn'
+    // topbar
+    const tpx=document.getElementById('tb-btc-px')
+    if(tpx){tpx.textContent='$'+numFmt(px);tpx.className='tb-val'}
+    const tchg=document.getElementById('tb-btc-chg')
+    if(tchg){tchg.textContent=chgTxt;tchg.className='tb-chg '+cls}
+    // dashboard card
+    setText('btc-px-d','$'+numFmt(px))
+    const dc=document.getElementById('btc-chg-d')
+    if(dc){dc.textContent=chgTxt;dc.className=cls}
+    setText('btc-vol-d','$'+shortNum(vol))
+    setText('btc-cap-d','Hi $'+numFmt(btc.high)+' / Lo $'+numFmt(btc.low))
+    setText('btc-badge',chgTxt+' 24h')
+    const badge=document.getElementById('btc-badge')
+    if(badge) badge.style.color=chg>=0?'var(--green)':'var(--red)'
+    // macro
+    setText('btc-high','$'+numFmt(btc.high))
+    setText('btc-low','$'+numFmt(btc.low))
+    setText('btc-vol2','$'+shortNum(vol))
+    // markets page
+    setText('mkt-btc-px','$'+numFmt(px))
+    const mc=document.getElementById('mkt-btc-chg')
+    if(mc){mc.textContent=chgTxt;mc.className=cls}
+    setText('mkt-btc-vol','$'+shortNum(vol))
+    setText('mkt-btc-hi','$'+numFmt(btc.high))
+    setText('mkt-btc-lo','$'+numFmt(btc.low))
+    setText('mkt-btc-upd','Updated '+fmtTime(new Date().toISOString()))
+    // btc live page
+    setText('btc-live-px','$'+numFmt(px))
+    const blc=document.getElementById('btc-live-chg')
+    if(blc){blc.textContent=chgTxt;blc.className=cls}
+    setText('btc-live-hi','$'+numFmt(btc.high))
+    setText('btc-live-lo','$'+numFmt(btc.low))
+    setText('btc-live-vol','$'+shortNum(vol))
+    setText('btc-live-volb',shortNum(btc.volBase)+' BTC')
+  }
+  setText('mkt-upd','Updated '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'})+' BKK')
+  updateTopBar()
+  renderWatchlist()
+  renderHeatmap('hm-scan',D.scan_results||[])
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER FEAR & GREED
+// ═══════════════════════════════════════════════════════════
+function renderFG(){
+  const v=FG.value,lbl=FG.label
+  const c=v>=60?'var(--green)':v<=40?'var(--red)':'var(--yellow)'
+  ;['fg-val','fg-val2'].forEach(id=>{
+    const el=document.getElementById(id)
+    if(el){el.textContent=v;el.style.color=c}
+  })
+  ;['fg-lbl','fg-lbl2'].forEach(id=>{
+    const el=document.getElementById(id)
+    if(el){el.textContent=lbl.toUpperCase();el.style.color=c}
+  })
+  ;['fg-upd'].forEach(id=>setText(id,lbl))
+  ;['fg-yst','fg-yst2'].forEach(id=>setText(id,FG.yesterday))
+  ;['fg-week','fg-week2'].forEach(id=>setText(id,FG.lastWeek))
+  drawFGCanvas('fg-canvas',100,56,v)
+  drawFGCanvas('fg-canvas2',140,80,v)
+}
+
+function drawFGCanvas(id,w,h,val){
+  const c=document.getElementById(id)
+  if(!c) return
+  c.width=w;c.height=h
+  const ctx=c.getContext('2d')
+  ctx.clearRect(0,0,w,h)
+  const cx=w/2,cy=h*0.95,r=h*0.85
+  const startA=Math.PI,endA=2*Math.PI
+  // bg arc
+  ctx.beginPath();ctx.arc(cx,cy,r,startA,endA)
+  ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=8;ctx.stroke()
+  // value arc
+  const pct=val/100
+  const clr=val>=60?'#00c97b':val<=40?'#e83c5a':'#f0b429'
+  ctx.beginPath();ctx.arc(cx,cy,r,startA,startA+pct*Math.PI)
+  ctx.strokeStyle=clr;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke()
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDER ALL (called on data load)
+// ═══════════════════════════════════════════════════════════
+function render(){
+  updateTopBar()
+  renderDash()
+  if(currentPage==='sig') renderSignals()
+  if(currentPage==='pos') renderPositions()
+  if(currentPage==='scan') renderScanner()
+  if(currentPage==='lab') renderLab()
+  if(currentPage==='agents') renderAgents()
+  if(currentPage==='health') renderHealth()
+}
+
+// ═══════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════
+function renderDash(){
+  const scan=D.scan_results||[],sigs=D.signals||[],open=D.open_trades||[],closed=D.closed_trades||[]
+  const bal=D.balance||1000,pnl=D.pnl||0
+  const wins=closed.filter(t=>t.outcome==='WIN').length
+  const pct=((bal/1000)-1)*100
+
+  setText('d-bal','$'+bal.toFixed(2))
+  setText('d-bal-pct',(pct>=0?'+':'')+pct.toFixed(1)+'% from start')
+  const pnlEl=document.getElementById('d-pnl')
+  if(pnlEl){pnlEl.textContent=(pnl>=0?'+':'')+' $'+Math.abs(pnl).toFixed(2);pnlEl.className=pnl>=0?'up':'dn'}
+  setText('d-wr',D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—')
+  setText('d-open',open.length)
+  setText('d-closed',closed.length)
+  setText('d-scan-ago',D.last_scan?timeAgo(D.last_scan):'—')
+
+  // Scan timestamp for other elements
+  setText('sig-scan-time',D.last_scan?'Scan '+timeAgo(D.last_scan):'—')
+  setText('sc-last',D.last_scan?timeAgo(D.last_scan):'—')
+
+  // Paper positions mini list
+  setText('d-pos-cnt',open.length+' open')
+  const posEl=document.getElementById('d-pos-list')
+  if(posEl){
+    if(open.length===0){posEl.innerHTML='<div class="empty">No open positions</div>'}
+    else{
+      posEl.innerHTML=open.slice(0,8).map(t=>{
+        const pnlPct=t.pnl_pct||0
+        return`<div class="pos-row">
+          <span class="pos-sym">${t.symbol?.replace('/USDT','')}</span>
+          <span class="${t.side==='LONG'?'pos-side-l':'pos-side-s'}">${t.side==='LONG'?'L':'S'}</span>
+          <span class="t2" style="font-size:10px;flex:1">${pxFmt(t.entry_price)}</span>
+          <span class="pos-pnl pos-ml ${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</span>
+        </div>`
+      }).join('')
+    }
+  }
+
+  // Recent signals table
+  const allSigs=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0))
+  const topSigs=allSigs.filter(r=>r.status==='SIGNAL'||r.status==='WATCH').slice(0,8)
+  const sigTb=document.getElementById('d-sig-tb')
+  if(sigTb){
+    if(topSigs.length===0){sigTb.innerHTML='<tr><td colspan="6"><div class="empty">รอผล scan...</div></td></tr>'}
+    else sigTb.innerHTML=topSigs.map(r=>{
+      const lv=LIVE[r.symbol]
+      const px=lv?pxFmt(lv.price):pxFmt(r.price)
+      return`<tr>
+        <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
+        <td>${sBadge(r.status)}</td>
+        <td>${sideBadge(r.side)}</td>
+        <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/26</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/26*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
+        </div></td>
+        <td>${px}</td>
+        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+      </tr>`
+    }).join('')
+  }
+
+  // Top quality signals
+  const tqTb=document.getElementById('d-tq-tb')
+  const topQ=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0)).slice(0,6)
+  setText('d-tq-cnt',topQ.length+' top')
+  if(tqTb){
+    if(topQ.length===0){tqTb.innerHTML='<tr><td colspan="6"><div class="empty">—</div></td></tr>'}
+    else tqTb.innerHTML=topQ.map(r=>`<tr>
+      <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
+      <td>${sideBadge(r.side)}</td>
+      <td><span style="font-family:var(--mono);color:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}">⚡ ${r.best_score}</span></td>
+      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+      <td>${r.htf_bull?'<span class="up">▲BULL</span>':'<span class="dn">▼BEAR</span>'}</td>
+      <td>${r.in_kz?'<span class="up">⚡YES</span>':'<span class="t2">—</span>'}</td>
+    </tr>`).join('')
+  }
+
+  // Strategy (simplified — by score range)
+  const stratEl=document.getElementById('d-strat-body')
+  if(stratEl&&closed.length>0){
+    const byCoin={}
+    closed.forEach(t=>{
+      const sym=t.symbol?.replace('/USDT','')||'?'
+      if(!byCoin[sym]) byCoin[sym]={wins:0,total:0}
+      byCoin[sym].total++
+      if(t.outcome==='WIN') byCoin[sym].wins++
+    })
+    const rows=Object.entries(byCoin).sort((a,b)=>b[1].total-a[1].total).slice(0,5)
+    stratEl.innerHTML=`<div class="tw"><table>
+      <thead><tr><th>Coin</th><th>Trades</th><th>Win Rate</th><th>Total P&L</th></tr></thead>
+      <tbody>${rows.map(([sym,d])=>`<tr>
+        <td class="txt"><b>${sym}</b></td>
+        <td>${d.total}</td>
+        <td class="${d.wins/d.total>=0.5?'up':'dn'}">${(d.wins/d.total*100).toFixed(1)}%</td>
+        <td>—</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`
+  }
+
+  // Session stats
+  const sessEl=document.getElementById('d-sess-tb')
+  if(sessEl){
+    const sess=D.sessions||[]
+    if(sess.length===0){sessEl.innerHTML='<tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'}
+    else sessEl.innerHTML=sess.map(s=>`<tr>
+      <td class="txt">${s.session}</td>
+      <td>${s.total}</td>
+      <td>${s.wins}</td>
+      <td class="${s.win_rate>=50?'up':'dn'}">${s.win_rate?.toFixed(1)}%</td>
+    </tr>`).join('')
+  }
 
   // Equity chart
   drawEquity(D.equity||[1000])
 
-  // Session (dashboard + lab)
-  const sessHTML=buildSessTable(D.sessions||[])
-  document.getElementById('sess-tb').innerHTML=sessHTML
-  document.getElementById('lb-sess-tb').innerHTML=sessHTML
-
-  // Heatmaps
-  renderHeatmap('hm-dash', scan)
-  renderHeatmap('hm-full', scan)
-
-  // ── SCANNER ──────────────────────────────────────────────
-  renderScanner()
-
-  // ── SIGNALS ──────────────────────────────────────────────
-  const longS=sigs.filter(s=>s.side==='LONG').length
-  const shortS=sigs.filter(s=>s.side==='SHORT').length
-  document.getElementById('sig-tot').textContent=sigs.length
-  document.getElementById('sig-lng').textContent=longS
-  document.getElementById('sig-sht').textContent=shortS
-  document.getElementById('sig-b').textContent=sigs.length+' signals'
-  const feed=document.getElementById('sig-feed')
-  feed.innerHTML=sigs.length===0
-    ?'<div class="empty">รอ signal ครั้งแรก — scan ทุก 5 นาที</div>'
-    :[...sigs].reverse().slice(0,50).map(s=>`
-      <div class="fi">
-        <div class="fi-t">${shortDt(s.ts)}</div>
-        <div class="fi-b">
-          <span class="bdg ${s.side==='LONG'?'b-lng':'b-sht'}">${s.side}</span>
-          &nbsp;<strong>${s.symbol}</strong>
-          &nbsp;Score <span class="up">${s.score}/26</span>
-          &nbsp;· <span class="t2">$${s.price}</span>
-          &nbsp;· SL <span class="dn">$${s.sl}</span>
-          &nbsp;· TP1 <span class="up">$${s.tp1}</span>
-          &nbsp;· TP2 <span class="up">$${s.tp2}</span>
-          &nbsp;· RSI ${s.rsi}${s.in_kz?' &nbsp;<span class="yl">⚡KZ</span>':''}
-        </div>
-      </div>`).join('')
-
-  // ── PAPER LAB ────────────────────────────────────────────
-  const best=closed.length>0?Math.max(...closed.map(t=>t.pnl_usd||0)):null
-  const worst=closed.length>0?Math.min(...closed.map(t=>t.pnl_usd||0)):null
-  const exp=closed.length>0?(closed.reduce((a,t)=>a+(t.pnl_usd||0),0)/closed.length):null
-  setText('lb-bal','$'+bal.toFixed(2),'sc-val '+(pct>=0?'up':'dn'))
-  document.getElementById('lb-pct').textContent=(pct>=0?'+':'')+pct.toFixed(1)+'%'
-  document.getElementById('lb-wr').textContent=D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—'
-  document.getElementById('lb-wl').textContent=`W:${wins} L:${(D.total_trades||0)-wins}`
-  setText('lb-pnl',(pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2),'sc-val '+(pnl>=0?'up':'dn'))
-  document.getElementById('lb-exp').textContent=exp!==null?((exp>=0?'+':'')+'$'+Math.abs(exp).toFixed(2)):'—'
-  document.getElementById('lb-best').textContent=best!==null?'+$'+best.toFixed(2):'—'
-  document.getElementById('lb-worst').textContent=worst!==null?'-$'+Math.abs(worst).toFixed(2):'—'
-  document.getElementById('lb-open-b').textContent=opens.length+' open'
-  document.getElementById('lb-cls-b').textContent=closed.length+' closed'
-
-  // Win rate by symbol
-  const symMap={}
-  closed.forEach(t=>{
-    if(!symMap[t.symbol]) symMap[t.symbol]={t:0,w:0,pnl:0}
-    symMap[t.symbol].t++
-    if(t.outcome==='WIN') symMap[t.symbol].w++
-    symMap[t.symbol].pnl+=(t.pnl_usd||0)
-  })
-  const symArr=Object.entries(symMap).sort((a,b)=>b[1].t-a[1].t)
-  document.getElementById('lb-sym-tb').innerHTML=symArr.length===0
-    ?'<tr><td colspan="5"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'
-    :symArr.map(([sym,v])=>{const wr=v.w/v.t*100;return`<tr>
-      <td><strong>${sym}</strong></td><td>${v.t}</td><td>${v.w}</td>
-      <td class="${wr>=50?'up':''}">${wr.toFixed(0)}%</td>
-      <td class="${v.pnl>=0?'up':'dn'}">${v.pnl>=0?'+':''}$${Math.abs(v.pnl).toFixed(2)}</td>
-    </tr>`}).join('')
-
-  // Open / Closed tables
-  document.getElementById('open-tb').innerHTML=opens.length===0
-    ?'<tr><td colspan="10"><div class="empty">ไม่มี open trade</div></td></tr>'
-    :opens.map(t=>`<tr>
-      <td class="t2">#${t.id}</td><td><strong>${t.symbol}</strong></td>
-      <td><span class="bdg ${t.side==='LONG'?'b-lng':'b-sht'}">${t.side}</span></td>
-      <td>${fmt(t.entry_px)}</td><td class="dn">${fmt(t.sl_px)}</td>
-      <td class="up">${fmt(t.tp1_px)}</td><td class="up">${fmt(t.tp2_px)}</td>
-      <td><div class="sb"><span>${t.score}</span><div class="st"><div class="sf" style="width:${Math.round((t.score||0)/26*100)}%;background:var(--accent)"></div></div></div></td>
-      <td>${t.tp1_hit?'✅':'—'}</td><td class="t2">${shortDt(t.opened_at)}</td>
-    </tr>`).join('')
-  document.getElementById('closed-tb').innerHTML=closed.length===0
-    ?'<tr><td colspan="9"><div class="empty">ยังไม่มี trade</div></td></tr>'
-    :[...closed].reverse().slice(0,50).map(t=>`<tr>
-      <td class="t2">#${t.id}</td><td><strong>${t.symbol}</strong></td>
-      <td><span class="bdg ${t.side==='LONG'?'b-lng':'b-sht'}">${t.side}</span></td>
-      <td>${fmt(t.entry_px)}</td><td>${fmt(t.exit_px)}</td>
-      <td><span class="bdg ${t.outcome==='WIN'?'b-win':'b-los'}">${t.outcome}</span></td>
-      <td class="${(t.pnl_usd||0)>=0?'up':'dn'}">${(t.pnl_usd||0)>=0?'+':''}$${Math.abs(t.pnl_usd||0).toFixed(2)}</td>
-      <td>${t.tp1_hit?'✅':'—'}</td><td class="t2">${shortDt(t.closed_at)}</td>
-    </tr>`).join('')
-
-  // ── MARKETS extras ────────────────────────────────────────
-  const btcScan=scan.find(r=>r.symbol==='BTC/USDT')
-  const ethScan=scan.find(r=>r.symbol==='ETH/USDT')
-  if(btcScan){
-    document.getElementById('btc-rsi').textContent=btcScan.rsi
-    document.getElementById('btc-sc').textContent=btcScan.best_score+'/26'
-    const bh=document.getElementById('btc-htf')
-    bh.textContent=btcScan.htf_bull?'▲BULL':'▼BEAR'
-    bh.className=btcScan.htf_bull?'up':'dn'
-  }
-  if(ethScan){
-    document.getElementById('eth-rsi').textContent=ethScan.rsi
-    document.getElementById('eth-sc').textContent=ethScan.best_score+'/26'
-    const eh=document.getElementById('eth-htf')
-    eh.textContent=ethScan.htf_bull?'▲BULL':'▼BEAR'
-    eh.className=ethScan.htf_bull?'up':'dn'
-  }
-  renderTopLongShort()
-
-  // ── AGENT TEAM ────────────────────────────────────────────
-  renderAgents()
-
-  // ── SYSTEM HEALTH ─────────────────────────────────────────
-  renderHealth()
+  // Top gainers mini
+  renderGainersMini()
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCANNER TABLE
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// WATCHLIST
+// ═══════════════════════════════════════════════════════════
+function renderWatchlist(){
+  const el=document.getElementById('d-wl-list')
+  if(!el) return
+  if(Object.keys(LIVE).length===0){el.innerHTML='<div class="empty">Loading...</div>';return}
+  el.innerHTML=SYMS.map(sym=>{
+    const lv=LIVE[sym]
+    if(!lv) return''
+    const base=sym.replace('/USDT','')
+    const chgTxt=(lv.change>=0?'+':'')+lv.change.toFixed(2)+'%'
+    return`<div class="wl-row">
+      <span class="wl-sym">${base}</span>
+      <span class="wl-px">${pxFmt(lv.price)}</span>
+      <span class="wl-chg ${lv.change>=0?'up':'dn'}">${chgTxt}</span>
+      <span class="wl-vol">$${shortNum(lv.vol)}</span>
+    </div>`
+  }).join('')
+}
+
+// ═══════════════════════════════════════════════════════════
+// GAINERS MINI
+// ═══════════════════════════════════════════════════════════
+function renderGainersMini(){
+  const el=document.getElementById('d-gainers-list')
+  if(!el) return
+  if(MKT.length===0){el.innerHTML='<div class="empty">Loading...</div>';return}
+  const gainers=[...MKT].sort((a,b)=>b.change-a.change).slice(0,8)
+  el.innerHTML=gainers.map(t=>`<div class="mkt-row">
+    <span class="mkt-sym">${t.sym}</span>
+    <span class="mkt-px t2">${pxFmt(t.price)}</span>
+    <span class="mkt-chg up">+${t.change.toFixed(2)}%</span>
+  </div>`).join('')
+}
+
+// ═══════════════════════════════════════════════════════════
+// EQUITY CHART
+// ═══════════════════════════════════════════════════════════
+function drawEquity(eq){
+  const c=document.getElementById('eq-canvas')
+  if(!c) return
+  const w=c.offsetWidth||300,h=80
+  c.width=w;c.height=h
+  const ctx=c.getContext('2d')
+  ctx.clearRect(0,0,w,h)
+  if(eq.length<2){
+    ctx.fillStyle='var(--t2)';ctx.font='11px Inter';ctx.textAlign='center'
+    ctx.fillText('No data yet',w/2,h/2);return
+  }
+  const mn=Math.min(...eq),mx=Math.max(...eq)
+  const rng=mx-mn||1
+  const pts=eq.map((v,i)=>({x:i/(eq.length-1)*w,y:h-((v-mn)/rng*(h-10)+5)}))
+  // gradient fill
+  const grad=ctx.createLinearGradient(0,0,0,h)
+  grad.addColorStop(0,'rgba(0,201,123,.2)')
+  grad.addColorStop(1,'rgba(0,201,123,0)')
+  ctx.beginPath()
+  ctx.moveTo(pts[0].x,pts[0].y)
+  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y))
+  ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath()
+  ctx.fillStyle=grad;ctx.fill()
+  // line
+  ctx.beginPath()
+  ctx.moveTo(pts[0].x,pts[0].y)
+  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y))
+  ctx.strokeStyle='var(--green)';ctx.lineWidth=1.5;ctx.stroke()
+}
+
+// ═══════════════════════════════════════════════════════════
+// SIGNALS PAGE
+// ═══════════════════════════════════════════════════════════
+function renderSignals(){
+  const scan=D.scan_results||[]
+  const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
+  const watchCnt=scan.filter(r=>r.status==='WATCH').length
+  const idleCnt=scan.filter(r=>r.status==='IDLE').length
+  const bullCnt=scan.filter(r=>r.htf_bull).length
+
+  setText('sig-all',scan.length)
+  setText('sig-sig-cnt',sigCnt)
+  setText('sig-watch-cnt',watchCnt)
+  setText('sig-idle-cnt',idleCnt)
+  setText('sig-bull-cnt',bullCnt+'/'+scan.length)
+  setText('sig-top-cnt',sigCnt+' signals')
+
+  // Top opportunity cards
+  const topCards=document.getElementById('sig-top-cards')
+  const topOps=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0)).slice(0,6)
+  if(topCards){
+    if(topOps.length===0){topCards.innerHTML='<div style="padding:16px;color:var(--t2)">รอผล scan ครั้งแรก...</div>'}
+    else topCards.innerHTML=topOps.map((r,i)=>{
+      const lv=LIVE[r.symbol]
+      const chg=lv?lv.change:null
+      return`<div class="sig-card ${r.side==='LONG'?'lng':'sht'}">
+        <div class="sig-num">#${i+1}</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+          ${sideBadge(r.side)}
+          ${sBadge(r.status)}
+        </div>
+        <div class="sig-sym">${r.symbol?.replace('/USDT','')}</div>
+        <div class="sig-type">EMA SCORE STRATEGY</div>
+        <div class="sig-score">⚡ ${r.best_score}</div>
+        <div class="sig-score-lbl">/ 26 max score</div>
+        <div class="sig-meta">
+          <span>RSI ${r.rsi||'—'}</span>
+          ${chg!==null?`<span class="${chg>=0?'up':'dn'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''}
+          ${lv?`<span>$${shortNum(lv.vol)}</span>`:''}
+        </div>
+      </div>`
+    }).join('')
+  }
+
+  // Quality distribution
+  const strong=scan.filter(r=>r.best_score>=20).length
+  const good=scan.filter(r=>r.best_score>=13&&r.best_score<20).length
+  const fair=scan.filter(r=>r.best_score>=8&&r.best_score<13).length
+  const weak=scan.filter(r=>r.best_score<8).length
+  const qdist=document.getElementById('sig-qdist')
+  if(qdist) qdist.innerHTML=`
+    <div class="qdist-item"><div class="qdist-val t2">${weak}</div><div class="qdist-lbl">Weak</div><div class="qdist-bar" style="background:var(--t2)"></div></div>
+    <div class="qdist-item"><div class="qdist-val yl">${fair}</div><div class="qdist-lbl">Fair</div><div class="qdist-bar" style="background:var(--yellow)"></div></div>
+    <div class="qdist-item"><div class="qdist-val" style="color:var(--blue)">${good}</div><div class="qdist-lbl">Good</div><div class="qdist-bar" style="background:var(--blue)"></div></div>
+    <div class="qdist-item"><div class="qdist-val up">${strong}</div><div class="qdist-lbl">Strong</div><div class="qdist-bar" style="background:var(--green)"></div></div>
+  `
+
+  // Score ranges
+  const sr=document.getElementById('sig-strat-rows')
+  if(sr){
+    const ranges=[
+      {lbl:'Score ≥ 20 (Strong)',cnt:strong,max:scan.length},
+      {lbl:'Score 13–19 (Good)',cnt:good,max:scan.length},
+      {lbl:'Score 8–12 (Fair)',cnt:fair,max:scan.length},
+      {lbl:'Score < 8 (Weak)',cnt:weak,max:scan.length},
+    ]
+    sr.innerHTML=ranges.map(r=>`<div class="strat-row">
+      <span class="strat-name">${r.lbl}</span>
+      <div class="strat-bar-track"><div class="strat-bar-fill" style="width:${r.max?r.cnt/r.max*100:0}%"></div></div>
+      <span class="strat-cnt">${r.cnt}</span>
+    </div>`).join('')
+  }
+
+  // Full table
+  const sorted=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0))
+  const tb=document.getElementById('sig-tb')
+  if(tb){
+    if(sorted.length===0){tb.innerHTML='<tr><td colspan="9"><div class="empty">รอผล scan ครั้งแรก — GitHub Actions รันทุก 5 นาที</div></td></tr>'}
+    else tb.innerHTML=sorted.map((r,i)=>{
+      const lv=LIVE[r.symbol]
+      const px=lv?pxFmt(lv.price):pxFmt(r.price)
+      const chg=lv?lv.change:null
+      const sc=r.best_score||0
+      const bc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
+      return`<tr>
+        <td class="t2">${i+1}</td>
+        <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
+        <td>${sideBadge(r.side)}</td>
+        <td>${sBadge(r.status)}</td>
+        <td>
+          <div class="sbar">
+            <span style="min-width:32px;color:${bc}">${sc}/26</span>
+            <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/26*100)}%;background:${bc}"></div></div>
+          </div>
+        </td>
+        <td>${px} ${chg!==null?`<span class="${chg>=0?'up':'dn'}" style="font-size:10px">(${chg>=0?'+':''}${chg.toFixed(1)}%)</span>`:''}</td>
+        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+        <td>${r.htf_bull?'<span class="up">▲ BULL</span>':'<span class="dn">▼ BEAR</span>'}</td>
+        <td>${r.in_kz?'<span class="up">⚡ YES</span>':'<span class="t2">—</span>'}</td>
+      </tr>`
+    }).join('')
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// POSITIONS PAGE
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab){
+  posTab=tab
+  document.getElementById('tab-open').classList.toggle('active',tab==='open')
+  document.getElementById('tab-closed').classList.toggle('active',tab==='closed')
+  renderPositions()
+}
+
+function renderPositions(){
+  const open=D.open_trades||[],closed=D.closed_trades||[]
+  const wins=closed.filter(t=>t.outcome==='WIN').length
+  const pnl=D.pnl||0
+  const avgPnl=closed.length>0?pnl/closed.length:0
+
+  setText('pos-open',open.length)
+  setText('pos-closed',closed.length)
+  setText('pos-wr',D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—')
+  const pnlEl=document.getElementById('pos-pnl')
+  if(pnlEl){pnlEl.textContent='$'+pnl.toFixed(2);pnlEl.className='stat-val '+(pnl>=0?'up':'dn')}
+  setText('pos-avg-pnl',closed.length>0?(avgPnl>=0?'+':'')+avgPnl.toFixed(2)+'%':'—')
+  setText('pos-wl','W:'+wins+' L:'+(closed.length-wins))
+  setText('tab-open-cnt',open.length)
+  setText('tab-closed-cnt',closed.length)
+
+  const thead=document.getElementById('pos-thead')
+  const tb=document.getElementById('pos-tb')
+  if(!tb) return
+
+  if(posTab==='open'){
+    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>TP</th><th>SL</th><th>P&L %</th><th>P&L $</th><th>Opened</th></tr>'
+    if(open.length===0){tb.innerHTML='<tr><td colspan="8"><div class="empty">No open positions</div></td></tr>'}
+    else tb.innerHTML=open.map(t=>{
+      const pnlPct=t.pnl_pct||0
+      return`<tr>
+        <td class="txt"><b>${t.symbol?.replace('/USDT','')}</b></td>
+        <td>${sideBadge(t.side)}</td>
+        <td>${pxFmt(t.entry_price)}</td>
+        <td class="up">${pxFmt(t.tp_price)}</td>
+        <td class="dn">${pxFmt(t.sl_price)}</td>
+        <td class="${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
+        <td class="${(t.pnl||0)>=0?'up':'dn'}">${((t.pnl||0)>=0?'+':'')+'$'+Math.abs(t.pnl||0).toFixed(2)}</td>
+        <td class="t2">${timeAgo(t.open_time)}</td>
+      </tr>`
+    }).join('')
+  } else {
+    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&L %</th><th>P&L $</th><th>Outcome</th><th>Duration</th></tr>'
+    if(closed.length===0){tb.innerHTML='<tr><td colspan="8"><div class="empty">No closed trades</div></td></tr>'}
+    else{
+      const sorted=[...closed].sort((a,b)=>new Date(b.close_time||0)-new Date(a.close_time||0))
+      tb.innerHTML=sorted.slice(0,100).map(t=>{
+        const pnlPct=t.pnl_pct||0
+        return`<tr>
+          <td class="txt"><b>${t.symbol?.replace('/USDT','')}</b></td>
+          <td>${sideBadge(t.side)}</td>
+          <td>${pxFmt(t.entry_price)}</td>
+          <td>${pxFmt(t.exit_price)}</td>
+          <td class="${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
+          <td class="${(t.pnl||0)>=0?'up':'dn'}">${((t.pnl||0)>=0?'+':'')+'$'+Math.abs(t.pnl||0).toFixed(2)}</td>
+          <td>${t.outcome==='WIN'?'<span class="bdg b-win">WIN</span>':'<span class="bdg b-los">LOSS</span>'}</td>
+          <td class="t2">${timeAgo(t.close_time)}</td>
+        </tr>`
+      }).join('')
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SCANNER PAGE
+// ═══════════════════════════════════════════════════════════
 function renderScanner(){
   const scan=D.scan_results||[]
   const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
   const watchCnt=scan.filter(r=>r.status==='WATCH').length
-  document.getElementById('sc-b').textContent=`${sigCnt} signals · ${watchCnt} watching`
-  document.getElementById('sc-tb').innerHTML=scan.length===0
-    ?'<tr><td colspan="11"><div class="empty">รอผล scan ครั้งแรก — GitHub Actions รันทุก 5 นาที</div></td></tr>'
-    :scan.map(r=>{
-      const sc=r.best_score||0
-      const bw=Math.round(sc/26*100)
-      const bc=sc>=8?'#00d97e':sc>=5?'#f5c842':'#2a3e5a'
-      const lv=LIVE[r.symbol]
-      const livePx=lv?'$'+numFmt(lv.price):'$'+fmtPx(r.price)
-      const chg=lv?lv.change:null
-      const chgTxt=chg!==null?`<span class="${chg>=0?'up':'dn'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:'—'
-      return`<tr>
-        <td><strong>${r.symbol}</strong></td>
-        <td class="t2">${livePx}</td>
-        <td>${chgTxt}</td>
-        <td>${sBadge(r.status)}</td>
-        <td><span class="bdg ${r.side==='LONG'?'b-lng':'b-sht'}">${r.side}</span></td>
-        <td class="${r.score_long>=8?'up':''}">${r.score_long}</td>
-        <td class="${r.score_short>=8?'dn':''}">${r.score_short}</td>
-        <td><div class="sb"><span style="min-width:28px">${sc}/26</span><div class="st"><div class="sf" style="width:${bw}%;background:${bc}"></div></div></div></td>
-        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi}</td>
-        <td>${r.htf_bull?'<span class="up">▲BULL</span>':'<span class="dn">▼BEAR</span>'}</td>
-        <td>${r.in_kz?'<span class="up">⚡YES</span>':'<span class="t2">—</span>'}</td>
-      </tr>`
-    }).join('')
-}
+  const bullCnt=scan.filter(r=>r.htf_bull).length
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// TOP LONG / SHORT
-// ═══════════════════════════════════════════════════════════════════════════════
-function renderTopLongShort(){
-  const scan=D.scan_results||[]
-  const topLng=[...scan].sort((a,b)=>(b.score_long||0)-(a.score_long||0)).slice(0,5)
-  const topSht=[...scan].sort((a,b)=>(b.score_short||0)-(a.score_short||0)).slice(0,5)
-  const mkRow=(r,isLng)=>{
+  setText('sc-total',scan.length||10)
+  setText('sc-sig',sigCnt)
+  setText('sc-watch',watchCnt)
+  setText('sc-bull',bullCnt)
+  setText('sc-last',D.last_scan?timeAgo(D.last_scan):'—')
+
+  renderHeatmap('hm-scan',scan)
+
+  const tb=document.getElementById('sc-tb')
+  if(!tb) return
+  if(scan.length===0){tb.innerHTML='<tr><td colspan="11"><div class="empty">รอผล scan ครั้งแรก — GitHub Actions รันทุก 5 นาที</div></td></tr>';return}
+  const sorted=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0))
+  tb.innerHTML=sorted.map(r=>{
     const lv=LIVE[r.symbol]
-    const px=lv?'$'+numFmt(lv.price):'$'+fmtPx(r.price)
+    const px=lv?pxFmt(lv.price):pxFmt(r.price)
     const chg=lv?lv.change:null
-    const chgTxt=chg!==null?`<span class="${chg>=0?'up':'dn'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:'—'
-    const sc=isLng?r.score_long:r.score_short
+    const sc=r.best_score||0
+    const bc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
     return`<tr>
-      <td><strong>${r.symbol}</strong></td>
-      <td class="t2">${px}</td>
-      <td>${chgTxt}</td>
-      <td class="${sc>=8?(isLng?'up':'dn'):''}">${sc}/26</td>
-      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi}</td>
-      <td>${r.in_kz?'<span class="up">⚡</span>':'—'}</td>
+      <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
+      <td>${px}</td>
+      <td>${chgFmt(chg)}</td>
+      <td>${sBadge(r.status)}</td>
+      <td>${sideBadge(r.side)}</td>
+      <td class="${r.score_long>=8?'up':''}">${r.score_long}</td>
+      <td class="${r.score_short>=8?'dn':''}">${r.score_short}</td>
+      <td>
+        <div class="sbar">
+          <span style="min-width:32px;color:${bc}">${sc}/26</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/26*100)}%;background:${bc}"></div></div>
+        </div>
+      </td>
+      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+      <td>${r.htf_bull?'<span class="up">▲ BULL</span>':'<span class="dn">▼ BEAR</span>'}</td>
+      <td>${r.in_kz?'<span class="up">⚡ YES</span>':'<span class="t2">—</span>'}</td>
     </tr>`
-  }
-  document.getElementById('top-lng').innerHTML=topLng.length===0?'<tr><td colspan="6"><div class="empty">—</div></td></tr>':topLng.map(r=>mkRow(r,true)).join('')
-  document.getElementById('top-sht').innerHTML=topSht.length===0?'<tr><td colspan="6"><div class="empty">—</div></td></tr>':topSht.map(r=>mkRow(r,false)).join('')
+  }).join('')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // HEATMAP
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function renderHeatmap(id,scan){
   const el=document.getElementById(id);if(!el) return
   if(scan.length===0){el.innerHTML='<div class="empty" style="grid-column:1/-1">รอข้อมูล scan...</div>';return}
   el.innerHTML=scan.map(r=>{
     const sc=r.best_score||0
-    const sym=r.symbol.replace('/USDT','')
-    const txtCol=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
-    const barCol=sc>=8?'rgba(0,217,126,.9)':sc>=5?'rgba(245,200,66,.8)':'rgba(42,62,90,.8)'
+    const sym=r.symbol?.replace('/USDT','')||r.symbol
+    const tc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
+    const bc=sc>=8?'rgba(0,201,123,.9)':sc>=5?'rgba(240,180,41,.8)':'rgba(74,102,133,.5)'
     const lv=LIVE[r.symbol]
-    const px=lv?pxShort(lv.price):pxShort(r.price)
+    const px=lv?numFmt(lv.price):numFmt(r.price)
     const chg=lv?lv.change:null
     const chgTxt=chg!==null?`<div class="hmc-chg ${chg>=0?'up':'dn'}">${chg>=0?'+':''}${chg.toFixed(1)}%</div>`:'<div class="hmc-chg t2">—</div>'
-    return`<div class="hmc">
-      <div class="hmc-sym" style="color:${txtCol}">${sym}</div>
+    return`<div class="hmc" onclick="nav('scan')">
+      <div class="hmc-sym" style="color:${tc}">${sym}</div>
       <div class="hmc-px">$${px}</div>
       ${chgTxt}
-      <div class="hmc-bar" style="background:${barCol}"></div>
-      <div class="hmc-sc" style="color:${txtCol}">${sc}/26</div>
+      <div class="hmc-bar" style="background:${bc}"></div>
+      <div class="hmc-sc" style="color:${tc}">${sc}/26</div>
     </div>`
   }).join('')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// FEAR & GREED CANVAS
-// ═══════════════════════════════════════════════════════════════════════════════
-function drawFG(val){
-  const cv=document.getElementById('fg-canvas');if(!cv) return
-  const ctx=cv.getContext('2d'),W=160,H=90
-  ctx.clearRect(0,0,W,H)
-  const cx=W/2,cy=H,r=68,thick=14
-  // background arc
-  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,2*Math.PI)
-  ctx.strokeStyle='#1c2a3e';ctx.lineWidth=thick;ctx.stroke()
-  if(val===null) return
-  // colored arc
-  const pct=val/100
-  const startA=Math.PI
-  const endA=Math.PI+pct*Math.PI
-  const col=val>=70?'#00d97e':val>=50?'#70cc70':val>=30?'#f5c842':val>=20?'#f08040':'#f04060'
-  ctx.beginPath();ctx.arc(cx,cy,r,startA,endA)
-  ctx.strokeStyle=col;ctx.lineWidth=thick;ctx.stroke()
-  // needle
-  const angle=Math.PI+pct*Math.PI
-  const nx=cx+Math.cos(angle)*(r-thick/2-4)
-  const ny=cy+Math.sin(angle)*(r-thick/2-4)
-  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(nx,ny)
-  ctx.strokeStyle='#d0e0f5';ctx.lineWidth=2;ctx.stroke()
-  ctx.beginPath();ctx.arc(cx,cy,4,0,2*Math.PI)
-  ctx.fillStyle='#d0e0f5';ctx.fill()
+// ═══════════════════════════════════════════════════════════
+// MARKETS PAGE
+// ═══════════════════════════════════════════════════════════
+function renderMarkets(){
+  renderFG()
+  if(MKT.length===0) return
+  const gainers=[...MKT].sort((a,b)=>b.change-a.change).slice(0,20)
+  const losers=[...MKT].sort((a,b)=>a.change-b.change).slice(0,15)
+  const byVol=[...MKT].sort((a,b)=>b.vol-a.vol).slice(0,20)
+
+  setText('gainers-cnt',gainers.length+' coins')
+  setText('losers-cnt',losers.length+' coins')
+  setText('vol-cnt',byVol.length+' coins')
+
+  const gTb=document.getElementById('gainers-tb')
+  if(gTb) gTb.innerHTML=gainers.map((t,i)=>`<tr>
+    <td class="t2">${i+1}</td>
+    <td class="txt"><b>${t.sym}</b></td>
+    <td>${pxFmt(t.price)}</td>
+    <td><span class="up">+${t.change.toFixed(2)}%</span></td>
+    <td class="t2">$${shortNum(t.vol)}</td>
+  </tr>`).join('')
+
+  const lTb=document.getElementById('losers-tb')
+  if(lTb) lTb.innerHTML=losers.map((t,i)=>`<tr>
+    <td class="t2">${i+1}</td>
+    <td class="txt"><b>${t.sym}</b></td>
+    <td>${pxFmt(t.price)}</td>
+    <td><span class="dn">${t.change.toFixed(2)}%</span></td>
+    <td class="t2">$${shortNum(t.vol)}</td>
+  </tr>`).join('')
+
+  const vTb=document.getElementById('vol-tb')
+  if(vTb) vTb.innerHTML=byVol.map((t,i)=>`<tr>
+    <td class="t2">${i+1}</td>
+    <td class="txt"><b>${t.sym}</b></td>
+    <td>${pxFmt(t.price)}</td>
+    <td>${chgFmt(t.change)}</td>
+    <td class="up">$${shortNum(t.vol)}</td>
+  </tr>`).join('')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// PAPER LAB
+// ═══════════════════════════════════════════════════════════
+function labFilter(mode){
+  labFilterMode=mode
+  ;['all','7d','30d'].forEach(m=>{
+    const b=document.getElementById('lab-btn-'+m)
+    if(b) b.classList.toggle('active',m===mode)
+  })
+  renderLab()
+}
+
+function renderLab(){
+  let closed=D.closed_trades||[]
+  const now=Date.now()
+  if(labFilterMode==='7d') closed=closed.filter(t=>now-new Date(t.close_time||0)<7*86400000)
+  if(labFilterMode==='30d') closed=closed.filter(t=>now-new Date(t.close_time||0)<30*86400000)
+
+  const wins=closed.filter(t=>t.outcome==='WIN')
+  const losses=closed.filter(t=>t.outcome==='LOSS')
+  const wr=closed.length>0?wins.length/closed.length*100:0
+  const grossWin=wins.reduce((s,t)=>s+(t.pnl||0),0)
+  const grossLoss=Math.abs(losses.reduce((s,t)=>s+(t.pnl||0),0))
+  const pf=grossLoss>0?(grossWin/grossLoss).toFixed(2):'∞'
+  const avgWin=wins.length>0?grossWin/wins.length:0
+  const avgLoss=losses.length>0?-grossLoss/losses.length:0
+  const totalPnl=closed.reduce((s,t)=>s+(t.pnl||0),0)
+  const avgPnl=closed.length>0?totalPnl/closed.length:0
+  const expectancy=wins.length>0&&losses.length>0
+    ?(wr/100*avgWin-(1-wr/100)*Math.abs(avgLoss)).toFixed(2):'—'
+
+  setText('lb-total',D.open_trades?.length+closed.length||closed.length)
+  setText('lb-closed',closed.length)
+  const wrEl=document.getElementById('lb-wr')
+  if(wrEl){wrEl.textContent=closed.length>0?wr.toFixed(1)+'%':'—';wrEl.className='stat-val '+(wr>=50?'up':'dn')}
+  const pnlEl=document.getElementById('lb-pnl')
+  if(pnlEl){pnlEl.textContent='$'+totalPnl.toFixed(2);pnlEl.className='stat-val '+(totalPnl>=0?'up':'dn')}
+  setText('lb-avg',closed.length>0?(avgPnl>=0?'+':'')+avgPnl.toFixed(2)+'%':'—')
+  setText('lb-exp',expectancy)
+  setText('lb-pf',pf)
+  setText('lb-avgw',wins.length>0?'+$'+avgWin.toFixed(2):'—')
+  setText('lb-avgl',losses.length>0?'-$'+Math.abs(avgLoss).toFixed(2):'—')
+  setText('lb-wlr',wins.length>0&&losses.length>0?(avgWin/Math.abs(avgLoss)).toFixed(2):'—')
+
+  // By coin
+  const byCoin={}
+  closed.forEach(t=>{
+    const sym=t.symbol?.replace('/USDT','')||'?'
+    if(!byCoin[sym]) byCoin[sym]={wins:0,total:0,pnl:0}
+    byCoin[sym].total++
+    byCoin[sym].pnl+=(t.pnl||0)
+    if(t.outcome==='WIN') byCoin[sym].wins++
+  })
+  const coinTb=document.getElementById('lb-coin-tb')
+  if(coinTb){
+    const rows=Object.entries(byCoin).sort((a,b)=>b[1].total-a[1].total)
+    if(rows.length===0){coinTb.innerHTML='<tr><td colspan="5"><div class="empty">No data</div></td></tr>'}
+    else coinTb.innerHTML=rows.map(([sym,d])=>`<tr>
+      <td class="txt"><b>${sym}</b></td>
+      <td>${d.total}</td>
+      <td>${d.wins}</td>
+      <td class="${d.wins/d.total>=0.5?'up':'dn'}">${(d.wins/d.total*100).toFixed(1)}%</td>
+      <td class="${d.pnl>=0?'up':'dn'}">${(d.pnl>=0?'+':'')+'$'+d.pnl.toFixed(2)}</td>
+    </tr>`).join('')
+  }
+
+  // Sessions
+  const sessTb=document.getElementById('lb-sess-tb')
+  if(sessTb){
+    const sess=D.sessions||[]
+    if(sess.length===0){sessTb.innerHTML='<tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'}
+    else sessTb.innerHTML=sess.map(s=>`<tr>
+      <td class="txt">${s.session}</td>
+      <td>${s.total}</td>
+      <td>${s.wins}</td>
+      <td class="${s.win_rate>=50?'up':'dn'}">${s.win_rate?.toFixed(1)}%</td>
+    </tr>`).join('')
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // AGENT TEAM
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+const AGENTS=[
+  {id:'data',emoji:'📡',name:'Data Collector',desc:'ดึง OHLCV + ราคา จาก OKX ทุก 5 นาที',cycle:'~5m',status:'stale'},
+  {id:'signal',emoji:'🔍',name:'Signal Scanner',desc:'วิเคราะห์ EMA/RSI/BOS/CHoCH/QM ทุก coin',cycle:'~5m',status:'stale'},
+  {id:'trader',emoji:'🤖',name:'Paper Trader',desc:'เปิด/ปิด paper trade ตาม signal',cycle:'~5m',status:'stale'},
+  {id:'dash',emoji:'📊',name:'Dashboard Builder',desc:'สร้าง dashboard_data.json ทุก run',cycle:'~5m',status:'stale'},
+  {id:'notify',emoji:'📱',name:'Telegram Notifier',desc:'ส่ง alert ผ่าน Telegram Bot',cycle:'~5m',status:'stale'},
+]
+
 function renderAgents(){
-  const age=D.last_scan?Math.round((Date.now()-new Date(D.last_scan).getTime())/60000):999
-  const getStatus=(maxOk,maxWarn)=>{
-    if(age<=maxOk) return{cls:'ag-run',txt:'🟢 RUNNING',lbl:'ทำงานปกติ'}
-    if(age<=maxWarn) return{cls:'ag-idle',txt:'🟡 IDLE',lbl:'รอรัน'}
-    return{cls:'ag-off',txt:'🔴 STALE',lbl:'ไม่มีข้อมูลใหม่'}
-  }
-  const agents=[
-    {name:'SCANNER',role:'live_trader.py — Scan 10 coins ทุก 5 นาที',st:getStatus(8,30),
-     info:`Symbols: ${(D.scan_results||[]).length}/10 · Last: ${D.last_scan?timeAgo(D.last_scan):'—'}`},
-    {name:'TRADE MGR',role:'paper_trade.py — จัดการ Paper Positions',st:getStatus(8,30),
-     info:`Open: ${(D.open_trades||[]).length} · Closed: ${D.total_trades||0}`},
-    {name:'DASHBOARD',role:'generate_dashboard.py — อัพเดท JSON ทุก scan',st:getStatus(8,30),
-     info:`Generated: ${D.last_scan?timeAgo(D.last_scan):'—'}`},
-    {name:'NOTIFIER',role:'notify.py — Telegram @Wakam3_bot',st:getStatus(8,30),
-     info:`Signals sent: ${(D.signals||[]).length}`},
-  ]
-  document.getElementById('ag-grid').innerHTML=agents.map(a=>`
-    <div class="ag-card ${a.st.cls}">
-      <div class="ag-name">${a.name}</div>
-      <div class="ag-role">${a.role}</div>
-      <div class="ag-stat">
-        <span class="ag-pill ag-status-pill">${a.st.txt}</span>
-        <span class="ag-pill" style="color:var(--t2);font-size:9px">${a.info}</span>
+  // Determine agent status from last_scan freshness
+  const lastScan=D.last_scan?new Date(D.last_scan):null
+  const ageMin=lastScan?(Date.now()-lastScan)/60000:999
+  const isRecent=ageMin<15
+
+  const agents=AGENTS.map(a=>({...a,status:isRecent?'run':'stale'}))
+  const runCnt=agents.filter(a=>a.status==='run').length
+  const staleCnt=agents.filter(a=>a.status==='stale').length
+
+  // Pills
+  const pillsEl=document.getElementById('ag-pills')
+  if(pillsEl) pillsEl.innerHTML=`
+    <div class="pill pill-run"><div class="pill-dot" style="background:var(--green)"></div>${runCnt} Running</div>
+    <div class="pill pill-stale"><div class="pill-dot" style="background:var(--yellow)"></div>${staleCnt} Stale</div>
+    <div class="pill pill-stop"><div class="pill-dot" style="background:var(--red)"></div>0 Stopped</div>
+    <div class="pill pill-unk"><div class="pill-dot" style="background:var(--t2)"></div>0 Unknown</div>
+  `
+
+  const grid=document.getElementById('ag-grid')
+  if(!grid) return
+  grid.innerHTML=agents.map(a=>{
+    const s=a.status
+    const cls=s==='run'?'ag-run':'ag-stale'
+    const badgeCls=s==='run'?'b-run':'b-stale'
+    const badge=s==='run'?'RUNNING':'STALE'
+    const lastSeen=D.last_scan?timeAgo(D.last_scan):'—'
+    return`<div class="ag-card ${cls}">
+      <div class="ag-header">
+        <div class="ag-avatar">${a.emoji}</div>
+        <div class="ag-info">
+          <div class="ag-name">${a.name} <span class="bdg ${badgeCls}" style="font-size:9px">${badge}</span></div>
+          <div class="ag-desc">${a.desc}</div>
+        </div>
       </div>
-    </div>`).join('')
-  const allOk=age<=8
-  document.getElementById('ag-status').textContent=allOk?'All Running':'Checking...'
-  document.getElementById('ag-status').style.color=allOk?'var(--green)':age<=30?'var(--yellow)':'var(--red)'
+      <div class="ag-stats">
+        <div class="ag-stat"><div class="ag-stat-lbl">LAST SEEN</div><div class="ag-stat-val ${s==='run'?'up':'yl'}">${s==='run'?lastSeen:'—'}</div></div>
+        <div class="ag-stat"><div class="ag-stat-lbl">CYCLE</div><div class="ag-stat-val">${a.cycle}</div></div>
+        <div class="ag-stat"><div class="ag-stat-lbl">SUPERVISOR</div><div class="ag-stat-val t2">GitHub Actions</div></div>
+      </div>
+    </div>`
+  }).join('')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SYSTEM HEALTH
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+// HEALTH CHECK
+// ═══════════════════════════════════════════════════════════
 function renderHealth(){
-  const age=D.last_scan?Math.round((Date.now()-new Date(D.last_scan).getTime())/60000):999
-  const scanOk=age<=8, scanWarn=age<=30
-  const scanSt=scanOk?'ok':scanWarn?'warn':'err'
+  const lastScan=D.last_scan?new Date(D.last_scan):null
+  const ageMin=lastScan?(Date.now()-lastScan)/60000:999
+  const scanOk=ageMin<15
+  const dataOk=Object.keys(LIVE).length>=5
+  const fgOk=FG.value>0
+  const tradesOk=true
 
-  const items=[
-    {dot:scanSt,lbl:'Scanner Agent',val:D.last_scan?timeAgo(D.last_scan)+' ago':'ไม่มีข้อมูล'},
-    {dot:(D.scan_results||[]).length>=10?'ok':'warn',lbl:'Scan Results',val:`${(D.scan_results||[]).length}/10 coins`},
-    {dot:'ok',lbl:'Dashboard Data',val:D.last_scan?shortDt(D.last_scan):'—'},
-    {dot:(D.signals||[]).length>=0?'ok':'warn',lbl:'Signal Engine',val:`${(D.signals||[]).length} signals detected`},
-    {dot:'ok',lbl:'Paper Trade DB',val:`${D.total_trades||0} trades recorded`},
-    {dot:Object.keys(LIVE).length>0?'ok':'warn',lbl:'Live Market Data',val:Object.keys(LIVE).length>0?'Connected (OKX)':'Connecting...'},
-  ]
-  document.getElementById('sys-items').innerHTML=items.map(i=>`
-    <div class="h-row">
-      <div class="h-lbl"><div class="h-dot h-${i.dot}"></div>${i.lbl}</div>
-      <div class="h-val">${i.val}</div>
-    </div>`).join('')
+  const warns=[!scanOk,!dataOk].filter(Boolean).length
+  const total=4
 
-  const dataItems=[
-    {lbl:'Balance',val:'$'+((D.balance||1000).toFixed(2))},
-    {lbl:'Open Trades',val:(D.open_trades||[]).length},
-    {lbl:'Closed Trades',val:D.total_trades||0},
-    {lbl:'Win Rate',val:D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—'},
-    {lbl:'Total PnL',val:(D.pnl>=0?'+':'')+'$'+Math.abs(D.pnl||0).toFixed(2)},
-    {lbl:'Scan Results',val:(D.scan_results||[]).length+' coins'},
-  ]
-  document.getElementById('data-items').innerHTML=dataItems.map(i=>`
-    <div class="h-row"><div class="h-lbl">${i.lbl}</div><div class="h-val">${i.val}</div></div>`).join('')
+  const banner=document.getElementById('health-banner')
+  const statusTxt=document.getElementById('h-status-txt')
+  const statusSub=document.getElementById('h-status-sub')
+  const warnNum=document.getElementById('h-warn-cnt')
+  const lastEl=document.getElementById('h-last')
 
-  const overall=scanOk&&Object.keys(LIVE).length>0
-  document.getElementById('sys-overall').textContent=overall?'✅ All Systems OK':scanWarn?'⚠️ Checking':'❌ Data Stale'
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// EQUITY CHART
-// ═══════════════════════════════════════════════════════════════════════════════
-function drawEquity(pts){
-  const cv=document.getElementById('equity-chart');if(!cv) return
-  const wrap=cv.parentElement
-  cv.width=wrap.clientWidth-30;cv.height=155
-  const ctx=cv.getContext('2d'),W=cv.width,H=cv.height
-  const pad={t:8,b:22,l:56,r:8}
-  const mn=Math.min(...pts)*.995,mx=Math.max(...pts)*1.005
-  const toX=i=>pad.l+(i/(pts.length-1||1))*(W-pad.l-pad.r)
-  const toY=v=>pad.t+(1-(v-mn)/(mx-mn||1))*(H-pad.t-pad.b)
-  ctx.clearRect(0,0,W,H)
-  for(let i=0;i<=3;i++){
-    const y=pad.t+i*(H-pad.t-pad.b)/3
-    ctx.strokeStyle='#1e3050';ctx.lineWidth=1
-    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke()
-    ctx.fillStyle='#4068a0';ctx.font='9px DM Mono'
-    ctx.fillText('$'+(mx-i*(mx-mn)/3).toFixed(0),2,y+3)
+  if(banner){
+    banner.className='health-banner '+(warns===0?'health-ok':'health-warn')
+    if(warnNum){warnNum.textContent=warns;warnNum.className='health-num '+(warns===0?'h-ok-n':'h-warn-n')}
+    if(statusTxt) statusTxt.textContent=warns===0?'ALL SYSTEMS OK':'DEGRADED'
+    if(statusSub) statusSub.textContent=`${total-warns} passed / ${warns} warnings / ${total} checks`
+    if(lastEl) lastEl.textContent=D.last_scan?timeAgo(D.last_scan):'—'
   }
-  const isUp=pts[pts.length-1]>=pts[0]
-  const g=ctx.createLinearGradient(0,pad.t,0,H-pad.b)
-  g.addColorStop(0,isUp?'rgba(0,217,126,.18)':'rgba(240,64,96,.18)')
-  g.addColorStop(1,'rgba(0,0,0,0)')
-  ctx.beginPath();ctx.moveTo(toX(0),H-pad.b)
-  pts.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)))
-  ctx.lineTo(toX(pts.length-1),H-pad.b);ctx.closePath()
-  ctx.fillStyle=g;ctx.fill()
-  ctx.beginPath();ctx.strokeStyle=isUp?'#00d97e':'#f04060';ctx.lineWidth=2
-  pts.forEach((v,i)=>i===0?ctx.moveTo(toX(0),toY(v)):ctx.lineTo(toX(i),toY(v)))
-  ctx.stroke()
-  const lx=toX(pts.length-1),ly=toY(pts[pts.length-1])
-  ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fillStyle=isUp?'#00d97e':'#f04060';ctx.fill()
+
+  const sections=[
+    {
+      title:'Background Services',meta:'GitHub Actions cron',
+      score:scanOk?'5/5':'4/5',ok:scanOk,
+      rows:[
+        {ok:true,name:'github-actions',val:'RUNNING — cron every 5 min'},
+        {ok:true,name:'live-trader',val:'Python script'},
+        {ok:true,name:'paper-trader',val:'Python script'},
+        {ok:true,name:'dashboard-builder',val:'Python script'},
+        {ok:scanOk,name:'last-commit',val:D.last_scan?timeAgo(D.last_scan):'Unknown'},
+      ]
+    },
+    {
+      title:'Data Freshness',meta:'OKX, signals, trades',
+      score:dataOk?'4/4':'3/4',ok:dataOk,
+      rows:[
+        {ok:dataOk,name:'live_prices',val:dataOk?'Latest: '+new Date().toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok'}):'Not connected'},
+        {ok:fgOk,name:'fear_greed',val:fgOk?`Latest: ${FG.value} ${FG.label}`:'Unavailable'},
+        {ok:(D.scan_results?.length||0)>0,name:'scan_results',val:(D.scan_results?.length||0)+' coins tracked'},
+        {ok:true,name:'market_tickers',val:MKT.length+' USDT pairs'},
+      ]
+    },
+    {
+      title:'Trading Pipeline',meta:'Signals, trades',
+      score:'3/3',ok:true,
+      rows:[
+        {ok:true,name:'signal_scanner',val:'Last scan: '+(D.last_scan?timeAgo(D.last_scan):'—')},
+        {ok:true,name:'paper_trades',val:(D.total_trades||0)+' total trades'},
+        {ok:true,name:'notifications',val:'Telegram bot'},
+      ]
+    }
+  ]
+
+  const el=document.getElementById('health-sections')
+  if(!el) return
+  el.innerHTML=sections.map(sec=>`
+    <div class="h-section">
+      <div class="h-sec-h">
+        <div class="h-sec-title">
+          <div class="h-dot ${sec.ok?'h-dot-ok':'h-dot-warn'}"></div>
+          ${sec.title}
+          <span style="font-size:10px;color:var(--t2);font-weight:400">${sec.meta}</span>
+        </div>
+        <span class="h-sec-score ${sec.ok?'h-all-ok':'h-has-warn'}">${sec.score}</span>
+      </div>
+      ${sec.rows.map(r=>`<div class="h-row">
+        <div class="h-dot ${r.ok?'h-dot-ok':'h-dot-warn'}"></div>
+        <div class="h-name">${r.name}</div>
+        <div class="h-val">${r.val}</div>
+      </div>`).join('')}
+    </div>
+  `).join('')
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════════════════════
-function buildSessTable(sess){
-  return sess.length===0
-    ?'<tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'
-    :sess.map(s=>`<tr><td>${s.name}</td><td>${s.trades}</td><td>${s.wins}</td>
-       <td class="${s.wr>=50?'up':s.wr>=40?'yl':''}">${s.wr.toFixed(1)}%</td></tr>`).join('')
-}
-function sBadge(s){
-  if(s==='SIGNAL') return'<span class="bdg b-sig">🔔 SIGNAL</span>'
-  if(s==='WATCH')  return'<span class="bdg b-wat">👁 WATCH</span>'
-  return'<span class="bdg b-idl">— IDLE</span>'
-}
-function setText(id,txt,cls){const el=document.getElementById(id);if(!el)return;el.textContent=txt;if(cls)el.className=cls}
-function fmt(v){return v?parseFloat(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:4}):'—'}
-function numFmt(v){return v?v.toLocaleString('en',{minimumFractionDigits:v>100?2:4,maximumFractionDigits:v>100?2:4}):'—'}
-function fmtPx(v){if(!v||v===0) return'—';return v>100?v.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}):v.toLocaleString('en',{minimumFractionDigits:4,maximumFractionDigits:4})}
-function pxShort(v){if(!v||v===0) return'—';if(v>10000) return(v/1000).toFixed(1)+'K';if(v>100) return v.toFixed(0);return v.toFixed(3)}
-function shortNum(v){if(!v) return'—';if(v>=1e12) return(v/1e12).toFixed(1)+'T';if(v>=1e9) return(v/1e9).toFixed(1)+'B';if(v>=1e6) return(v/1e6).toFixed(1)+'M';return v.toFixed(0)}
-function shortDt(s){
-  if(!s) return'—'
-  try{
-    const d=new Date(s)
-    const bkk=new Date(d.getTime()+7*3600000)
-    const p=v=>String(v).padStart(2,'0')
-    return`${p(bkk.getUTCMonth()+1)}/${p(bkk.getUTCDate())} ${p(bkk.getUTCHours())}:${p(bkk.getUTCMinutes())} BKK`
-  }catch{return s.substring(0,16)}
-}
-function timeAgo(s){
-  if(!s) return'—'
-  const diff=(Date.now()-new Date(s).getTime())/60000
-  if(diff<1) return'just now'
-  if(diff<60) return Math.floor(diff)+'m ago'
-  return Math.floor(diff/60)+'h ago'
+// ═══════════════════════════════════════════════════════════
+// BTC LIVE PAGE
+// ═══════════════════════════════════════════════════════════
+function renderBTCLive(){
+  renderLive()
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════════════════════
-loadAll()
-setInterval(loadAll, 300000)   // refresh ทุก 5 นาที
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load',init)
 </script>
 </body>
 </html>
