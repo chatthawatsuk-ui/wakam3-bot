@@ -48,10 +48,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -u
-          [ -f scan_results.json ]    && git add scan_results.json
-          [ -f latest_signals.json ]  && git add latest_signals.json
-          [ -f paper_trades.db ]      && git add paper_trades.db
+          echo "=== adding files ==="
+          git add -f --verbose dashboard_data.json        && echo "dashboard_data.json OK"  || echo "dashboard_data.json FAIL"
+          git add -f --verbose scan_results.json          && echo "scan_results.json OK"    || echo "scan_results.json FAIL (not found?)"
+          git add -f --verbose latest_signals.json 2>/dev/null && echo "latest_signals.json OK" || echo "latest_signals.json SKIP"
+          git add -f --verbose paper_trades.db     2>/dev/null && echo "paper_trades.db OK"     || echo "paper_trades.db SKIP"
           echo "=== git status ==="
           git status
           echo "=== staged diff ==="
