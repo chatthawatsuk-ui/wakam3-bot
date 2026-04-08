@@ -1,28 +1,91 @@
-import sys, os, sqlite3, json, warnings
+import sys, os, sqlite3, json, warnings, time
 from datetime import datetime, timezone
 warnings.filterwarnings("ignore")
+
+try:
+    import ccxt
+except ImportError:
+    ccxt = None
 
 DB_PATH   = "paper_trades.db"
 OUT_PATH  = "dashboard_data.json"
 PORT_SIZE = 1000.0
 
+SYMBOLS = [
+    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
+    "XRP/USDT", "DOGE/USDT", "AVAX/USDT", "LINK/USDT",
+    "ADA/USDT", "DOT/USDT",
+]
+
+def fetch_okx_prices():
+    """ดึงราคา + 24h stats ทุก coin จาก OKX — รันบน GitHub Actions"""
+    if not ccxt:
+        print("  [WARN] ccxt ไม่มี — ข้ามการดึงราคา OKX")
+        return {}, []
+
+    live_prices = {}
+    market_tickers = []
+
+    try:
+        exchange = ccxt.okx({"enableRateLimit": True})
+        tickers = exchange.fetch_tickers()          # ดึงทีเดียวหมดเลย
+
+        # ── watchlist 10 coins ────────────────────────────────────────────
+        for sym in SYMBOLS:
+            t = tickers.get(sym)
+            if not t:
+                continue
+            live_prices[sym] = {
+                "price":  round(float(t.get("last") or 0), 8),
+                "change": round(float(t.get("percentage") or 0), 2),
+                "high":   round(float(t.get("high") or 0), 8),
+                "low":    round(float(t.get("low") or 0), 8),
+                "vol":    round(float(t.get("quoteVolume") or 0), 2),
+            }
+
+        # ── market tickers (USDT pairs, vol > $500K) ──────────────────────
+        for sym, t in tickers.items():
+            if not sym.endswith("/USDT"):
+                continue
+            vol = float(t.get("quoteVolume") or 0)
+            price = float(t.get("last") or 0)
+            if vol < 500_000 or price <= 0:
+                continue
+            market_tickers.append({
+                "sym":    sym.replace("/USDT", ""),
+                "price":  round(price, 8),
+                "change": round(float(t.get("percentage") or 0), 2),
+                "vol":    round(vol, 2),
+            })
+
+        print(f"  OKX: {len(live_prices)} watchlist, {len(market_tickers)} market pairs")
+
+    except Exception as e:
+        print(f"  [WARN] OKX fetch_tickers: {e}")
+
+    return live_prices, market_tickers
+
+
 def main():
     last_scan = datetime.now(timezone.utc).isoformat()
 
-    # ── โหลด scan_results ก่อนเลย (ไม่ต้องรอ DB) ──────────────────────────────
+    # ── ดึงราคา OKX (runs on GitHub Actions — no DNS block) ───────────────
+    live_prices, market_tickers = fetch_okx_prices()
+
+    # ── โหลด scan_results ─────────────────────────────────────────────────
     scan_results = []
     if os.path.exists("scan_results.json"):
         try:
             with open("scan_results.json") as f:
                 raw = json.load(f)
             scan_results = sorted(raw, key=lambda x: x.get("best_score", 0), reverse=True)
-            print(f"  โหลด scan_results.json — {len(scan_results)} coins")
+            print(f"  scan_results.json — {len(scan_results)} coins")
         except Exception as e:
             print(f"  [WARN] scan_results.json: {e}")
     else:
-        print("  ไม่พบ scan_results.json — รอ live_trader.py รันก่อน")
+        print("  ไม่พบ scan_results.json")
 
-    # ── โหลด signals ─────────────────────────────────────────────────────────
+    # ── โหลด signals ──────────────────────────────────────────────────────
     signals = []
     if os.path.exists("latest_signals.json"):
         try:
@@ -30,30 +93,29 @@ def main():
                 signals = json.load(f)
         except: pass
 
-    # ── ถ้าไม่มี DB ให้ save แค่ scan_results ก่อนแล้วออก ────────────────────
+    # ── ถ้าไม่มี DB ──────────────────────────────────────────────────────
     if not os.path.exists(DB_PATH):
-        print(f"  ไม่พบ {DB_PATH} — บันทึก scan_results เท่านั้น")
         data = {
             "balance": PORT_SIZE, "pnl": 0, "win_rate": 0, "total_trades": 0,
             "open_trades": [], "closed_trades": [], "sessions": [],
             "equity": [PORT_SIZE], "signals": signals,
             "scan_results": scan_results,
+            "live_prices": live_prices,
+            "market_tickers": market_tickers,
             "last_scan": last_scan,
             "generated": last_scan,
         }
         with open(OUT_PATH, "w") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        print(f"✅ dashboard_data.json — no DB, {len(scan_results)} scan results")
+        print(f"✅ dashboard_data.json — no DB, {len(scan_results)} scan, {len(live_prices)} prices")
         return
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
-    # ── Portfolio balance ─────────────────────────────────────────────────────
     bal = conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()
     balance = float(bal["balance"]) if bal else PORT_SIZE
 
-    # ── Closed trades (แปลง field names ให้ตรงกับ dashboard) ─────────────────
     closed_rows = conn.execute("""
         SELECT id, symbol, side, entry_px, exit_px, outcome, pnl_usd,
                sl_px, tp1_px, tp1_hit, opened_at, closed_at
@@ -69,18 +131,18 @@ def main():
             raw_pct = (xp - ep) / ep * 100
             pnl_pct = raw_pct if r["side"] == "LONG" else -raw_pct
         closed.append({
-            "id":           r["id"],
-            "symbol":       r["symbol"],
-            "side":         r["side"],
-            "entry_price":  r["entry_px"],
-            "exit_price":   r["exit_px"],
-            "sl_price":     r["sl_px"],
-            "tp_price":     r["tp1_px"],
-            "outcome":      r["outcome"],
-            "pnl":          r["pnl_usd"],
-            "pnl_pct":      round(pnl_pct, 2),
-            "open_time":    r["opened_at"],
-            "close_time":   r["closed_at"],
+            "id":          r["id"],
+            "symbol":      r["symbol"],
+            "side":        r["side"],
+            "entry_price": r["entry_px"],
+            "exit_price":  r["exit_px"],
+            "sl_price":    r["sl_px"],
+            "tp_price":    r["tp1_px"],
+            "outcome":     r["outcome"],
+            "pnl":         r["pnl_usd"],
+            "pnl_pct":     round(pnl_pct, 2),
+            "open_time":   r["opened_at"],
+            "close_time":  r["closed_at"],
         })
 
     total     = len(closed)
@@ -88,14 +150,12 @@ def main():
     wr        = wins / total * 100 if total > 0 else 0
     total_pnl = sum(t["pnl"] or 0 for t in closed)
 
-    # ── Equity curve ──────────────────────────────────────────────────────────
     equity  = [PORT_SIZE]
     running = PORT_SIZE
     for t in closed:
         running += (t["pnl"] or 0)
         equity.append(round(running, 2))
 
-    # ── Open trades (แปลง field names) ────────────────────────────────────────
     open_rows = conn.execute("""
         SELECT id, symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
                tp1_hit, rsi, opened_at
@@ -105,28 +165,27 @@ def main():
     opens = []
     for r in open_rows:
         opens.append({
-            "id":           r["id"],
-            "symbol":       r["symbol"],
-            "side":         r["side"],
-            "score":        r["score"],
-            "entry_price":  r["entry_px"],
-            "sl_price":     r["sl_px"],
-            "tp_price":     r["tp1_px"],
-            "rsi":          r["rsi"],
-            "pnl_pct":      0,
-            "pnl":          0,
-            "open_time":    r["opened_at"],
+            "id":          r["id"],
+            "symbol":      r["symbol"],
+            "side":        r["side"],
+            "score":       r["score"],
+            "entry_price": r["entry_px"],
+            "sl_price":    r["sl_px"],
+            "tp_price":    r["tp1_px"],
+            "rsi":         r["rsi"],
+            "pnl_pct":     0,
+            "pnl":         0,
+            "open_time":   r["opened_at"],
         })
 
-    # ── Sessions (แก้ key names) ───────────────────────────────────────────────
     sess_data = {}
     for t in closed:
         try:
             h = datetime.fromisoformat(t["open_time"]).hour
-            if 1 <= h < 8:    s = "ASIA"
-            elif 8 <= h < 13: s = "EUROPE"
+            if 1 <= h < 8:     s = "ASIA"
+            elif 8 <= h < 13:  s = "EUROPE"
             elif 13 <= h < 21: s = "US"
-            else:              s = "LATE"
+            else:               s = "LATE"
         except:
             s = "—"
         if s not in sess_data:
@@ -142,27 +201,28 @@ def main():
             d["win_rate"] = round(d["wins"] / d["total"] * 100, 1) if d["total"] > 0 else 0
             sessions.append(d)
 
-    # ── บันทึก ────────────────────────────────────────────────────────────────
     data = {
-        "balance":      round(balance, 2),
-        "pnl":          round(total_pnl, 2),
-        "win_rate":     round(wr, 1),
-        "total_trades": total,
-        "open_trades":  opens,
+        "balance":       round(balance, 2),
+        "pnl":           round(total_pnl, 2),
+        "win_rate":      round(wr, 1),
+        "total_trades":  total,
+        "open_trades":   opens,
         "closed_trades": closed,
-        "sessions":     sessions,
-        "equity":       equity,
-        "signals":      signals,
-        "scan_results": scan_results,
-        "last_scan":    last_scan,
-        "generated":    last_scan,
+        "sessions":      sessions,
+        "equity":        equity,
+        "signals":       signals,
+        "scan_results":  scan_results,
+        "live_prices":   live_prices,
+        "market_tickers": market_tickers,
+        "last_scan":     last_scan,
+        "generated":     last_scan,
     }
 
     with open(OUT_PATH, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=2, default=str)
 
     conn.close()
-    print(f"✅ dashboard_data.json — {total} trades, balance ${balance:.2f}, {len(scan_results)} scan results")
+    print(f"✅ dashboard_data.json — {total} trades, ${balance:.2f}, {len(scan_results)} scan, {len(live_prices)} prices")
 
 if __name__ == "__main__":
     main()

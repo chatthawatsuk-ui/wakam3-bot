@@ -1070,47 +1070,29 @@ async function loadDashData(){
     const r=await fetch('dashboard_data.json?_='+Date.now())
     if(!r.ok) return
     D=await r.json()
+    loadLive()
+    loadMarkets()
     render()
     updateTopBar()
   }catch(e){}
 }
 
 async function loadLive(){
-  try{
-    const r=await fetch('https://api.binance.com/api/v3/ticker/24hr')
-    if(!r.ok) throw ''
-    const j=await r.json()
-    const symSet=new Set(SYMS.map(s=>s.replace('/USDT','')+'USDT'))
-    for(const t of j){
-      if(!symSet.has(t.symbol)) continue
-      const base=t.symbol.replace('USDT','')
-      const key=base+'/USDT'
-      const last=parseFloat(t.lastPrice)
-      const chg=parseFloat(t.priceChangePercent)
-      LIVE[key]={price:last,change:chg,
-        high:parseFloat(t.highPrice),low:parseFloat(t.lowPrice),
-        vol:parseFloat(t.quoteVolume),volBase:parseFloat(t.volume)}
+  // ใช้ live_prices จาก dashboard_data.json (ดึงโดย GitHub Actions จาก OKX)
+  if(D.live_prices&&Object.keys(D.live_prices).length>0){
+    for(const[sym,v] of Object.entries(D.live_prices)){
+      LIVE[sym]={price:v.price,change:v.change,high:v.high,low:v.low,vol:v.vol,volBase:0}
     }
     renderLive()
-  }catch(e){console.warn('Binance live error:',e)}
+  }
 }
 
 async function loadMarkets(){
-  try{
-    const r=await fetch('https://api.binance.com/api/v3/ticker/24hr')
-    if(!r.ok) throw ''
-    const j=await r.json()
-    MKT=j
-      .filter(t=>t.symbol.endsWith('USDT')&&!t.symbol.includes('DOWN')&&!t.symbol.includes('UP')&&!t.symbol.includes('BEAR')&&!t.symbol.includes('BULL'))
-      .map(t=>{
-        const last=parseFloat(t.lastPrice)
-        const chg=parseFloat(t.priceChangePercent)
-        const vol=parseFloat(t.quoteVolume)
-        return{sym:t.symbol.replace('USDT',''),price:last,change:chg,vol,open24h:parseFloat(t.openPrice)}
-      })
-      .filter(t=>t.vol>500000&&t.price>0)
+  // ใช้ market_tickers จาก dashboard_data.json (ดึงโดย GitHub Actions จาก OKX)
+  if(D.market_tickers&&D.market_tickers.length>0){
+    MKT=D.market_tickers
     renderMarkets()
-  }catch(e){}
+  }
 }
 
 async function loadFG(){
