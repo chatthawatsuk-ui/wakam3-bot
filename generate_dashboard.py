@@ -87,16 +87,7 @@ def main():
             scan_results = sorted(raw, key=lambda x: x.get("best_score", 0), reverse=True)
         except: pass
 
-    last_scan = None
-    if os.path.exists("signals.log"):
-        try:
-            with open("signals.log") as f:
-                lines = f.readlines()
-            for line in reversed(lines):
-                if "SCAN เสร็จ" in line:
-                    last_scan = line[1:20]
-                    break
-        except: pass
+    last_scan = datetime.now(timezone.utc).isoformat()
 
     data = {
         "balance":      round(balance, 2),
