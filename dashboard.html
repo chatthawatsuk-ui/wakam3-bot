@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>AI Trade Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Barlow+Condensed:wght@200;300;400&family=Sarabun:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090c12;--s1:#0d1119;--s2:#111620;--s3:#161d2a;
+  --b:#1e2840;--text:#b8c8e0;--t2:#5a7090;--t3:#2a3850;
+  --green:#00d97e;--green2:#00ff9d;--red:#f04060;--red2:#ff6080;
+  --yellow:#f0c040;--accent:#3a7fff;--accent2:#60a0ff;
+  --mono:'DM Mono',monospace;--head:'Barlow Condensed',sans-serif;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:12px;line-height:1.6}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 24px;background:var(--s1);border-bottom:1px solid var(--b);
+  position:sticky;top:0;z-index:100;
+}
+.logo{font-family:var(--head);font-weight:200;font-size:18px;letter-spacing:.2em;color:var(--green);text-transform:uppercase}
+.logo span{color:var(--t2);font-size:11px;display:block;letter-spacing:.15em;margin-top:-2px}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.live-label{font-size:10px;color:var(--green);letter-spacing:.15em}
+.time-label{font-size:10px;color:var(--t2);letter-spacing:.08em}
+
+/* ── LAYOUT ── */
+.page{max-width:1200px;margin:0 auto;padding:20px 16px 48px}
+
+/* ── STAT CARDS ── */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px}
+.stat{
+  background:var(--s1);border:1px solid var(--b);padding:16px;
+  position:relative;overflow:hidden;
+}
+.stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent)}
+.stat.green::before{background:var(--green)}
+.stat.red::before{background:var(--red)}
+.stat.yellow::before{background:var(--yellow)}
+.stat-label{font-size:9px;color:var(--t2);letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px}
+.stat-value{font-size:22px;font-weight:500;letter-spacing:.02em;line-height:1}
+.stat-sub{font-size:10px;color:var(--t2);margin-top:4px}
+.up{color:var(--green)}
+.dn{color:var(--red)}
+
+/* ── SECTION ── */
+.section{margin-bottom:20px}
+.section-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--s2);border:1px solid var(--b);
+  border-bottom:none;
+}
+.section-title{font-family:var(--head);font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--t2)}
+.section-badge{font-size:10px;color:var(--accent);border:1px solid var(--accent);padding:1px 8px;border-radius:2px}
+
+/* ── TABLE ── */
+.tbl-wrap{background:var(--s1);border:1px solid var(--b);overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{background:var(--s2);color:var(--t2);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:8px 12px;text-align:left;font-weight:400;white-space:nowrap}
+td{padding:8px 12px;border-top:1px solid var(--b);white-space:nowrap;font-size:11px}
+tr:hover td{background:rgba(58,127,255,.04)}
+.badge{display:inline-block;padding:2px 8px;font-size:9px;letter-spacing:.08em;border-radius:2px}
+.badge.long{background:rgba(0,217,126,.12);color:var(--green);border:1px solid rgba(0,217,126,.3)}
+.badge.short{background:rgba(240,64,96,.12);color:var(--red);border:1px solid rgba(240,64,96,.3)}
+.badge.open{background:rgba(58,127,255,.12);color:var(--accent);border:1px solid rgba(58,127,255,.3)}
+.badge.win{background:rgba(0,217,126,.12);color:var(--green)}
+.badge.loss{background:rgba(240,64,96,.12);color:var(--red)}
+
+/* ── SCORE BAR ── */
+.score-bar{display:flex;align-items:center;gap:6px}
+.score-fill{height:4px;border-radius:2px;background:var(--accent);transition:.3s}
+.score-max{height:4px;border-radius:2px;background:var(--b);flex:1}
+
+/* ── EQUITY CHART ── */
+.chart-wrap{background:var(--s1);border:1px solid var(--b);padding:16px}
+canvas{width:100%!important}
+
+/* ── SIGNAL FEED ── */
+.feed{background:var(--s1);border:1px solid var(--b);max-height:320px;overflow-y:auto}
+.feed-item{
+  display:grid;grid-template-columns:100px 1fr;
+  padding:10px 14px;border-bottom:1px solid var(--b);
+  align-items:start;gap:12px;
+}
+.feed-time{font-size:10px;color:var(--t2)}
+.feed-body{font-size:11px}
+.feed-body strong{color:var(--text)}
+.feed-tag{display:inline-block;font-size:9px;padding:1px 6px;border-radius:2px;margin-right:4px}
+.tag-signal{background:rgba(0,217,126,.15);color:var(--green)}
+.tag-close{background:rgba(240,64,96,.15);color:var(--red)}
+.tag-scan{background:rgba(58,127,255,.1);color:var(--t2)}
+
+/* ── 2-COL ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){
+  .grid2{grid-template-columns:1fr}
+  .stats{grid-template-columns:1fr 1fr}
+  .topbar{padding:10px 14px}
+  .page{padding:12px 10px 48px}
+}
+
+/* ── EMPTY STATE ── */
+.empty{padding:32px;text-align:center;color:var(--t2);font-size:11px}
+.empty .icon{font-size:28px;margin-bottom:8px;opacity:.4}
+
+/* ── REFRESH BTN ── */
+.btn{
+  background:transparent;border:1px solid var(--b);color:var(--t2);
+  padding:5px 14px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  cursor:pointer;transition:.15s;text-transform:uppercase;
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── NO DATA BANNER ── */
+.banner{
+  background:rgba(58,127,255,.08);border:1px solid rgba(58,127,255,.2);
+  padding:14px 16px;margin-bottom:16px;font-size:11px;color:var(--accent2);
+}
+.banner code{background:var(--s2);padding:1px 6px;border-radius:2px;font-size:10px}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="logo">AI Trade <span>PAPER TRADING SYSTEM</span></div>
+  </div>
+  <div class="topbar-right">
+    <span class="dot" id="dot"></span>
+    <span class="live-label">LIVE</span>
+    <span class="time-label" id="clock">--:-- UTC</span>
+    <button class="btn" onclick="loadData()">⟳ Refresh</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- BANNER (แสดงเมื่อไม่มีข้อมูล) -->
+  <div class="banner" id="banner" style="display:none">
+    📂 ไม่พบข้อมูล — รัน <code>bash run.sh</code> ก่อน แล้วกด Refresh
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stats" id="stats">
+    <div class="stat green">
+      <div class="stat-label">Balance</div>
+      <div class="stat-value" id="s-balance">$1,000.00</div>
+      <div class="stat-sub" id="s-pct">+0.0%</div>
+    </div>
+    <div class="stat" id="s-wr-card">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value" id="s-wr">0.0%</div>
+      <div class="stat-sub" id="s-trades">0 trades</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total PnL</div>
+      <div class="stat-value" id="s-pnl">$0.00</div>
+      <div class="stat-sub">Closed trades</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Open Trades</div>
+      <div class="stat-value" id="s-open">0</div>
+      <div class="stat-sub">Active positions</div>
+    </div>
+    <div class="stat yellow">
+      <div class="stat-label">Last Scan</div>
+      <div class="stat-value" style="font-size:14px" id="s-scan">—</div>
+      <div class="stat-sub">Auto every 1h</div>
+    </div>
+  </div>
+
+  <!-- OPEN TRADES -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Open Positions</div>
+      <div class="section-badge" id="open-count">0 open</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Symbol</th><th>Side</th><th>Entry</th>
+            <th>SL</th><th>TP1</th><th>TP2</th><th>Score</th><th>TP1?</th><th>Opened</th>
+          </tr>
+        </thead>
+        <tbody id="open-tbody">
+          <tr><td colspan="10"><div class="empty"><div class="icon">○</div>ไม่มี open trade</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GRID: EQUITY + SESSION -->
+  <div class="grid2">
+
+    <!-- EQUITY CURVE -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Equity Curve</div>
+      </div>
+      <div class="chart-wrap" style="height:200px;display:flex;align-items:center;justify-content:center">
+        <canvas id="equity-chart" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- SESSION WIN RATE -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Win Rate by Session</div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Session</th><th>Trades</th><th>Win</th><th>Win Rate</th></tr></thead>
+          <tbody id="sess-tbody">
+            <tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOSED TRADES -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Closed Trades</div>
+      <div class="section-badge" id="closed-count">0 closed</div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th>
+            <th>Outcome</th><th>PnL</th><th>TP1?</th><th>Closed</th>
+          </tr>
+        </thead>
+        <tbody id="closed-tbody">
+          <tr><td colspan="9"><div class="empty"><div class="icon">○</div>ยังไม่มี closed trade</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SIGNAL LOG -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-title">Signal Log</div>
+      <div class="section-badge" id="sig-count">0 signals</div>
+    </div>
+    <div class="feed" id="feed">
+      <div class="empty">รัน live_trader.py เพื่อเริ่ม scan</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+// Dashboard อ่านข้อมูลจาก dashboard_data.json ที่ generate โดย generate_dashboard.py
+// ถ้าไม่มีไฟล์ → แสดง demo data
+
+const DEMO = {
+  balance: 1000,
+  pnl: 0,
+  win_rate: 0,
+  total_trades: 0,
+  open_trades: [],
+  closed_trades: [],
+  sessions: [],
+  equity: [1000],
+  last_scan: null,
+  signals: []
+}
+
+let DATA = DEMO
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────────
+function updateClock(){
+  const now = new Date()
+  const h   = String(now.getUTCHours()).padStart(2,'0')
+  const m   = String(now.getUTCMinutes()).padStart(2,'0')
+  const s   = String(now.getUTCSeconds()).padStart(2,'0')
+  document.getElementById('clock').textContent = `${h}:${m}:${s} UTC`
+}
+setInterval(updateClock,1000)
+updateClock()
+
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
+async function loadData(){
+  try {
+    const r = await fetch('dashboard_data.json?t=' + Date.now())
+    if(!r.ok) throw new Error('no file')
+    DATA = await r.json()
+    document.getElementById('banner').style.display = 'none'
+  } catch(e) {
+    document.getElementById('banner').style.display = 'block'
+    DATA = DEMO
+  }
+  render()
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  const d = DATA
+
+  // Stats
+  const bal    = d.balance || 1000
+  const pct    = ((bal/1000)-1)*100
+  const pnl    = d.pnl || 0
+  const wr     = d.win_rate || 0
+  const opens  = d.open_trades || []
+  const closed = d.closed_trades || []
+
+  document.getElementById('s-balance').textContent = '$' + bal.toFixed(2)
+  const pctEl = document.getElementById('s-pct')
+  pctEl.textContent = (pct>=0?'+':'') + pct.toFixed(1) + '%'
+  pctEl.className = 'stat-sub ' + (pct>=0?'up':'dn')
+
+  document.getElementById('s-wr').textContent = wr.toFixed(1) + '%'
+  document.getElementById('s-trades').textContent = (d.total_trades||0) + ' trades'
+
+  const pnlEl = document.getElementById('s-pnl')
+  pnlEl.textContent = (pnl>=0?'+':'') + '$' + Math.abs(pnl).toFixed(2)
+  pnlEl.className = 'stat-value ' + (pnl>=0?'up':'dn')
+
+  document.getElementById('s-open').textContent = opens.length
+  document.getElementById('s-scan').textContent = d.last_scan ? timeAgo(d.last_scan) : '—'
+
+  // Open trades
+  document.getElementById('open-count').textContent = opens.length + ' open'
+  const otb = document.getElementById('open-tbody')
+  if(opens.length===0){
+    otb.innerHTML = '<tr><td colspan="10"><div class="empty"><div class="icon">○</div>ไม่มี open trade</div></td></tr>'
+  } else {
+    otb.innerHTML = opens.map(t=>`
+      <tr>
+        <td class="t2">#${t.id}</td>
+        <td><strong>${t.symbol}</strong></td>
+        <td><span class="badge ${t.side==='LONG'?'long':'short'}">${t.side}</span></td>
+        <td>${fmt(t.entry_px)}</td>
+        <td class="dn">${fmt(t.sl_px)}</td>
+        <td class="up">${fmt(t.tp1_px)}</td>
+        <td class="up">${fmt(t.tp2_px)}</td>
+        <td>
+          <div class="score-bar">
+            <span>${t.score}</span>
+            <div class="score-max"><div class="score-fill" style="width:${(t.score/26*100).toFixed(0)}%"></div></div>
+          </div>
+        </td>
+        <td>${t.tp1_hit?'✅':'-'}</td>
+        <td class="t2">${shortDt(t.opened_at)}</td>
+      </tr>
+    `).join('')
+  }
+
+  // Closed trades
+  document.getElementById('closed-count').textContent = closed.length + ' closed'
+  const ctb = document.getElementById('closed-tbody')
+  if(closed.length===0){
+    ctb.innerHTML = '<tr><td colspan="9"><div class="empty"><div class="icon">○</div>ยังไม่มี closed trade</div></td></tr>'
+  } else {
+    const recent = [...closed].reverse().slice(0,50)
+    ctb.innerHTML = recent.map(t=>`
+      <tr>
+        <td class="t2">#${t.id}</td>
+        <td><strong>${t.symbol}</strong></td>
+        <td><span class="badge ${t.side==='LONG'?'long':'short'}">${t.side}</span></td>
+        <td>${fmt(t.entry_px)}</td>
+        <td>${fmt(t.exit_px)}</td>
+        <td><span class="badge ${t.outcome==='WIN'?'win':'loss'}">${t.outcome}</span></td>
+        <td class="${t.pnl_usd>=0?'up':'dn'}">${t.pnl_usd>=0?'+':''}$${Math.abs(t.pnl_usd).toFixed(2)}</td>
+        <td>${t.tp1_hit?'✅':'-'}</td>
+        <td class="t2">${shortDt(t.closed_at)}</td>
+      </tr>
+    `).join('')
+  }
+
+  // Session
+  const stb = document.getElementById('sess-tbody')
+  const sess = d.sessions || []
+  if(sess.length===0){
+    stb.innerHTML = '<tr><td colspan="4"><div class="empty">ยังไม่มีข้อมูล</div></td></tr>'
+  } else {
+    stb.innerHTML = sess.map(s=>`
+      <tr>
+        <td>${s.name}</td>
+        <td>${s.trades}</td>
+        <td>${s.wins}</td>
+        <td class="${s.wr>=50?'up':s.wr>=40?'yellow':''}">${s.wr.toFixed(1)}%</td>
+      </tr>
+    `).join('')
+  }
+
+  // Equity chart
+  drawEquity(d.equity || [1000])
+
+  // Signal feed
+  const signals = d.signals || []
+  const feed = document.getElementById('feed')
+  document.getElementById('sig-count').textContent = signals.length + ' signals'
+  if(signals.length===0){
+    feed.innerHTML = '<div class="empty">รัน live_trader.py เพื่อเริ่ม scan</div>'
+  } else {
+    feed.innerHTML = [...signals].reverse().slice(0,30).map(s=>`
+      <div class="feed-item">
+        <div class="feed-time">${shortDt(s.ts)}</div>
+        <div class="feed-body">
+          <span class="feed-tag tag-signal">SIGNAL</span>
+          <strong>${s.symbol}</strong> ${s.side} — Score ${s.score}/26
+          px=${s.price} sl=${s.sl} tp1=${s.tp1}
+        </div>
+      </div>
+    `).join('')
+  }
+}
+
+// ── EQUITY CHART ──────────────────────────────────────────────────────────────
+function drawEquity(points){
+  const canvas = document.getElementById('equity-chart')
+  const wrap   = canvas.parentElement
+  canvas.width  = wrap.clientWidth - 32
+  canvas.height = 180
+  const ctx = canvas.getContext('2d')
+  const W = canvas.width, H = canvas.height
+  const pad = {t:10,b:24,l:60,r:10}
+
+  const min = Math.min(...points) * 0.995
+  const max = Math.max(...points) * 1.005
+  const toX = i => pad.l + (i/(points.length-1||1)) * (W-pad.l-pad.r)
+  const toY = v => pad.t + (1-(v-min)/(max-min||1)) * (H-pad.t-pad.b)
+
+  ctx.clearRect(0,0,W,H)
+
+  // Grid
+  ctx.strokeStyle = '#1e2840'
+  ctx.lineWidth = 1
+  for(let i=0;i<=4;i++){
+    const y = pad.t + i*(H-pad.t-pad.b)/4
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke()
+    const val = max - i*(max-min)/4
+    ctx.fillStyle = '#3a4860'
+    ctx.font = '9px DM Mono'
+    ctx.fillText('$'+val.toFixed(0), 2, y+3)
+  }
+
+  // Area fill
+  const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b)
+  const isUp = points[points.length-1] >= points[0]
+  grad.addColorStop(0, isUp?'rgba(0,217,126,.25)':'rgba(240,64,96,.25)')
+  grad.addColorStop(1, 'rgba(0,0,0,0)')
+
+  ctx.beginPath()
+  ctx.moveTo(toX(0),H-pad.b)
+  points.forEach((v,i)=>ctx.lineTo(toX(i),toY(v)))
+  ctx.lineTo(toX(points.length-1),H-pad.b)
+  ctx.closePath()
+  ctx.fillStyle = grad
+  ctx.fill()
+
+  // Line
+  ctx.beginPath()
+  ctx.strokeStyle = isUp?'#00d97e':'#f04060'
+  ctx.lineWidth = 2
+  points.forEach((v,i)=>i===0?ctx.moveTo(toX(0),toY(v)):ctx.lineTo(toX(i),toY(v)))
+  ctx.stroke()
+
+  // Last dot
+  const lx = toX(points.length-1), ly = toY(points[points.length-1])
+  ctx.beginPath()
+  ctx.arc(lx,ly,4,0,Math.PI*2)
+  ctx.fillStyle = isUp?'#00d97e':'#f04060'
+  ctx.fill()
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function fmt(v){ return v ? parseFloat(v).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:4}) : '—' }
+function shortDt(s){
+  if(!s) return '—'
+  try{
+    const d = new Date(s)
+    return d.toLocaleString('en',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false,timeZone:'UTC'})
+  }catch{return s.substring(0,16)}
+}
+function timeAgo(s){
+  if(!s) return '—'
+  const diff = (Date.now() - new Date(s).getTime()) / 60000
+  if(diff<1) return 'just now'
+  if(diff<60) return Math.floor(diff) + 'm ago'
+  return Math.floor(diff/60) + 'h ago'
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadData()
+setInterval(loadData, 60000)  // auto refresh ทุก 1 นาที
+</script>
+</body>
+</html>

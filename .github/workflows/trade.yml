@@ -1,0 +1,55 @@
+name: AI Trade — Scan Every Hour
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # ทุก 1 ชั่วโมง (xx:00 UTC)
+  workflow_dispatch:       # รันมือได้ทุกเมื่อ
+
+permissions:
+  contents: write          # ต้องการสิทธิ์ commit กลับ repo
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python Setup ───────────────────────────────────────────────────────
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # ── 3. Run System ─────────────────────────────────────────────────────────
+      - name: Scan Signals (live_trader.py)
+        run: python live_trader.py
+
+      - name: Update Paper Trades (paper_trade.py)
+        run: python paper_trade.py
+
+      - name: Generate Dashboard Data (generate_dashboard.py)
+        run: python generate_dashboard.py
+
+      - name: Send Telegram Notification (notify.py)
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python notify.py
+
+      # ── 4. Commit & Push ─────────────────────────────────────────────────────
+      - name: Commit updated data back to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add paper_trades.db dashboard_data.json latest_signals.json 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "scan: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
