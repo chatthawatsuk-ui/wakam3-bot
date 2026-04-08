@@ -1077,39 +1077,36 @@ async function loadDashData(){
 
 async function loadLive(){
   try{
-    const r=await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT')
+    const r=await fetch('https://api.binance.com/api/v3/ticker/24hr')
     if(!r.ok) throw ''
     const j=await r.json()
-    if(j.code!=='0') throw ''
-    for(const t of j.data){
-      const key=t.instId.replace('-','/')
-      if(SYMS.includes(key)){
-        const last=parseFloat(t.last)
-        const open24h=parseFloat(t.open24h)
-        const chg=open24h>0?(last-open24h)/open24h*100:0
-        LIVE[key]={price:last,change:chg,
-          high:parseFloat(t.high24h),low:parseFloat(t.low24h),
-          vol:parseFloat(t.volCcy24h),volBase:parseFloat(t.vol24h)}
-      }
+    const symSet=new Set(SYMS.map(s=>s.replace('/USDT','')+'USDT'))
+    for(const t of j){
+      if(!symSet.has(t.symbol)) continue
+      const base=t.symbol.replace('USDT','')
+      const key=base+'/USDT'
+      const last=parseFloat(t.lastPrice)
+      const chg=parseFloat(t.priceChangePercent)
+      LIVE[key]={price:last,change:chg,
+        high:parseFloat(t.highPrice),low:parseFloat(t.lowPrice),
+        vol:parseFloat(t.quoteVolume),volBase:parseFloat(t.volume)}
     }
     renderLive()
-  }catch(e){console.warn('OKX live error:',e)}
+  }catch(e){console.warn('Binance live error:',e)}
 }
 
 async function loadMarkets(){
   try{
-    const r=await fetch('https://www.okx.com/api/v5/market/tickers?instType=SPOT')
+    const r=await fetch('https://api.binance.com/api/v3/ticker/24hr')
     if(!r.ok) throw ''
     const j=await r.json()
-    if(j.code!=='0') throw ''
-    MKT=j.data
-      .filter(t=>t.instId.endsWith('-USDT'))
+    MKT=j
+      .filter(t=>t.symbol.endsWith('USDT')&&!t.symbol.includes('DOWN')&&!t.symbol.includes('UP')&&!t.symbol.includes('BEAR')&&!t.symbol.includes('BULL'))
       .map(t=>{
-        const last=parseFloat(t.last)
-        const open24h=parseFloat(t.open24h)
-        const chg=open24h>0?(last-open24h)/open24h*100:0
-        const vol=parseFloat(t.volCcy24h)
-        return{sym:t.instId.replace('-USDT',''),price:last,change:chg,vol,open24h}
+        const last=parseFloat(t.lastPrice)
+        const chg=parseFloat(t.priceChangePercent)
+        const vol=parseFloat(t.quoteVolume)
+        return{sym:t.symbol.replace('USDT',''),price:last,change:chg,vol,open24h:parseFloat(t.openPrice)}
       })
       .filter(t=>t.vol>500000&&t.price>0)
     renderMarkets()
