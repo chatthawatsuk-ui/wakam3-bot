@@ -1922,11 +1922,11 @@ function renderLab(){
 // AGENT TEAM
 // ═══════════════════════════════════════════════════════════
 const AGENTS=[
-  {id:'data',emoji:'📡',name:'Data Collector',desc:'ดึง OHLCV + ราคา จาก OKX ทุก 5 นาที',cycle:'~5m',status:'stale'},
-  {id:'signal',emoji:'🔍',name:'Signal Scanner',desc:'วิเคราะห์ EMA/RSI/BOS/CHoCH/QM ทุก coin',cycle:'~5m',status:'stale'},
-  {id:'trader',emoji:'🤖',name:'Paper Trader',desc:'เปิด/ปิด paper trade ตาม signal',cycle:'~5m',status:'stale'},
-  {id:'dash',emoji:'📊',name:'Dashboard Builder',desc:'สร้าง dashboard_data.json ทุก run',cycle:'~5m',status:'stale'},
-  {id:'notify',emoji:'📱',name:'Telegram Notifier',desc:'ส่ง alert ผ่าน Telegram Bot',cycle:'~5m',status:'stale'},
+  {id:'data',emoji:'📡',name:'Data Collector',desc:'ดึง OHLCV + ราคา จาก OKX ทุก 15 นาที',cycle:'~15m',status:'stale'},
+  {id:'signal',emoji:'🔍',name:'Signal Scanner',desc:'วิเคราะห์ EMA/RSI/BOS/CHoCH/QM ทุก coin',cycle:'~15m',status:'stale'},
+  {id:'trader',emoji:'🤖',name:'Paper Trader',desc:'เปิด/ปิด paper trade ตาม signal',cycle:'~15m',status:'stale'},
+  {id:'dash',emoji:'📊',name:'Dashboard Builder',desc:'สร้าง dashboard_data.json ทุก run',cycle:'~15m',status:'stale'},
+  {id:'notify',emoji:'📱',name:'Telegram Notifier',desc:'ส่ง alert ผ่าน Telegram Bot',cycle:'~15m',status:'stale'},
 ]
 
 function renderAgents(){
@@ -2006,7 +2006,7 @@ function renderHealth(){
       title:'Background Services',meta:'GitHub Actions cron',
       score:scanOk?'5/5':'4/5',ok:scanOk,
       rows:[
-        {ok:true,name:'github-actions',val:'RUNNING — cron every 5 min'},
+        {ok:true,name:'github-actions',val:'RUNNING — cron every 15 min'},
         {ok:true,name:'live-trader',val:'Python script'},
         {ok:true,name:'paper-trader',val:'Python script'},
         {ok:true,name:'dashboard-builder',val:'Python script'},
