@@ -1742,18 +1742,31 @@ function renderPositions(){
   if(!tb) return
 
   if(posTab==='open'){
-    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>TP</th><th>SL</th><th>P&L %</th><th>P&L $</th><th>Opened</th></tr>'
-    if(open.length===0){tb.innerHTML='<tr><td colspan="8"><div class="empty">No open positions</div></td></tr>'}
+    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Now</th><th>TP1</th><th>SL</th><th>TP1?</th><th>P&L %</th><th>P&L $</th><th>Opened</th></tr>'
+    if(open.length===0){tb.innerHTML='<tr><td colspan="10"><div class="empty">No open positions</div></td></tr>'}
     else tb.innerHTML=open.map(t=>{
       const pnlPct=t.pnl_pct||0
-      return`<tr>
-        <td class="txt"><b>${t.symbol?.replace('/USDT','')}</b></td>
+      const pnl=t.pnl||0
+      const fut=isFutures(t.symbol)
+      const base=t.symbol?.replace('/USDT','')||'?'
+      const lv=LIVE[t.symbol]
+      const currPx=lv?lv.price:(t.current_price||t.entry_price)
+      const url=tvUrl(t.symbol)
+      return`<tr style="${pnlPct>=1?'background:rgba(0,201,123,.04)':pnlPct<=-1?'background:rgba(232,60,90,.04)':''}">
+        <td class="txt">
+          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
+            ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
+            ${fut?'<span style="font-size:8px;background:#f7931a22;color:#f7931a;border-radius:3px;padding:1px 3px;margin-left:3px">PERP</span>':'<span style="font-size:8px;color:var(--t2);border-radius:3px;padding:1px 3px;margin-left:3px">SPOT</span>'}
+          </a>
+        </td>
         <td>${sideBadge(t.side)}</td>
-        <td>${pxFmt(t.entry_price)}</td>
-        <td class="up">${pxFmt(t.tp_price)}</td>
-        <td class="dn">${pxFmt(t.sl_price)}</td>
-        <td class="${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
-        <td class="${(t.pnl||0)>=0?'up':'dn'}">${((t.pnl||0)>=0?'+':'')+'$'+Math.abs(t.pnl||0).toFixed(2)}</td>
+        <td style="font-family:var(--mono)">${pxFmt(t.entry_price)}</td>
+        <td style="font-family:var(--mono);font-weight:600">${pxFmt(currPx)}</td>
+        <td class="up" style="font-family:var(--mono)">${pxFmt(t.tp_price)}</td>
+        <td class="dn" style="font-family:var(--mono)">${pxFmt(t.sl_price)}</td>
+        <td>${t.tp1_hit?'<span class="up" style="font-size:11px">✅ Hit</span>':'<span class="t2">—</span>'}</td>
+        <td class="${pnlPct>=0?'up':'dn'}" style="font-weight:600">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
+        <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')+pnl.toFixed(2)}</td>
         <td class="t2">${timeAgo(t.open_time)}</td>
       </tr>`
     }).join('')
@@ -1764,13 +1777,21 @@ function renderPositions(){
       const sorted=[...closed].sort((a,b)=>new Date(b.close_time||0)-new Date(a.close_time||0))
       tb.innerHTML=sorted.slice(0,100).map(t=>{
         const pnlPct=t.pnl_pct||0
+        const pnl=t.pnl||0
+        const fut=isFutures(t.symbol)
+        const base=t.symbol?.replace('/USDT','')||'?'
+        const url=tvUrl(t.symbol)
         return`<tr>
-          <td class="txt"><b>${t.symbol?.replace('/USDT','')}</b></td>
+          <td class="txt">
+            <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
+              ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
+            </a>
+          </td>
           <td>${sideBadge(t.side)}</td>
-          <td>${pxFmt(t.entry_price)}</td>
-          <td>${pxFmt(t.exit_price)}</td>
+          <td style="font-family:var(--mono)">${pxFmt(t.entry_price)}</td>
+          <td style="font-family:var(--mono)">${pxFmt(t.exit_price)}</td>
           <td class="${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
-          <td class="${(t.pnl||0)>=0?'up':'dn'}">${((t.pnl||0)>=0?'+':'')+'$'+Math.abs(t.pnl||0).toFixed(2)}</td>
+          <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')+pnl.toFixed(2)}</td>
           <td>${t.outcome==='WIN'?'<span class="bdg b-win">WIN</span>':'<span class="bdg b-los">LOSS</span>'}</td>
           <td class="t2">${timeAgo(t.close_time)}</td>
         </tr>`
@@ -1806,8 +1827,16 @@ function renderScanner(){
     const chg=lv?lv.change:null
     const sc=r.best_score||0
     const bc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
-    return`<tr>
-      <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
+    const fut=isFutures(r.symbol)
+    const base=r.symbol?.replace('/USDT','')||'?'
+    const url=tvUrl(r.symbol)
+    return`<tr style="${r.status==='SIGNAL'?'background:rgba(0,201,123,.04)':''}">
+      <td class="txt">
+        <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
+          ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':'<span style="font-size:9px;color:var(--t2)">·S</span>'}
+          <span style="font-size:9px;color:var(--t2)">↗</span>
+        </a>
+      </td>
       <td>${px}</td>
       <td>${chgFmt(chg)}</td>
       <td>${sBadge(r.status)}</td>
@@ -1835,7 +1864,8 @@ function renderHeatmap(id,scan){
   if(scan.length===0){el.innerHTML='<div class="empty" style="grid-column:1/-1">รอข้อมูล scan...</div>';return}
   el.innerHTML=scan.map(r=>{
     const sc=r.best_score||0
-    const sym=r.symbol?.replace('/USDT','')||r.symbol
+    const base=r.symbol?.replace('/USDT','')||r.symbol
+    const sym=base+(isFutures(r.symbol)?'<span style="font-size:8px;color:#f7931a">.P</span>':'')
     const tc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
     const bc=sc>=8?'rgba(0,201,123,.9)':sc>=5?'rgba(240,180,41,.8)':'rgba(74,102,133,.5)'
     const lv=LIVE[r.symbol]
