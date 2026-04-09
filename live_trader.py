@@ -1,12 +1,22 @@
-import sys, os, sqlite3, warnings, time, json
+"""
+📡 Data Collector + Orchestrator
+  - ดึง OHLCV จาก OKX ทุก 15 นาที
+  - ส่ง df ให้ Signal Scanner
+  - Signal Scanner เรียก 3 Pine Specialists แล้วคืน signal
+  - บันทึก scan_results.json + latest_signals.json
+
+Flow:
+  📡 live_trader (fetch data)
+      └──▶ 🔍 signal_scanner.scan_symbol()
+              ├── 🎯 agent_trend.run()
+              ├── 🏦 agent_smc.run()
+              └── 📈 agent_osc.run()
+                      └──▶ 🤖 paper_trade.py
+"""
+import sys, os, warnings, time, json
 from datetime import datetime, timezone
 import pandas as pd
-import numpy as np
 warnings.filterwarnings("ignore")
-
-from ta.momentum   import RSIIndicator, StochasticOscillator
-from ta.trend      import EMAIndicator, SMAIndicator, MACD
-from ta.volatility import AverageTrueRange
 
 try:
     import ccxt
@@ -14,111 +24,56 @@ except ImportError:
     print("[ERROR] pip install ccxt")
     sys.exit(1)
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
-# OKX USDT Perpetual Futures — confirmed available (CMC Top 100)
-FUTURES_SYMBOLS = [
-    "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "SOL/USDT",
-    "TRX/USDT", "DOGE/USDT", "ADA/USDT", "BCH/USDT", "LTC/USDT",
-    "LINK/USDT", "AVAX/USDT", "SUI/USDT", "TON/USDT", "DOT/USDT",
-    "SHIB/USDT", "HBAR/USDT", "XLM/USDT", "UNI/USDT", "NEAR/USDT",
-    "TAO/USDT", "MNT/USDT", "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
-    "ETC/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT", "ATOM/USDT",
-    "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT", "VET/USDT",
-    "CRO/USDT", "TRUMP/USDT", "ONDO/USDT", "HYPE/USDT", "DEXE/USDT",
-]
+import signal_scanner as SCANNER
 
-# CMC Top 100 แต่ไม่มี OKX perpetual futures — ใช้ Spot แทน
+# ── CONFIG ────────────────────────────────────────────────────────────────────
+FUTURES_SYMBOLS = [
+    "BTC/USDT",  "ETH/USDT",  "BNB/USDT",  "XRP/USDT",  "SOL/USDT",
+    "TRX/USDT",  "DOGE/USDT", "ADA/USDT",  "BCH/USDT",  "LTC/USDT",
+    "LINK/USDT", "AVAX/USDT", "SUI/USDT",  "TON/USDT",  "DOT/USDT",
+    "SHIB/USDT", "HBAR/USDT", "XLM/USDT",  "UNI/USDT",  "NEAR/USDT",
+    "TAO/USDT",  "MNT/USDT",  "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
+    "ETC/USDT",  "RENDER/USDT","ALGO/USDT", "POL/USDT",  "ATOM/USDT",
+    "WLD/USDT",  "ENA/USDT",  "FIL/USDT",  "APT/USDT",  "VET/USDT",
+    "CRO/USDT",  "TRUMP/USDT","ONDO/USDT", "HYPE/USDT", "DEXE/USDT",
+]
 SPOT_SYMBOLS = [
     "MORPHO/USDT", "KAS/USDT", "QNT/USDT", "ZEC/USDT", "FLR/USDT",
 ]
 
-SYMBOLS      = FUTURES_SYMBOLS + SPOT_SYMBOLS
-FUTURES_SET  = set(FUTURES_SYMBOLS)
+SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
+FUTURES_SET = set(FUTURES_SYMBOLS)
 
-TF_1H      = "1h"
-TF_4H      = "4h"
-CANDLES    = 300
+TF_1H   = "1h"
+TF_4H   = "4h"
+CANDLES = 300
 
-# ── CDC ActionZone (WaKam3.pine) ──────────────────────────────
-EMA_FAST   = 12   # CDC Fast EMA  (was 7)
-EMA_SLOW   = 26   # CDC Slow EMA  (was 30)
-SMA_50     = 50   # short-term trend
-SMA_100    = 100  # mid-term trend
-SMA_200    = 200  # long-term trend  (was SMA_TREND=99)
-# ── ATR Trailing Stop (WaKam3.pine) ──────────────────────────
-ATR_FAST_P = 5    # Fast ATR period
-ATR_FAST_M = 0.5  # Fast ATR multiplier
-ATR_SLOW_P = 10   # Slow ATR period
-ATR_SLOW_M = 2.0  # Slow ATR multiplier
-SWING_LB   = 10
-RETRACE    = 0.003
-MIN_SCORE  = 8
-TP1_R      = 1.2
-TP2_R      = 2.0
-RISK_PCT   = 0.01
-SL_PCT     = 0.005
-LEVERAGE   = 20         # x20 (ปลอดภัยกว่า x100)
-
-DB_PATH      = "paper_trades.db"
-LOG_PATH     = "signals.log"
-WEIGHTS_PATH = "weights.json"
-MIN_TRADES   = 10    # closed trades ขั้นต่ำก่อนปรับ weight
-SMOOTHING    = 0.4   # blend กับ equal weight — ป้องกัน overfit
+DB_PATH  = "paper_trades.db"
+LOG_PATH = "signals.log"
 
 # ── EXCHANGES ─────────────────────────────────────────────────────────────────
 exchange_futures = ccxt.okx({
     "enableRateLimit": True,
-    "options": {"defaultType": "swap"},   # perpetual futures OHLCV
+    "options": {"defaultType": "swap"},
 })
 exchange_spot = ccxt.okx({
     "enableRateLimit": True,
     "options": {"defaultType": "spot"},
 })
-exchange = exchange_futures  # default (ใช้ใน htf_bias ทั่วไป)
 
-# ── DYNAMIC WEIGHTS ──────────────────────────────────────────────────────────
-def load_weights():
-    """
-    อ่าน weights.json (สร้างโดย generate_dashboard.py หลัง calc win rate)
-    ถ้าไม่มีหรือ locked → equal weights 1/3 ทุก specialist
-    """
-    try:
-        if os.path.exists(WEIGHTS_PATH):
-            with open(WEIGHTS_PATH) as f:
-                w = json.load(f)
-            if not w.get("locked", True):
-                t, s, o = w["trend"], w["smc"], w["osc"]
-                return float(t), float(s), float(o)
-    except Exception:
-        pass
-    return 1/3, 1/3, 1/3   # equal weights (default)
-
-# โหลด weights ครั้งเดียวตอน import / startup
-W_TREND, W_SMC, W_OSC = load_weights()
-
-def _weighted_score(trend_s, smc_s, osc_s, kz=False):
-    """
-    แปลง specialist scores → weighted total (max คงที่ 31 เสมอ)
-    normalize แต่ละ specialist ก่อน (÷ max) แล้ว weighted sum × 30 + KZ
-    """
-    t_norm = trend_s / 11
-    s_norm = smc_s   / 10
-    o_norm = osc_s   / 9
-    combined = t_norm * W_TREND + s_norm * W_SMC + o_norm * W_OSC
-    return round(combined * 30) + (1 if kz else 0)
 
 # ── LOGGER ────────────────────────────────────────────────────────────────────
 def log(msg):
-    ts  = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    ts   = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     line = f"[{ts}] {msg}"
     print(line)
     with open(LOG_PATH, "a") as f:
         f.write(line + "\n")
 
-# ── FETCH LIVE DATA ───────────────────────────────────────────────────────────
-def fetch(symbol, timeframe, limit=CANDLES, exch=None):
-    if exch is None:
-        exch = exchange_futures if symbol in FUTURES_SET else exchange_spot
+
+# ── FETCH OHLCV ───────────────────────────────────────────────────────────────
+def fetch(symbol, timeframe, limit=CANDLES):
+    exch = exchange_futures if symbol in FUTURES_SET else exchange_spot
     try:
         bars = exch.fetch_ohlcv(symbol, timeframe, limit=limit)
         df   = pd.DataFrame(bars, columns=["ts","open","high","low","close","volume"])
@@ -129,415 +84,67 @@ def fetch(symbol, timeframe, limit=CANDLES, exch=None):
         log(f"[WARN] fetch {symbol} {timeframe}: {e}")
         return pd.DataFrame()
 
-# ── ATR TRAILING STOP (CDC / WaKam3) ─────────────────────────────────────────
-def _atr_trail(close_vals, atr_vals):
-    """Running ATR Trailing Stop — ต้อง loop เพราะ state ขึ้นกับแท่งก่อนหน้า"""
-    trail = np.full(len(close_vals), np.nan)
-    trail[0] = close_vals[0] - atr_vals[0]
-    for i in range(1, len(close_vals)):
-        if np.isnan(atr_vals[i]):
-            trail[i] = trail[i-1]
-            continue
-        prev = trail[i-1]
-        c    = close_vals[i]
-        a    = atr_vals[i]
-        trail[i] = max(prev, c - a) if c > prev else min(prev, c + a)
-    return trail
 
-# ── INDICATORS ────────────────────────────────────────────────────────────────
-def indicators(df):
-    c, h, l = df["close"], df["high"], df["low"]
-
-    # ── 🎯 Trend Agent — CDC ActionZone + SMA + ATR Trailing Stop ──────────────
-    df["ema12"]  = EMAIndicator(c, EMA_FAST).ema_indicator()   # CDC Fast
-    df["ema26"]  = EMAIndicator(c, EMA_SLOW).ema_indicator()   # CDC Slow
-    df["sma50"]  = SMAIndicator(c, SMA_50).sma_indicator()
-    df["sma100"] = SMAIndicator(c, SMA_100).sma_indicator()
-    df["sma200"] = SMAIndicator(c, SMA_200).sma_indicator()
-
-    # CDC ActionZone signals
-    df["bull"]      = df["ema12"] > df["ema26"]
-    df["cdc_bull"]  = df["bull"]
-    df["cross_up"]  = (~df["bull"].shift(1).fillna(False)) & df["bull"]
-    df["cross_dn"]  = df["bull"].shift(1).fillna(False) & (~df["bull"])
-    df["touch_bull"] = (c >= df["ema26"]*(1-RETRACE)) & (c <= df["ema26"]*(1+RETRACE*2)) & df["bull"]
-    df["touch_bear"] = (c <= df["ema26"]*(1+RETRACE)) & (c >= df["ema26"]*(1-RETRACE*2)) & (~df["bull"])
-
-    # SMA trend conditions
-    df["above_sma50"]    = c > df["sma50"]
-    df["above_sma200"]   = c > df["sma200"]
-    df["sma50_gt_200"]   = df["sma50"] > df["sma200"]   # Golden Cross structure
-
-    # ATR Trailing Stop Fast (5 × 0.5) and Slow (10 × 2.0)
-    atr_f = AverageTrueRange(h, l, c, ATR_FAST_P).average_true_range() * ATR_FAST_M
-    atr_s = AverageTrueRange(h, l, c, ATR_SLOW_P).average_true_range() * ATR_SLOW_M
-    df["atr_trail_fast"] = _atr_trail(c.values, atr_f.values)
-    df["atr_trail_slow"] = _atr_trail(c.values, atr_s.values)
-    df["trail_fast_bull"] = c > df["atr_trail_fast"]
-    df["trail_slow_bull"] = c > df["atr_trail_slow"]
-
-    df["sh"]  = h.rolling(SWING_LB*2+1, center=True).max()
-    df["sl_"] = l.rolling(SWING_LB*2+1, center=True).min()
-    df["psh"] = df["sh"].shift(SWING_LB)
-    df["psl"] = df["sl_"].shift(SWING_LB)
-
-    df["bos_bull"]   = c > df["psh"]
-    df["bos_bear"]   = c < df["psl"]
-    df["choch_bull"] = (~df["bos_bull"].shift(3).fillna(False)) & df["bos_bull"] & (~df["bull"].shift(5).fillna(True))
-    df["choch_bear"] = (~df["bos_bear"].shift(3).fillna(False)) & df["bos_bear"] & df["bull"].shift(5).fillna(False)
-
-    df["hh"] = df["sh"] > df["sh"].shift(SWING_LB)
-    df["hl"] = df["sl_"] > df["sl_"].shift(SWING_LB)
-    df["lh"] = df["sh"] < df["sh"].shift(SWING_LB)
-    df["qm_bull"] = df["lh"].shift(2) & df["hl"]
-    df["qm_bear"] = df["hl"].shift(2) & df["lh"]
-
-    # ── 🏦 SMC Agent — Premium / Discount Zones ────────────────────────────────
-    swing_hi = h.rolling(SWING_LB*2+1, center=True).max()
-    swing_lo = l.rolling(SWING_LB*2+1, center=True).min()
-    eq_mid   = (swing_hi + swing_lo) / 2
-    df["in_premium"]  = c > eq_mid   # price in premium zone → avoid long
-    df["in_discount"] = c < eq_mid   # price in discount zone → good for long
-    df["in_eq"]       = (c - eq_mid).abs() / (swing_hi - swing_lo + 1e-9) < 0.1
-
-    # ── 📈 Oscillator Agent — RSI + Pivot Divergence ────────────────────────────
-    df["rsi"] = RSIIndicator(c, 14).rsi()
-    df["rsi_os"] = df["rsi"] < 40
-    df["rsi_ob"] = df["rsi"] > 60
-
-    # Pivot-based RSI Divergence (lookback 5 bars each side — เหมือน Pine Script)
-    pivot_lo  = l.rolling(11, center=True).min() == l
-    pivot_hi  = h.rolling(11, center=True).max() == h
-    # Regular Bullish: price lower low, RSI higher low (at pivot lows)
-    df["rsi_bull_div"] = (
-        pivot_lo &
-        (l < l.where(pivot_lo).shift(1).ffill()) &
-        (df["rsi"] > df["rsi"].where(pivot_lo).shift(1).ffill()) &
-        (df["rsi"] < 50)
-    )
-    # Regular Bearish: price higher high, RSI lower high (at pivot highs)
-    df["rsi_bear_div"] = (
-        pivot_hi &
-        (h > h.where(pivot_hi).shift(1).ffill()) &
-        (df["rsi"] < df["rsi"].where(pivot_hi).shift(1).ffill()) &
-        (df["rsi"] > 50)
-    )
-
-    st = StochasticOscillator(h, l, c, 14, 3)
-    df["stk"] = st.stoch()
-    df["std"] = st.stoch_signal()
-    df["st_up"] = (df["stk"] > df["std"]) & (df["stk"].shift(1) <= df["std"].shift(1))
-    df["st_dn"] = (df["stk"] < df["std"]) & (df["stk"].shift(1) >= df["std"].shift(1))
-
-    m = MACD(c, 26, 12, 9)
-    df["hist"]    = m.macd_diff()
-    df["macd_up"] = (df["hist"] > 0) & (df["hist"].shift(1) <= 0)
-    df["macd_dn"] = (df["hist"] < 0) & (df["hist"].shift(1) >= 0)
-
-    df["atr"]  = AverageTrueRange(h, l, c, 14).average_true_range()
-    df["hour"] = df.index.hour
-    df["kz"]   = ((df["hour"]>=7)&(df["hour"]<10)) | ((df["hour"]>=13)&(df["hour"]<16))
-
-    return df.dropna()
-
-
-def htf_bias(df1h, df4h):
-    if df4h.empty:
-        df1h["htf_bull"] = True
-        df1h["htf_sma"]  = True
-        return df1h
-    df4h["h12"]  = EMAIndicator(df4h["close"], EMA_FAST).ema_indicator()
-    df4h["h26"]  = EMAIndicator(df4h["close"], EMA_SLOW).ema_indicator()
-    df4h["h200"] = SMAIndicator(df4h["close"], SMA_200).sma_indicator()
-    df4h["htf_bull"] = df4h["h12"] > df4h["h26"]
-    df4h["htf_sma"]  = df4h["close"] > df4h["h200"]
-    htf = df4h[["htf_bull","htf_sma"]].resample("1h").ffill()
-    df1h = df1h.join(htf, how="left")
-    df1h["htf_bull"] = df1h["htf_bull"].ffill().fillna(True)
-    df1h["htf_sma"]  = df1h["htf_sma"].ffill().fillna(True)
-    return df1h
-
-# ── SPECIALIST SCORERS ────────────────────────────────────────────────────────
-def _trend_long(r):
-    """🎯 Trend Agent — CDC EMA12/26 + SMA50/200 + ATR Trail (max 11)"""
-    s = 0
-    if r["cdc_bull"]:        s += 2   # EMA12 > EMA26
-    if r["cross_up"]:        s += 2   # CDC buy cross
-    if r["touch_bull"]:      s += 1   # pullback to EMA26
-    if r["above_sma50"]:     s += 1   # above short-term trend
-    if r["above_sma200"]:    s += 2   # above long-term trend
-    if r["sma50_gt_200"]:    s += 1   # golden cross structure
-    if r["trail_slow_bull"]: s += 2   # above ATR slow trail
-    return s  # max 11
-
-def _trend_short(r):
-    """🎯 Trend Agent — SHORT (max 11)"""
-    s = 0
-    if not r["cdc_bull"]:        s += 2
-    if r["cross_dn"]:            s += 2
-    if r["touch_bear"]:          s += 1
-    if not r["above_sma50"]:     s += 1
-    if not r["above_sma200"]:    s += 2
-    if not r["sma50_gt_200"]:    s += 1
-    if not r["trail_slow_bull"]: s += 2
-    return s  # max 11
-
-def _smc_long(r):
-    """🏦 SMC Agent — BOS/CHoCH/QM + Discount Zone (max 10)"""
-    s = 0
-    if r["bos_bull"]:    s += 2
-    if r["choch_bull"]:  s += 3
-    if r["qm_bull"]:     s += 2
-    if r["in_discount"]: s += 2   # price in discount zone
-    if r["in_eq"]:       s += 1   # price at equilibrium
-    return s  # max 10
-
-def _smc_short(r):
-    """🏦 SMC Agent — SHORT (max 10)"""
-    s = 0
-    if r["bos_bear"]:    s += 2
-    if r["choch_bear"]:  s += 3
-    if r["qm_bear"]:     s += 2
-    if r["in_premium"]:  s += 2   # price in premium zone
-    if r["in_eq"]:       s += 1
-    return s  # max 10
-
-def _osc_long(r):
-    """📈 Oscillator Agent — RSI Div + Stoch + MACD (max 9)"""
-    s = 0
-    if r["rsi_bull_div"]: s += 3
-    if r["rsi_os"]:       s += 2
-    if r["st_up"]:        s += 2
-    if r["macd_up"]:      s += 2
-    return s  # max 9
-
-def _osc_short(r):
-    """📈 Oscillator Agent — SHORT (max 9)"""
-    s = 0
-    if r["rsi_bear_div"]: s += 3
-    if r["rsi_ob"]:       s += 2
-    if r["st_dn"]:        s += 2
-    if r["macd_dn"]:      s += 2
-    return s  # max 9
-
-# ── MAIN SIGNAL — weighted by dynamic weights ─────────────────────────────────
-def score_long(r):
-    """Weighted max = 31 (normalize per specialist → weighted sum × 30 + KZ)"""
-    if not (r["htf_bull"] and r["htf_sma"]):
-        return 0
-    return _weighted_score(_trend_long(r), _smc_long(r), _osc_long(r), r["kz"])
-
-def score_short(r):
-    """Weighted max = 31"""
-    if r["htf_bull"] or r["htf_sma"]:
-        return 0
-    return _weighted_score(_trend_short(r), _smc_short(r), _osc_short(r), r["kz"])
-
-def specialist_breakdown(r, side):
-    """ส่ง score แต่ละ specialist กลับมาเพื่อแสดงใน dashboard"""
-    if side == "LONG":
-        return {
-            "trend": _trend_long(r),
-            "smc":   _smc_long(r),
-            "osc":   _osc_long(r),
-        }
-    return {
-        "trend": _trend_short(r),
-        "smc":   _smc_short(r),
-        "osc":   _osc_short(r),
-    }
-
-# ── SCAN ──────────────────────────────────────────────────────────────────────
+# ── MAIN SCAN — ส่งข้อมูลให้ Signal Scanner ──────────────────────────────────
 def scan():
-    signals     = []
-    scan_results = []   # ← เก็บ score ทุกเหรียญ (สำหรับ dashboard scanner)
-    log("─" * 50)
+    signals      = []
+    scan_results = []
+    log("─" * 55)
     log(f"SCAN เริ่ม — {len(SYMBOLS)} symbols")
+    log(f"⚖️  Weights — 🎯{SCANNER.W_TREND:.3f} 🏦{SCANNER.W_SMC:.3f} 📈{SCANNER.W_OSC:.3f} "
+        f"({'dynamic' if abs(SCANNER.W_TREND - 1/3) > 0.01 else 'equal (default)'})")
 
     for sym in SYMBOLS:
         mtype = "FUTURES" if sym in FUTURES_SET else "SPOT"
         try:
             d1h = fetch(sym, TF_1H)
             d4h = fetch(sym, TF_4H)
+
             if d1h.empty or len(d1h) < 150:
                 log(f"  {sym}: ข้อมูลไม่พอ")
-                scan_results.append({"symbol": sym, "status": "NO_DATA",
-                                     "market_type": mtype,
-                                     "score_long": 0, "score_short": 0,
-                                     "best_score": 0, "price": 0, "rsi": 0,
-                                     "htf_bull": False, "in_kz": False,
-                                     "ts": datetime.now(timezone.utc).isoformat()})
+                scan_results.append({
+                    "symbol": sym, "market_type": mtype, "status": "NO_DATA",
+                    "best_score": 0, "score_long": 0, "score_short": 0,
+                    "score_trend": 0, "score_smc": 0, "score_osc": 0,
+                    "rsi": 0, "price": 0, "htf_bull": False,
+                    "in_kz": False, "in_discount": False, "trail_bull": False,
+                    "ts": datetime.now(timezone.utc).isoformat(),
+                })
                 continue
 
-            d1h = indicators(d1h)
-            d1h = htf_bias(d1h, d4h)
+            # ── ส่ง df ให้ Signal Scanner ─────────────────────
+            sig, result = SCANNER.scan_symbol(sym, d1h, d4h, mtype)
+            scan_results.append(result)
 
-            # ดูแท่งปิดล่าสุด (index -2 = แท่งที่ปิดแล้ว)
-            r   = d1h.iloc[-2]
-            px  = d1h.iloc[-1]["close"]   # ราคาปัจจุบัน
-
-            sl  = score_long(r)
-            ss  = score_short(r)
-
-            # ── บันทึก scan result ทุกเหรียญ ──────────────────────────────
-            best        = max(sl, ss)
-            best_side   = "LONG" if sl >= ss else "SHORT"
-            pct         = round(best / 31 * 100, 1)   # max score = 31
-            if best >= MIN_SCORE:
-                status  = "SIGNAL"
-            elif best >= 5:
-                status  = "WATCH"
+            if sig:
+                signals.append(sig)
+                log(f"  ✅ {sym} {sig['side']} score={sig['score']}/31 "
+                    f"[🎯{sig['score_trend']} 🏦{sig['score_smc']} 📈{sig['score_osc']}] "
+                    f"px={sig['price']:.4f} sl={sig['sl']:.4f}")
             else:
-                status  = "IDLE"
-
-            bk = specialist_breakdown(r, best_side)
-
-            scan_results.append({
-                "symbol":      sym,
-                "market_type": mtype,
-                "status":      status,
-                "side":        best_side,
-                "score_long":  sl,
-                "score_short": ss,
-                "best_score":  best,
-                "score_pct":   pct,
-                "price":       round(float(px), 4),
-                "rsi":         round(float(r["rsi"]), 1),
-                "htf_bull":    bool(r["htf_bull"]),
-                "in_kz":       bool(r["kz"]),
-                # ── specialist breakdown ───────────────────────
-                "score_trend": bk["trend"],   # 🎯 CDC Agent
-                "score_smc":   bk["smc"],     # 🏦 SMC Agent
-                "score_osc":   bk["osc"],     # 📈 Oscillator Agent
-                "in_discount": bool(r["in_discount"]),
-                "trail_bull":  bool(r["trail_slow_bull"]),
-                "ts":          datetime.now(timezone.utc).isoformat(),
-            })
-
-            if sl >= MIN_SCORE and sl >= ss:
-                side, score = "LONG", sl
-            elif ss >= MIN_SCORE and ss > sl:
-                side, score = "SHORT", ss
-            else:
-                log(f"  {sym}: watch (L={sl} S={ss}) px={px:.4f}")
-                time.sleep(0.3)
-                continue
-
-            # คำนวณ levels
-            atr  = r["atr"]
-            ep   = px
-            if side == "LONG":
-                sl_p = min(float(r["sl_"]), ep - atr)
-            else:
-                sl_p = max(float(r["sh"]),  ep + atr)
-
-            dist = abs(ep - sl_p)
-            if dist < ep * 0.001:
-                log(f"  {sym}: SL ใกล้เกินไป skip")
-                continue
-
-            tp1  = ep + dist*TP1_R if side=="LONG" else ep - dist*TP1_R
-            tp2  = ep + dist*TP2_R if side=="LONG" else ep - dist*TP2_R
-
-            bk = specialist_breakdown(r, side)
-            sig = {
-                "symbol":      sym,
-                "side":        side,
-                "score":       score,
-                "price":       round(ep, 4),
-                "sl":          round(sl_p, 4),
-                "tp1":         round(tp1, 4),
-                "tp2":         round(tp2, 4),
-                "sl_pct":      round(dist/ep*100, 3),
-                "rsi":         round(float(r["rsi"]), 1),
-                "in_kz":       bool(r["kz"]),
-                # ── specialist scores ──────────────────────────
-                "score_trend": bk["trend"],
-                "score_smc":   bk["smc"],
-                "score_osc":   bk["osc"],
-                "ts":          datetime.now(timezone.utc).isoformat(),
-            }
-            signals.append(sig)
-            log(f"  ✅ {sym} {side} score={score} px={ep:.4f} sl={sl_p:.4f} tp1={tp1:.4f} tp2={tp2:.4f}")
+                sc = result.get("best_score", 0)
+                st = result.get("status", "?")
+                log(f"  {sym}: {st} score={sc}/31 "
+                    f"[🎯{result.get('score_trend',0)} "
+                    f"🏦{result.get('score_smc',0)} "
+                    f"📈{result.get('score_osc',0)}]")
 
             time.sleep(0.3)
 
         except Exception as e:
             log(f"  [ERR] {sym}: {e}")
 
-    log(f"SCAN เสร็จ — พบ {len(signals)} signals")
-    save_specialist_history(scan_results)
+    log(f"SCAN เสร็จ — พบ {len(signals)} signals จาก {len(scan_results)} coins")
+    SCANNER.save_specialist_history(scan_results)
     return signals, scan_results
 
 
-# ── SPECIALIST HISTORY (Level 1 — Track scores per scan) ─────────────────────
-def save_specialist_history(scan_results):
-    """บันทึก specialist scores ลง SQLite ทุก scan — เก็บ 7 วัน"""
-    if not scan_results:
-        return
-    try:
-        con = sqlite3.connect(DB_PATH)
-        cur = con.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS specialist_history (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                scan_ts     TEXT    NOT NULL,
-                symbol      TEXT    NOT NULL,
-                status      TEXT,
-                side        TEXT,
-                best_score  INTEGER DEFAULT 0,
-                score_trend INTEGER DEFAULT 0,
-                score_smc   INTEGER DEFAULT 0,
-                score_osc   INTEGER DEFAULT 0,
-                rsi         REAL    DEFAULT 0,
-                htf_bull    INTEGER DEFAULT 0,
-                in_discount INTEGER DEFAULT 0,
-                trail_bull  INTEGER DEFAULT 0
-            )
-        """)
-        scan_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
-        rows = [
-            (
-                scan_ts,
-                r.get("symbol",""),
-                r.get("status",""),
-                r.get("side",""),
-                r.get("best_score",0),
-                r.get("score_trend",0),
-                r.get("score_smc",0),
-                r.get("score_osc",0),
-                r.get("rsi",0),
-                int(r.get("htf_bull",False)),
-                int(r.get("in_discount",False)),
-                int(r.get("trail_bull",False)),
-            )
-            for r in scan_results
-        ]
-        cur.executemany("""
-            INSERT INTO specialist_history
-              (scan_ts,symbol,status,side,best_score,
-               score_trend,score_smc,score_osc,
-               rsi,htf_bull,in_discount,trail_bull)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-        """, rows)
-        # เก็บแค่ 7 วัน — ลบข้อมูลเก่าออก
-        cur.execute("""
-            DELETE FROM specialist_history
-            WHERE scan_ts < datetime('now','-7 days')
-        """)
-        con.commit()
-        con.close()
-        log(f"บันทึก specialist_history → {len(rows)} rows (7-day rolling)")
-    except Exception as e:
-        log(f"[ERR] save_specialist_history: {e}")
-
-# ── MAIN ──────────────────────────────────────────────────────────────────────
+# ── ENTRY POINT ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    log("=" * 50)
+    log("=" * 55)
     log("AI TRADE SYSTEM — LIVE SIGNAL ENGINE")
-    log("🎯 Trend(CDC EMA12/26·SMA50/100/200·ATR Trail) | 🏦 SMC(BOS/CHoCH/QM·Zones) | 📈 Osc(RSI Div·Stoch·MACD)")
-    log(f"⚖️  Weights — Trend:{W_TREND:.3f}  SMC:{W_SMC:.3f}  Osc:{W_OSC:.3f}  ({'dynamic' if abs(W_TREND-1/3)>0.01 else 'equal (default)'})")
-    log("=" * 50)
+    log("🎯 Trend Agent | 🏦 SMC Agent | 📈 Osc Agent → 🔍 Signal Scanner")
+    log("=" * 55)
 
     signals      = []
     scan_results = []
@@ -549,7 +156,6 @@ if __name__ == "__main__":
         import traceback
         log(traceback.format_exc())
     finally:
-        # บันทึก scan_results เสมอ — แม้ error จะต้องมีไฟล์ให้ dashboard
         try:
             with open("scan_results.json", "w") as f:
                 json.dump(scan_results, f, indent=2, ensure_ascii=False)
