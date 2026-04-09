@@ -11,26 +11,28 @@ DB_PATH   = "paper_trades.db"
 OUT_PATH  = "dashboard_data.json"
 PORT_SIZE = 1000.0
 
-# CMC Top 100 (ex-stablecoins/wrapped) × OKX USDT Perpetual Futures
-SYMBOLS = [
-    # ── Mega Cap ──────────────────────────────────────────────────────────────
+# OKX USDT Perpetual Futures — confirmed
+FUTURES_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "SOL/USDT",
-    # ── Large Cap ─────────────────────────────────────────────────────────────
     "TRX/USDT", "DOGE/USDT", "ADA/USDT", "BCH/USDT", "LTC/USDT",
     "LINK/USDT", "AVAX/USDT", "SUI/USDT", "TON/USDT", "DOT/USDT",
-    # ── Mid-Large Cap ─────────────────────────────────────────────────────────
     "SHIB/USDT", "HBAR/USDT", "XLM/USDT", "UNI/USDT", "NEAR/USDT",
     "TAO/USDT", "MNT/USDT", "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
-    # ── Mid Cap ───────────────────────────────────────────────────────────────
-    "ETC/USDT", "ONDO/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT",
-    "ATOM/USDT", "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT",
-    # ── Active Futures (CMC top 100) ──────────────────────────────────────────
-    "VET/USDT", "CRO/USDT", "TRUMP/USDT", "DEXE/USDT", "MORPHO/USDT",
-    "KAS/USDT", "QNT/USDT", "HYPE/USDT", "ZEC/USDT", "FLR/USDT",
+    "ETC/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT", "ATOM/USDT",
+    "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT", "VET/USDT",
+    "CRO/USDT", "TRUMP/USDT", "ONDO/USDT", "HYPE/USDT", "DEXE/USDT",
 ]
 
+# ไม่มี OKX futures — ใช้ Spot
+SPOT_SYMBOLS = [
+    "MORPHO/USDT", "KAS/USDT", "QNT/USDT", "ZEC/USDT", "FLR/USDT",
+]
+
+SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
+FUTURES_SET = set(FUTURES_SYMBOLS)
+
 def fetch_okx_prices():
-    """ดึงราคา + 24h stats จาก OKX Perpetual Futures — รันบน GitHub Actions"""
+    """ดึงราคา + 24h stats จาก OKX (futures+spot) — รันบน GitHub Actions"""
     if not ccxt:
         print("  [WARN] ccxt ไม่มี — ข้ามการดึงราคา OKX")
         return {}, []
@@ -39,11 +41,15 @@ def fetch_okx_prices():
     market_tickers = []
 
     try:
-        exchange = ccxt.okx({
-            "enableRateLimit": True,
-            "options": {"defaultType": "swap"},   # perpetual futures
-        })
-        tickers = exchange.fetch_tickers()          # ดึงทีเดียวหมดเลย
+        exch_fut  = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
+        exch_spot = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "spot"}})
+
+        tickers_fut  = exch_fut.fetch_tickers()
+        tickers_spot = exch_spot.fetch_tickers()
+
+        # รวม: ถ้า symbol อยู่ใน FUTURES_SET ใช้ futures ticker ก่อน fallback spot
+        tickers = tickers_spot.copy()
+        tickers.update(tickers_fut)   # futures ทับ spot สำหรับ key เดียวกัน
 
         # ── watchlist 10 coins ────────────────────────────────────────────
         for sym in SYMBOLS:

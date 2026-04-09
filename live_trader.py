@@ -15,27 +15,29 @@ except ImportError:
     sys.exit(1)
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-# CMC Top 100 (ex-stablecoins/wrapped) × OKX USDT Perpetual Futures
-SYMBOLS = [
-    # ── Mega Cap ──────────────────────────────────────────────────────────────
+# OKX USDT Perpetual Futures — confirmed available (CMC Top 100)
+FUTURES_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "SOL/USDT",
-    # ── Large Cap ─────────────────────────────────────────────────────────────
     "TRX/USDT", "DOGE/USDT", "ADA/USDT", "BCH/USDT", "LTC/USDT",
     "LINK/USDT", "AVAX/USDT", "SUI/USDT", "TON/USDT", "DOT/USDT",
-    # ── Mid-Large Cap ─────────────────────────────────────────────────────────
     "SHIB/USDT", "HBAR/USDT", "XLM/USDT", "UNI/USDT", "NEAR/USDT",
     "TAO/USDT", "MNT/USDT", "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
-    # ── Mid Cap ───────────────────────────────────────────────────────────────
-    "ETC/USDT", "ONDO/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT",
-    "ATOM/USDT", "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT",
-    # ── Active Futures (CMC top 100) ──────────────────────────────────────────
-    "VET/USDT", "CRO/USDT", "TRUMP/USDT", "DEXE/USDT", "MORPHO/USDT",
-    "KAS/USDT", "QNT/USDT", "HYPE/USDT", "ZEC/USDT", "FLR/USDT",
+    "ETC/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT", "ATOM/USDT",
+    "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT", "VET/USDT",
+    "CRO/USDT", "TRUMP/USDT", "ONDO/USDT", "HYPE/USDT", "DEXE/USDT",
 ]
+
+# CMC Top 100 แต่ไม่มี OKX perpetual futures — ใช้ Spot แทน
+SPOT_SYMBOLS = [
+    "MORPHO/USDT", "KAS/USDT", "QNT/USDT", "ZEC/USDT", "FLR/USDT",
+]
+
+SYMBOLS      = FUTURES_SYMBOLS + SPOT_SYMBOLS
+FUTURES_SET  = set(FUTURES_SYMBOLS)
 
 TF_1H      = "1h"
 TF_4H      = "4h"
-CANDLES    = 300        # จำนวน candle ที่ดึงมาคำนวณ
+CANDLES    = 300
 
 EMA_FAST   = 7
 EMA_SLOW   = 30
@@ -45,18 +47,23 @@ RETRACE    = 0.003
 MIN_SCORE  = 8
 TP1_R      = 1.2
 TP2_R      = 2.0
-RISK_PCT   = 0.01       # 1% per trade
-SL_PCT     = 0.005      # 0.5% SL ของราคา
-LEVERAGE   = 20         # x20 futures (ปลอดภัยกว่า x100)
+RISK_PCT   = 0.01
+SL_PCT     = 0.005
+LEVERAGE   = 20         # x20 (ปลอดภัยกว่า x100)
 
 DB_PATH    = "paper_trades.db"
 LOG_PATH   = "signals.log"
 
-# ── EXCHANGE (OKX Perpetual Futures / USDT Swap) ──────────────────────────────
-exchange = ccxt.okx({
+# ── EXCHANGES ─────────────────────────────────────────────────────────────────
+exchange_futures = ccxt.okx({
     "enableRateLimit": True,
-    "options": {"defaultType": "swap"},   # ใช้ perpetual futures OHLCV
+    "options": {"defaultType": "swap"},   # perpetual futures OHLCV
 })
+exchange_spot = ccxt.okx({
+    "enableRateLimit": True,
+    "options": {"defaultType": "spot"},
+})
+exchange = exchange_futures  # default (ใช้ใน htf_bias ทั่วไป)
 
 # ── LOGGER ────────────────────────────────────────────────────────────────────
 def log(msg):
@@ -67,9 +74,11 @@ def log(msg):
         f.write(line + "\n")
 
 # ── FETCH LIVE DATA ───────────────────────────────────────────────────────────
-def fetch(symbol, timeframe, limit=CANDLES):
+def fetch(symbol, timeframe, limit=CANDLES, exch=None):
+    if exch is None:
+        exch = exchange_futures if symbol in FUTURES_SET else exchange_spot
     try:
-        bars = exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
+        bars = exch.fetch_ohlcv(symbol, timeframe, limit=limit)
         df   = pd.DataFrame(bars, columns=["ts","open","high","low","close","volume"])
         df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
         df.set_index("dt", inplace=True)
@@ -191,12 +200,14 @@ def scan():
     log(f"SCAN เริ่ม — {len(SYMBOLS)} symbols")
 
     for sym in SYMBOLS:
+        mtype = "FUTURES" if sym in FUTURES_SET else "SPOT"
         try:
             d1h = fetch(sym, TF_1H)
             d4h = fetch(sym, TF_4H)
             if d1h.empty or len(d1h) < 150:
                 log(f"  {sym}: ข้อมูลไม่พอ")
                 scan_results.append({"symbol": sym, "status": "NO_DATA",
+                                     "market_type": mtype,
                                      "score_long": 0, "score_short": 0,
                                      "best_score": 0, "price": 0, "rsi": 0,
                                      "htf_bull": False, "in_kz": False,
@@ -226,6 +237,7 @@ def scan():
 
             scan_results.append({
                 "symbol":      sym,
+                "market_type": mtype,
                 "status":      status,
                 "side":        best_side,
                 "score_long":  sl,
