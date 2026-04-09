@@ -52,22 +52,39 @@ def signal_msg(sig):
 
 
 def close_msg(r):
-    icon    = "✅ WIN" if r["outcome"] == "WIN" else "❌ LOSS"
+    icon    = "✅ WIN" if r.get("outcome") == "WIN" else "❌ LOSS"
     side    = r.get("side", "")
     ep      = r.get("entry_px", 0)
     ex      = r.get("exit_px",  0)
     pnl     = r.get("pnl",      0)
     lev     = r.get("leverage",  0)
     notional = r.get("notional", 0)
-    reason  = r.get("reason", "")   # TP1/TP2/SL
+    reason  = r.get("reason", "")
 
     lev_str = f"  {lev:.1f}x / ${notional:.0f}" if lev else ""
     return (
         f"{icon} <b>{r['symbol']}</b> {side} — {reason}\n"
         f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"Entry  : {ep:,.4f}\n"
-        f"Exit   : {ex:,.4f}\n"
+        f"Entry  : {ep:.8g}\n"
+        f"Exit   : {ex:.8g}\n"
         f"PnL    : <b>${pnl:+.2f}</b>{lev_str}\n"
+        f"━━━━━━━━━━━━━━━━━━━━"
+    )
+
+
+def tp1_msg(r):
+    side = r.get("side", "")
+    ep   = r.get("entry_px",   0)
+    tp1  = r.get("tp1_px",     0)
+    tgt  = r.get("tp1_target", 0)
+    side_icon = "🟢" if side == "LONG" else "🔴"
+    return (
+        f"🎯 <b>TP1 HIT</b> — {side_icon} {r['symbol']} {side}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"Entry  : {ep:.8g}\n"
+        f"TP1    : {tp1:.8g}  ✅ (target {tgt:.8g})\n"
+        f"SL ขยับ → Breakeven {ep:.8g}\n"
+        f"รอ TP2 ต่อ 🚀\n"
         f"━━━━━━━━━━━━━━━━━━━━"
     )
 
@@ -109,19 +126,25 @@ def mark_notified(sig):
 
 # ── CLOSE RESULTS — paper_trade.py เขียน, notify.py อ่านแล้วล้าง ───────────
 def notify_closed_trades():
-    """อ่าน closed_results.json → ส่ง Telegram → ลบไฟล์"""
+    """อ่าน closed_results.json → ส่ง Telegram (CLOSE + TP1) → ลบไฟล์"""
     if not os.path.exists(CLOSED_PATH):
         return
     try:
         with open(CLOSED_PATH) as f:
             results = json.load(f)
         for r in results:
-            msg = close_msg(r)
-            ok  = send(msg)
-            status = "✅" if ok else "❌"
-            print(f"  {status} ปิด {r['symbol']} {r.get('outcome','')} "
-                  f"PnL=${r.get('pnl',0):+.2f}")
-        os.remove(CLOSED_PATH)   # ล้างหลังส่งแล้ว
+            if r.get("type") == "TP1":
+                msg = tp1_msg(r)
+                ok  = send(msg)
+                status = "✅" if ok else "❌"
+                print(f"  {status} TP1 {r['symbol']} {r.get('side','')}")
+            else:
+                msg = close_msg(r)
+                ok  = send(msg)
+                status = "✅" if ok else "❌"
+                print(f"  {status} ปิด {r['symbol']} {r.get('outcome','')} "
+                      f"PnL=${r.get('pnl',0):+.2f}")
+        os.remove(CLOSED_PATH)
     except Exception as e:
         print(f"[NOTIFY] closed_results error: {e}")
 

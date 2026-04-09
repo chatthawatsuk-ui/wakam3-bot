@@ -12,12 +12,13 @@ except ImportError:
     sys.exit(1)
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-DB_PATH      = "paper_trades.db"
-PORT_SIZE    = 1000.0   # ยอดเริ่มต้น USD
-RISK_PCT     = 0.01     # A: 1% ของ balance คงเหลือ (dynamic)
-MAX_LEVERAGE = 5        # B: leverage สูงสุด (cap)
-TP1_R        = 1.2
-TP2_R        = 2.0
+DB_PATH       = "paper_trades.db"
+PORT_SIZE     = 1000.0   # ยอดเริ่มต้น USD
+RISK_PCT      = 0.01     # A: 1% ของ balance คงเหลือ (dynamic)
+MAX_LEVERAGE  = 5        # B: leverage สูงสุด (cap)
+MAX_OPEN      = 5        # จำนวน position เปิดพร้อมกันสูงสุด
+TP1_R         = 1.2
+TP2_R         = 2.0
 
 exchange = ccxt.okx({"enableRateLimit": True})
 
@@ -140,11 +141,19 @@ def get_balance(conn):
 
 # ── OPEN TRADE ────────────────────────────────────────────────────────────────
 def open_trade(conn, sig):
+    # ตรวจ symbol ซ้ำ
     existing = conn.execute(
         "SELECT id FROM trades WHERE symbol=? AND status='OPEN'",
         (sig["symbol"],)).fetchone()
     if existing:
         print(f"  [SKIP] {sig['symbol']} มี trade เปิดอยู่แล้ว")
+        return None
+
+    # ตรวจ max open positions
+    open_count = conn.execute(
+        "SELECT COUNT(*) FROM trades WHERE status='OPEN'").fetchone()[0]
+    if open_count >= MAX_OPEN:
+        print(f"  [SKIP] {sig['symbol']} — เปิดครบ {MAX_OPEN} positions แล้ว")
         return None
 
     entry_px = sig["price"]
@@ -227,9 +236,14 @@ def check_open_trades(conn):
             pnl_sl_after_tp1  =  r * 0.5 * TP1_R - r * 0.5
 
         if hit_tp1:
-            conn.execute("UPDATE trades SET tp1_hit=1 WHERE id=?", (tid,))
+            # ── Trailing Stop: ขยับ SL → Breakeven (entry_px) ──
+            conn.execute(
+                "UPDATE trades SET tp1_hit=1, sl_px=? WHERE id=?",
+                (ep, tid))
             conn.commit()
-            print(f"  🎯 #{tid} {sym} TP1 Hit @ {px:.4f}")
+            print(f"  🎯 #{tid} {sym} TP1 Hit @ {px:.8g} → SL ขยับเป็น Breakeven {ep:.8g}")
+            # แจ้ง Telegram ว่า TP1 hit
+            _append_tp1_alert(sym, side, ep, px, tp1)
 
         elif hit_tp2:
             _close(conn, tid, px, "WIN", pnl_full_tp2, reason="TP2 ✅")
@@ -293,6 +307,29 @@ def _append_closed_result(sym, side, entry_px, exit_px, outcome, pnl,
         "notional": round(notional  or 0, 2),
         "reason":   reason,
         "ts":       datetime.now(timezone.utc).isoformat(),
+    })
+    with open(CLOSED_PATH, "w") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+
+
+def _append_tp1_alert(sym, side, entry_px, tp1_px, tp1_target):
+    """แจ้ง TP1 Hit ผ่าน closed_results.json — type='TP1'"""
+    results = []
+    if os.path.exists(CLOSED_PATH):
+        try:
+            with open(CLOSED_PATH) as f:
+                results = json.load(f)
+        except Exception:
+            results = []
+    results.append({
+        "type":      "TP1",
+        "symbol":    sym,
+        "side":      side,
+        "entry_px":  entry_px,
+        "tp1_px":    tp1_px,
+        "tp1_target": tp1_target,
+        "reason":    f"TP1 ✅ SL → Breakeven @ {entry_px:.8g}",
+        "ts":        datetime.now(timezone.utc).isoformat(),
     })
     with open(CLOSED_PATH, "w") as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
