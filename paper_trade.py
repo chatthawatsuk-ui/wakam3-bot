@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 import pandas as pd
 warnings.filterwarnings("ignore")
 
+CLOSED_PATH = "closed_results.json"   # notify.py จะอ่านไฟล์นี้เพื่อส่ง Telegram
+
 try:
     import ccxt
 except ImportError:
@@ -230,22 +232,22 @@ def check_open_trades(conn):
             print(f"  🎯 #{tid} {sym} TP1 Hit @ {px:.4f}")
 
         elif hit_tp2:
-            _close(conn, tid, px, "WIN", pnl_full_tp2)
+            _close(conn, tid, px, "WIN", pnl_full_tp2, reason="TP2 ✅")
             closed.append((tid, sym, "WIN", pnl_full_tp2))
 
         elif hit_sl:
             if tp1_hit:
                 outcome = "WIN" if pnl_sl_after_tp1 > 0 else "LOSS"
-                _close(conn, tid, px, outcome, pnl_sl_after_tp1)
+                _close(conn, tid, px, outcome, pnl_sl_after_tp1, reason="SL (หลัง TP1)")
                 closed.append((tid, sym, outcome, pnl_sl_after_tp1))
             else:
-                _close(conn, tid, px, "LOSS", pnl_full_sl)
+                _close(conn, tid, px, "LOSS", pnl_full_sl, reason="SL ❌")
                 closed.append((tid, sym, "LOSS", pnl_full_sl))
 
     return closed
 
 
-def _close(conn, trade_id, exit_px, outcome, pnl):
+def _close(conn, trade_id, exit_px, outcome, pnl, reason=""):
     conn.execute("""
         UPDATE trades SET
             status='CLOSED', exit_px=?, outcome=?, pnl_usd=?, closed_at=?
@@ -256,8 +258,44 @@ def _close(conn, trade_id, exit_px, outcome, pnl):
         UPDATE portfolio SET balance = balance + ?, updated = ? WHERE id=1
     """, (round(pnl, 2), datetime.now(timezone.utc).isoformat()))
     conn.commit()
+
+    # อ่านข้อมูล trade เพื่อส่ง Telegram
+    row = conn.execute(
+        "SELECT symbol, side, entry_px, leverage, notional_usd FROM trades WHERE id=?",
+        (trade_id,)
+    ).fetchone()
+    if row:
+        sym, side, ep, lev, notional = row
+        _append_closed_result(sym, side, ep, exit_px, outcome, pnl, lev, notional, reason)
+
     icon = "✅" if outcome == "WIN" else "❌"
-    print(f"  {icon} ปิด #{trade_id} {outcome} PnL=${pnl:+.2f}")
+    print(f"  {icon} ปิด #{trade_id} {outcome} PnL=${pnl:+.2f} [{reason}]")
+
+
+def _append_closed_result(sym, side, entry_px, exit_px, outcome, pnl,
+                           leverage, notional, reason):
+    """เพิ่มผลลัพธ์ใน closed_results.json — notify.py จะอ่านแล้วส่ง Telegram"""
+    results = []
+    if os.path.exists(CLOSED_PATH):
+        try:
+            with open(CLOSED_PATH) as f:
+                results = json.load(f)
+        except Exception:
+            results = []
+    results.append({
+        "symbol":   sym,
+        "side":     side,
+        "entry_px": round(entry_px or 0, 6),
+        "exit_px":  round(exit_px  or 0, 6),
+        "outcome":  outcome,
+        "pnl":      round(pnl, 2),
+        "leverage": round(leverage  or 0, 2),
+        "notional": round(notional  or 0, 2),
+        "reason":   reason,
+        "ts":       datetime.now(timezone.utc).isoformat(),
+    })
+    with open(CLOSED_PATH, "w") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
 
 
 # ── PORTFOLIO SUMMARY ─────────────────────────────────────────────────────────

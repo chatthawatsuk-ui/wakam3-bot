@@ -59,6 +59,7 @@ jobs:
           git add -f --verbose latest_signals.json 2>/dev/null && echo "latest_signals.json OK" || echo "latest_signals.json SKIP"
           git add -f --verbose paper_trades.db     2>/dev/null && echo "paper_trades.db OK"     || echo "paper_trades.db SKIP"
           git add -f --verbose proposals/          2>/dev/null && echo "proposals/ OK"           || echo "proposals/ SKIP"
+          git add -f --verbose notified_signals.json 2>/dev/null && echo "notified_signals.json OK" || echo "notified_signals.json SKIP"
           echo "=== git status ==="
           git status
           echo "=== staged diff ==="
