@@ -2,7 +2,8 @@ name: AI Trade — Scan Every Hour
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/15 * * * *'        # ทุก 15 นาที — scan signals
+    - cron: '0 6 * * 1'           # ทุกวันจันทร์ 06:00 UTC — weekly report
   workflow_dispatch:
 
 permissions:
@@ -44,6 +45,10 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python notify.py
 
+      - name: Weekly Report — ทุกวันจันทร์เท่านั้น (PROPOSAL ONLY)
+        if: github.event.schedule == '0 6 * * 1' || github.event_name == 'workflow_dispatch'
+        run: python weekly_report.py
+
       - name: Commit updated data back to repo
         run: |
           git config user.name "github-actions[bot]"
@@ -53,6 +58,7 @@ jobs:
           git add -f --verbose scan_results.json          && echo "scan_results.json OK"    || echo "scan_results.json FAIL (not found?)"
           git add -f --verbose latest_signals.json 2>/dev/null && echo "latest_signals.json OK" || echo "latest_signals.json SKIP"
           git add -f --verbose paper_trades.db     2>/dev/null && echo "paper_trades.db OK"     || echo "paper_trades.db SKIP"
+          git add -f --verbose proposals/          2>/dev/null && echo "proposals/ OK"           || echo "proposals/ SKIP"
           echo "=== git status ==="
           git status
           echo "=== staged diff ==="

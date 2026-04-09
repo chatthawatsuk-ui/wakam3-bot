@@ -10,6 +10,10 @@ Flow:
 import os, json, sqlite3
 from datetime import datetime, timezone
 
+import numpy as np
+from ta.trend      import ADXIndicator
+from ta.volatility import BollingerBands, AverageTrueRange
+
 import agent_trend as TREND
 import agent_smc   as SMC
 import agent_osc   as OSC
@@ -83,6 +87,9 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
     if not t_rep or not s_rep or not o_rep:
         return None, _err
 
+    # ── Level 5: ตรวจ Market Regime ──────────────────────────
+    regime = _detect_regime(df_1h)
+
     # ── HTF filter — Trend Agent ตัดสิน ──────────────────────
     htf_bull = t_rep["htf_bull"]
     htf_sma  = t_rep["htf_sma"]
@@ -127,6 +134,7 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
         "score_osc":   b_osc,
         "in_discount": s_rep["details"].get("in_discount", False),
         "trail_bull":  t_rep["details"].get("trail_slow_bull", False),
+        "regime":      regime,
         "ts":          ts,
     }
 
@@ -159,12 +167,146 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
         "sl_pct":      round(dist / ep * 100, 3),
         "rsi":         o_rep["rsi"],
         "in_kz":       kz,
+        "regime":      regime,
         "score_trend": b_trend,
         "score_smc":   b_smc,
         "score_osc":   b_osc,
         "ts":          ts,
     }
+
+    # ── Level 4: บันทึก conditions ที่ active ตอน signal ยิง ──
+    save_condition_snapshot(sym, side, regime, ts, t_rep, s_rep, o_rep)
+
     return signal, scan_result
+
+
+# ══════════════════════════════════════════════════════════════
+# LEVEL 5 — MARKET REGIME DETECTION
+# ⚠️  READ-ONLY — ใช้บันทึกข้อมูลและ Report เท่านั้น
+#     การปรับ weights ตาม regime จะไม่เกิดอัตโนมัติ
+#     ต้องรอ Weekly Report (ทุกวันจันทร์) + คอนเฟิมก่อนทุกครั้ง
+# ══════════════════════════════════════════════════════════════
+def _detect_regime(df_1h):
+    """
+    TRENDING : ADX(14) > 25
+    VOLATILE : ATR ปัจจุบัน > 1.5× ค่าเฉลี่ย 48 แท่ง
+    RANGING  : อื่นๆ (ADX ต่ำ + ATR ปกติ)
+    """
+    try:
+        h, l, c = df_1h["high"], df_1h["low"], df_1h["close"]
+        adx_val  = ADXIndicator(h, l, c, 14).adx().iloc[-1]
+        atr_s    = AverageTrueRange(h, l, c, 14).average_true_range()
+        atr_now  = atr_s.iloc[-1]
+        atr_avg  = atr_s.rolling(48).mean().iloc[-1]
+        atr_ratio = atr_now / atr_avg if atr_avg > 0 else 1.0
+        if atr_ratio > 1.5:
+            return "VOLATILE"
+        if adx_val > 25:
+            return "TRENDING"
+        return "RANGING"
+    except Exception:
+        return "UNKNOWN"
+
+
+# ══════════════════════════════════════════════════════════════
+# LEVEL 4 — CONDITION SNAPSHOT (บันทึกทุก condition ที่ fire พร้อม regime)
+# ⚠️  READ-ONLY — ใช้บันทึกข้อมูลและ Report เท่านั้น
+#     การปรับ point ต่อ condition จะไม่เกิดอัตโนมัติ
+#     ต้องรอ Weekly Report (ทุกวันจันทร์) + คอนเฟิมก่อนทุกครั้ง
+# ══════════════════════════════════════════════════════════════
+def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
+    """
+    บันทึก conditions ทุกตัวที่ active ตอน signal ยิง
+    พร้อม regime → ใช้ใน weekly_report.py เพื่อคำนวณ win rate ต่อ condition
+    """
+    try:
+        td = t_rep.get("details", {})
+        sd = s_rep.get("details", {})
+        od = o_rep.get("details", {})
+
+        con = sqlite3.connect(DB_PATH)
+        cur = con.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS condition_snapshots (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                signal_ts     TEXT    NOT NULL,
+                symbol        TEXT    NOT NULL,
+                side          TEXT    NOT NULL,
+                regime        TEXT    NOT NULL,
+                -- 🎯 Trend Agent conditions
+                cdc_bull        INTEGER DEFAULT 0,
+                cross_up        INTEGER DEFAULT 0,
+                cross_dn        INTEGER DEFAULT 0,
+                touch_bull      INTEGER DEFAULT 0,
+                touch_bear      INTEGER DEFAULT 0,
+                above_sma50     INTEGER DEFAULT 0,
+                above_sma200    INTEGER DEFAULT 0,
+                sma50_gt_200    INTEGER DEFAULT 0,
+                trail_slow_bull INTEGER DEFAULT 0,
+                -- 🏦 SMC Agent conditions
+                bos_bull        INTEGER DEFAULT 0,
+                bos_bear        INTEGER DEFAULT 0,
+                choch_bull      INTEGER DEFAULT 0,
+                choch_bear      INTEGER DEFAULT 0,
+                qm_bull         INTEGER DEFAULT 0,
+                qm_bear         INTEGER DEFAULT 0,
+                in_discount     INTEGER DEFAULT 0,
+                in_premium      INTEGER DEFAULT 0,
+                in_eq           INTEGER DEFAULT 0,
+                -- 📈 Osc Agent conditions
+                rsi_bull_div    INTEGER DEFAULT 0,
+                rsi_bear_div    INTEGER DEFAULT 0,
+                rsi_os          INTEGER DEFAULT 0,
+                rsi_ob          INTEGER DEFAULT 0,
+                st_up           INTEGER DEFAULT 0,
+                st_dn           INTEGER DEFAULT 0,
+                macd_up         INTEGER DEFAULT 0,
+                macd_dn         INTEGER DEFAULT 0
+            )
+        """)
+        cur.execute("""
+            INSERT INTO condition_snapshots (
+                signal_ts, symbol, side, regime,
+                cdc_bull, cross_up, cross_dn, touch_bull, touch_bear,
+                above_sma50, above_sma200, sma50_gt_200, trail_slow_bull,
+                bos_bull, bos_bear, choch_bull, choch_bear,
+                qm_bull, qm_bear, in_discount, in_premium, in_eq,
+                rsi_bull_div, rsi_bear_div, rsi_os, rsi_ob,
+                st_up, st_dn, macd_up, macd_dn
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            signal_ts, sym, side, regime,
+            int(td.get("cdc_bull",        False)),
+            int(td.get("cross_up",         False)),
+            int(td.get("cross_dn",         False)),
+            int(td.get("touch_bull",       False)),
+            int(td.get("touch_bear",       False)),
+            int(td.get("above_sma50",      False)),
+            int(td.get("above_sma200",     False)),
+            int(td.get("sma50_gt_200",     False)),
+            int(td.get("trail_slow_bull",  False)),
+            int(sd.get("bos_bull",         False)),
+            int(sd.get("bos_bear",         False)),
+            int(sd.get("choch_bull",       False)),
+            int(sd.get("choch_bear",       False)),
+            int(sd.get("qm_bull",          False)),
+            int(sd.get("qm_bear",          False)),
+            int(sd.get("in_discount",      False)),
+            int(sd.get("in_premium",       False)),
+            int(sd.get("in_eq",            False)),
+            int(od.get("rsi_bull_div",     False)),
+            int(od.get("rsi_bear_div",     False)),
+            int(od.get("rsi_os",           False)),
+            int(od.get("rsi_ob",           False)),
+            int(od.get("st_up",            False)),
+            int(od.get("st_dn",            False)),
+            int(od.get("macd_up",          False)),
+            int(od.get("macd_dn",          False)),
+        ))
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(f"[ERR] save_condition_snapshot: {e}")
 
 
 # ══════════════════════════════════════════════════════════════
