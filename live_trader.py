@@ -15,11 +15,24 @@ except ImportError:
     sys.exit(1)
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-SYMBOLS    = [
-    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
-    "XRP/USDT", "DOGE/USDT", "AVAX/USDT", "LINK/USDT",
-    "ADA/USDT", "DOT/USDT",
+# CMC Top 100 (ex-stablecoins/wrapped) × OKX USDT Perpetual Futures
+SYMBOLS = [
+    # ── Mega Cap ──────────────────────────────────────────────────────────────
+    "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "SOL/USDT",
+    # ── Large Cap ─────────────────────────────────────────────────────────────
+    "TRX/USDT", "DOGE/USDT", "ADA/USDT", "BCH/USDT", "LTC/USDT",
+    "LINK/USDT", "AVAX/USDT", "SUI/USDT", "TON/USDT", "DOT/USDT",
+    # ── Mid-Large Cap ─────────────────────────────────────────────────────────
+    "SHIB/USDT", "HBAR/USDT", "XLM/USDT", "UNI/USDT", "NEAR/USDT",
+    "TAO/USDT", "MNT/USDT", "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
+    # ── Mid Cap ───────────────────────────────────────────────────────────────
+    "ETC/USDT", "ONDO/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT",
+    "ATOM/USDT", "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT",
+    # ── Active Futures (CMC top 100) ──────────────────────────────────────────
+    "VET/USDT", "CRO/USDT", "TRUMP/USDT", "DEXE/USDT", "MORPHO/USDT",
+    "KAS/USDT", "QNT/USDT", "HYPE/USDT", "ZEC/USDT", "FLR/USDT",
 ]
+
 TF_1H      = "1h"
 TF_4H      = "4h"
 CANDLES    = 300        # จำนวน candle ที่ดึงมาคำนวณ
@@ -34,13 +47,16 @@ TP1_R      = 1.2
 TP2_R      = 2.0
 RISK_PCT   = 0.01       # 1% per trade
 SL_PCT     = 0.005      # 0.5% SL ของราคา
-LEVERAGE   = 100
+LEVERAGE   = 20         # x20 futures (ปลอดภัยกว่า x100)
 
 DB_PATH    = "paper_trades.db"
 LOG_PATH   = "signals.log"
 
-# ── EXCHANGE ──────────────────────────────────────────────────────────────────
-exchange = ccxt.okx({"enableRateLimit": True})
+# ── EXCHANGE (OKX Perpetual Futures / USDT Swap) ──────────────────────────────
+exchange = ccxt.okx({
+    "enableRateLimit": True,
+    "options": {"defaultType": "swap"},   # ใช้ perpetual futures OHLCV
+})
 
 # ── LOGGER ────────────────────────────────────────────────────────────────────
 def log(msg):

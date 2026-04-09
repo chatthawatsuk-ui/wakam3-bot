@@ -11,14 +11,26 @@ DB_PATH   = "paper_trades.db"
 OUT_PATH  = "dashboard_data.json"
 PORT_SIZE = 1000.0
 
+# CMC Top 100 (ex-stablecoins/wrapped) × OKX USDT Perpetual Futures
 SYMBOLS = [
-    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
-    "XRP/USDT", "DOGE/USDT", "AVAX/USDT", "LINK/USDT",
-    "ADA/USDT", "DOT/USDT",
+    # ── Mega Cap ──────────────────────────────────────────────────────────────
+    "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "SOL/USDT",
+    # ── Large Cap ─────────────────────────────────────────────────────────────
+    "TRX/USDT", "DOGE/USDT", "ADA/USDT", "BCH/USDT", "LTC/USDT",
+    "LINK/USDT", "AVAX/USDT", "SUI/USDT", "TON/USDT", "DOT/USDT",
+    # ── Mid-Large Cap ─────────────────────────────────────────────────────────
+    "SHIB/USDT", "HBAR/USDT", "XLM/USDT", "UNI/USDT", "NEAR/USDT",
+    "TAO/USDT", "MNT/USDT", "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
+    # ── Mid Cap ───────────────────────────────────────────────────────────────
+    "ETC/USDT", "ONDO/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT",
+    "ATOM/USDT", "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT",
+    # ── Active Futures (CMC top 100) ──────────────────────────────────────────
+    "VET/USDT", "CRO/USDT", "TRUMP/USDT", "DEXE/USDT", "MORPHO/USDT",
+    "KAS/USDT", "QNT/USDT", "HYPE/USDT", "ZEC/USDT", "FLR/USDT",
 ]
 
 def fetch_okx_prices():
-    """ดึงราคา + 24h stats ทุก coin จาก OKX — รันบน GitHub Actions"""
+    """ดึงราคา + 24h stats จาก OKX Perpetual Futures — รันบน GitHub Actions"""
     if not ccxt:
         print("  [WARN] ccxt ไม่มี — ข้ามการดึงราคา OKX")
         return {}, []
@@ -27,7 +39,10 @@ def fetch_okx_prices():
     market_tickers = []
 
     try:
-        exchange = ccxt.okx({"enableRateLimit": True})
+        exchange = ccxt.okx({
+            "enableRateLimit": True,
+            "options": {"defaultType": "swap"},   # perpetual futures
+        })
         tickers = exchange.fetch_tickers()          # ดึงทีเดียวหมดเลย
 
         # ── watchlist 10 coins ────────────────────────────────────────────
@@ -43,16 +58,17 @@ def fetch_okx_prices():
                 "vol":    round(float(t.get("quoteVolume") or 0), 2),
             }
 
-        # ── market tickers (USDT pairs, vol > $500K) ──────────────────────
+        # ── market tickers (futures USDT pairs, vol > $1M) ────────────────
         for sym, t in tickers.items():
-            if not sym.endswith("/USDT"):
+            if not sym.endswith("/USDT:USDT") and not sym.endswith("/USDT"):
                 continue
             vol = float(t.get("quoteVolume") or 0)
             price = float(t.get("last") or 0)
-            if vol < 500_000 or price <= 0:
+            if vol < 1_000_000 or price <= 0:
                 continue
+            base = sym.replace("/USDT:USDT", "").replace("/USDT", "")
             market_tickers.append({
-                "sym":    sym.replace("/USDT", ""),
+                "sym":    base,
                 "price":  round(price, 8),
                 "change": round(float(t.get("percentage") or 0), 2),
                 "vol":    round(vol, 2),
