@@ -88,9 +88,9 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
     htf_sma  = t_rep["htf_sma"]
     kz       = o_rep["kz"]
 
-    # ── คะแนนแต่ละ specialist (กรอง HTF) ─────────────────────
-    trend_l = t_rep["score_long"]  if (htf_bull and htf_sma)   else 0
-    trend_s = t_rep["score_short"] if not (htf_bull or htf_sma) else 0
+    # ── คะแนนแต่ละ specialist (Trend Agent กรอง HTF เองแล้ว) ──
+    trend_l = t_rep["score_long"]
+    trend_s = t_rep["score_short"]
     smc_l   = s_rep["score_long"]
     smc_s_  = s_rep["score_short"]
     osc_l   = o_rep["score_long"]
