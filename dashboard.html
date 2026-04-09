@@ -804,22 +804,39 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
     <!-- ══ BTC LIVE ══ -->
     <div id="pg-btc" class="page">
-      <div class="card" style="max-width:700px;margin:0 auto">
-        <div class="card-h">
-          <div class="card-title"><span class="icon">₿</span> BTC / USDT — LIVE DATA</div>
-          <div class="live-dot"></div>
-        </div>
-        <div class="btc-hero">
-          <div class="btc-hero-px" id="btc-live-px">—</div>
-          <div class="btc-hero-sub">
-            <span id="btc-live-chg" style="font-weight:600">—</span>
-            <span style="margin-left:6px">24H Change</span>
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px;max-width:900px;margin:0 auto">
+        <!-- BTC Price Card -->
+        <div class="card">
+          <div class="card-h">
+            <div class="card-title"><span class="icon">₿</span> BTC / USDT — LIVE DATA</div>
+            <div class="live-dot"></div>
           </div>
-          <div class="btc-stats-row">
-            <div class="btc-stat"><div class="btc-stat-lbl">24H HIGH</div><div class="btc-stat-val up" id="btc-live-hi">—</div></div>
-            <div class="btc-stat"><div class="btc-stat-lbl">24H LOW</div><div class="btc-stat-val dn" id="btc-live-lo">—</div></div>
-            <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (USDT)</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
-            <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (BTC)</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+          <div class="btc-hero">
+            <div class="btc-hero-px" id="btc-live-px">—</div>
+            <div class="btc-hero-sub">
+              <span id="btc-live-chg" style="font-weight:600">—</span>
+              <span style="margin-left:6px">24H Change</span>
+            </div>
+            <div class="btc-stats-row">
+              <div class="btc-stat"><div class="btc-stat-lbl">24H HIGH</div><div class="btc-stat-val up" id="btc-live-hi">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">24H LOW</div><div class="btc-stat-val dn" id="btc-live-lo">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (USDT)</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (BTC)</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+            </div>
+          </div>
+        </div>
+        <!-- BTC Fear & Greed Card -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">₿ BTC FEAR &amp; GREED</div></div>
+          <div style="padding:20px;text-align:center">
+            <canvas id="btc-fg-canvas" width="160" height="90" style="display:block;margin:0 auto"></canvas>
+            <div id="btc-fg-val" style="font-size:42px;font-weight:800;font-family:var(--mono);margin-top:6px">—</div>
+            <div id="btc-fg-lbl" style="font-size:12px;color:var(--t2);margin-top:2px">—</div>
+            <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;font-size:11px">
+              <div><span class="t2">RSI(14)</span> <b id="btc-fg-rsi">—</b></div>
+              <div><span class="t2">vs MA30</span> <b id="btc-fg-ma">—</b></div>
+            </div>
+            <div style="margin-top:12px;font-size:9px;color:var(--t2)">คำนวณจาก BTC Daily: RSI + Momentum + Volatility</div>
           </div>
         </div>
       </div>
@@ -827,12 +844,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
     <!-- ══ MARKETS ══ -->
     <div id="pg-markets" class="page">
-      <!-- Fear & Greed + BTC row -->
-      <div style="display:grid;grid-template-columns:220px 1fr;gap:10px;margin-bottom:10px">
+      <!-- Row 1: Fear & Greed + Altcoin Season + BTC -->
+      <div style="display:grid;grid-template-columns:200px 200px 1fr;gap:10px;margin-bottom:10px">
         <div class="card">
           <div class="card-h"><div class="card-title">FEAR &amp; GREED</div></div>
           <div class="fg-wrap" style="flex-direction:column;padding:16px">
-            <canvas id="fg-canvas2" width="140" height="80"></canvas>
+            <canvas id="fg-canvas2" width="140" height="80" style="display:block;margin:0 auto"></canvas>
             <div style="text-align:center;margin-top:8px">
               <div class="fg-num" id="fg-val2" style="font-size:32px">—</div>
               <div class="fg-lbl t2" id="fg-lbl2">—</div>
@@ -840,6 +857,18 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="fg-hist" style="justify-content:center;margin-top:8px">
               <span>Yesterday: <b id="fg-yst2">—</b></span>
               <span style="margin-left:8px">Week: <b id="fg-week2">—</b></span>
+            </div>
+          </div>
+        </div>
+        <!-- Altcoin Season Card -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">🚀 ALTCOIN SEASON</div></div>
+          <div style="padding:16px;text-align:center">
+            <canvas id="alt-season-canvas" width="140" height="80" style="display:block;margin:0 auto"></canvas>
+            <div id="alt-season-val" style="font-size:32px;font-weight:800;font-family:var(--mono);margin-top:8px">—</div>
+            <div id="alt-season-lbl" style="font-size:11px;color:var(--t2);margin-top:2px">—</div>
+            <div style="margin-top:10px;font-size:10px;color:var(--t2)">
+              <span id="alt-season-out">—</span> coins outperforming BTC
             </div>
           </div>
         </div>
@@ -1321,6 +1350,8 @@ function renderLive(){
   updateTopBar()
   renderWatchlist()
   renderHeatmap('hm-scan',D.scan_results||[])
+  renderBTCFG()
+  renderAltSeason()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1363,6 +1394,72 @@ function drawFGCanvas(id,w,h,val){
 }
 
 // ═══════════════════════════════════════════════════════════
+// BTC FEAR & GREED
+// ═══════════════════════════════════════════════════════════
+function renderBTCFG(){
+  const fg=D.btc_fg||{}
+  const v=fg.value||0
+  const lbl=fg.label||'—'
+  const rsi=fg.rsi!=null?fg.rsi.toFixed(1):'—'
+  const ma=fg.ma30_pct!=null?(fg.ma30_pct>=0?'+':'')+fg.ma30_pct.toFixed(1)+'%':'—'
+  const c=v>=60?'var(--green)':v<=40?'var(--red)':'var(--yellow)'
+  const el=document.getElementById('btc-fg-val')
+  if(el){el.textContent=v||'—';el.style.color=c}
+  const lblEl=document.getElementById('btc-fg-lbl')
+  if(lblEl){lblEl.textContent=lbl.toUpperCase();lblEl.style.color=c}
+  setText('btc-fg-rsi',rsi)
+  setText('btc-fg-ma',ma)
+  drawFGCanvas('btc-fg-canvas',160,90,v)
+}
+
+// ═══════════════════════════════════════════════════════════
+// ALTCOIN SEASON
+// ═══════════════════════════════════════════════════════════
+function renderAltSeason(){
+  const as=D.altcoin_season||{}
+  const v=as.value||0
+  const lbl=as.label||'—'
+  const out=as.outperform!=null?as.outperform:'—'
+  const tot=as.total||0
+  const c=v>=75?'var(--green)':v>=45?'var(--yellow)':'var(--red)'
+  // Markets page
+  const valEl=document.getElementById('alt-season-val')
+  if(valEl){valEl.textContent=v||'—';valEl.style.color=c}
+  const lblEl=document.getElementById('alt-season-lbl')
+  if(lblEl){lblEl.textContent=lbl.toUpperCase();lblEl.style.color=c}
+  const outEl=document.getElementById('alt-season-out')
+  if(outEl) outEl.textContent=tot>0?`${out}/${tot}`:'—'
+  drawAltSeasonCanvas('alt-season-canvas',140,80,v)
+}
+
+function drawAltSeasonCanvas(id,w,h,val){
+  const c=document.getElementById(id)
+  if(!c) return
+  c.width=w;c.height=h
+  const ctx=c.getContext('2d')
+  ctx.clearRect(0,0,w,h)
+  const cx=w/2,cy=h*0.95,r=h*0.85
+  // bg
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,2*Math.PI)
+  ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=8;ctx.stroke()
+  // fill
+  const pct=Math.max(0,Math.min(100,val))/100
+  const clr=val>=75?'#00c97b':val>=45?'#f0b429':'#e83c5a'
+  ctx.beginPath();ctx.arc(cx,cy,r,Math.PI,Math.PI+pct*Math.PI)
+  ctx.strokeStyle=clr;ctx.lineWidth=8;ctx.lineCap='round';ctx.stroke()
+  // label zones
+  const zones=[{x:.1,t:'BTC'},{x:.5,t:'NEUTRAL'},{x:.9,t:'ALT'}]
+  ctx.font=`bold 8px var(--mono)`
+  ctx.fillStyle='rgba(255,255,255,.3)'
+  ctx.textAlign='center'
+  zones.forEach(z=>{
+    const a=Math.PI+z.x*Math.PI
+    const tx=cx+Math.cos(a)*(r-16),ty=cy+Math.sin(a)*(r-16)
+    ctx.fillText(z.t,tx,ty)
+  })
+}
+
+// ═══════════════════════════════════════════════════════════
 // RENDER ALL (called on data load)
 // ═══════════════════════════════════════════════════════════
 function render(){
@@ -1374,6 +1471,8 @@ function render(){
   if(currentPage==='lab') renderLab()
   if(currentPage==='agents') renderAgents()
   if(currentPage==='health') renderHealth()
+  if(currentPage==='markets') renderMarkets()
+  if(currentPage==='btc') renderBTCLive()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1887,6 +1986,7 @@ function renderHeatmap(id,scan){
 // ═══════════════════════════════════════════════════════════
 function renderMarkets(){
   renderFG()
+  renderAltSeason()
   if(MKT.length===0) return
   const gainers=[...MKT].sort((a,b)=>b.change-a.change).slice(0,20)
   const losers=[...MKT].sort((a,b)=>a.change-b.change).slice(0,15)
@@ -2146,6 +2246,7 @@ function renderHealth(){
 // ═══════════════════════════════════════════════════════════
 function renderBTCLive(){
   renderLive()
+  renderBTCFG()
 }
 
 // ═══════════════════════════════════════════════════════════

@@ -35,10 +35,11 @@ def fetch_okx_prices():
     """ดึงราคา + 24h stats จาก OKX (futures+spot) — รันบน GitHub Actions"""
     if not ccxt:
         print("  [WARN] ccxt ไม่มี — ข้ามการดึงราคา OKX")
-        return {}, []
+        return {}, [], {}
 
     live_prices = {}
     market_tickers = []
+    tickers = {}
 
     try:
         exch_fut  = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
@@ -88,14 +89,122 @@ def fetch_okx_prices():
     except Exception as e:
         print(f"  [WARN] OKX fetch_tickers: {e}")
 
-    return live_prices, market_tickers
+    return live_prices, market_tickers, tickers  # tickers_norm ส่งต่อให้ calc_market_indices
+
+
+# ── HELPERS ───────────────────────────────────────────────────────────────────
+def _rsi(closes, period=14):
+    """Simple RSI calculation (pure Python, no pandas needed)"""
+    if len(closes) < period + 1:
+        return 50.0
+    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
+    gains  = [d if d > 0 else 0.0 for d in deltas]
+    losses = [-d if d < 0 else 0.0 for d in deltas]
+    avg_g  = sum(gains[-period:]) / period
+    avg_l  = sum(losses[-period:]) / period
+    if avg_l == 0:
+        return 100.0
+    rs = avg_g / avg_l
+    return round(100 - 100 / (1 + rs), 1)
+
+
+def calc_market_indices(tickers_norm):
+    """
+    คำนวณ 2 ดัชนี:
+    1. BTC Fear & Greed  — จาก BTC daily OHLCV (RSI + Momentum + Volatility)
+    2. Altcoin Season    — เปรียบ % change 24h ของ 44 altcoins vs BTC
+    """
+    result = {
+        "btc_fg":        {"value": 50, "label": "Neutral", "rsi": 50},
+        "altcoin_season": {"value": 50, "label": "Neutral", "outperform": 0, "total": 0},
+    }
+    if not ccxt:
+        return result
+
+    # ── 1. Altcoin Season (24h proxy) ─────────────────────────────────────────
+    try:
+        btc_t    = tickers_norm.get("BTC/USDT", {})
+        btc_chg  = float(btc_t.get("percentage") or 0)
+        alts     = [s for s in SYMBOLS if s != "BTC/USDT"]
+        outperform, valid = 0, 0
+        for sym in alts:
+            t = tickers_norm.get(sym, {})
+            if not t:
+                continue
+            chg = float(t.get("percentage") or 0)
+            valid += 1
+            if chg > btc_chg:
+                outperform += 1
+        if valid > 0:
+            score = round(outperform / valid * 100)
+            if score >= 75:   lbl = "Altcoin Season 🚀"
+            elif score >= 55: lbl = "Altcoins Leading"
+            elif score >= 45: lbl = "Neutral"
+            elif score >= 25: lbl = "Bitcoin Leading"
+            else:             lbl = "Bitcoin Season ₿"
+            result["altcoin_season"] = {
+                "value":      score,
+                "label":      lbl,
+                "outperform": outperform,
+                "total":      valid,
+                "btc_24h":    round(btc_chg, 2),
+                "timeframe":  "24h",
+            }
+        print(f"  Altcoin Season: {result['altcoin_season']['value']}/100 — {result['altcoin_season']['label']}")
+    except Exception as e:
+        print(f"  [WARN] altcoin_season: {e}")
+
+    # ── 2. BTC Fear & Greed (daily OHLCV) ─────────────────────────────────────
+    try:
+        exch = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
+        bars = exch.fetch_ohlcv("BTC/USDT", "1d", limit=91)
+        if bars and len(bars) >= 31:
+            closes = [float(b[4]) for b in bars]   # close prices
+            curr   = closes[-1]
+
+            # RSI(14) daily
+            rsi = _rsi(closes)
+
+            # Momentum: % above/below 30d MA  (−20% → 0, +20% → 100)
+            ma30      = sum(closes[-30:]) / 30
+            momentum  = (curr - ma30) / ma30 * 100
+            mom_score = max(0.0, min(100.0, (momentum + 20) / 40 * 100))
+
+            # Volatility: std of last 14 daily returns (low vol = greed)
+            rets   = [(closes[i] - closes[i-1]) / closes[i-1] * 100
+                      for i in range(len(closes)-14, len(closes))]
+            mean_r = sum(rets) / len(rets)
+            std_r  = (sum((r - mean_r)**2 for r in rets) / len(rets)) ** 0.5
+            vol_score = max(0.0, min(100.0, 100 - std_r / 5 * 100))
+
+            score = round(rsi * 0.4 + mom_score * 0.4 + vol_score * 0.2)
+            if score >= 75:   lbl = "Extreme Greed"
+            elif score >= 55: lbl = "Greed"
+            elif score >= 45: lbl = "Neutral"
+            elif score >= 25: lbl = "Fear"
+            else:             lbl = "Extreme Fear"
+
+            result["btc_fg"] = {
+                "value": score,
+                "label": lbl,
+                "rsi":   rsi,
+                "ma30_pct": round(momentum, 1),
+            }
+        print(f"  BTC F&G: {result['btc_fg']['value']}/100 — {result['btc_fg']['label']}")
+    except Exception as e:
+        print(f"  [WARN] btc_fg: {e}")
+
+    return result
 
 
 def main():
     last_scan = datetime.now(timezone.utc).isoformat()
 
-    # ── ดึงราคา OKX (runs on GitHub Actions — no DNS block) ───────────────
-    live_prices, market_tickers = fetch_okx_prices()
+    # ── ดึงราคา OKX ──────────────────────────────────────────────────────────
+    live_prices, market_tickers, tickers_norm = fetch_okx_prices()
+
+    # ── คำนวณ BTC F&G และ Altcoin Season (ใช้ tickers_norm ที่ดึงมาแล้ว) ──
+    _indices = calc_market_indices(tickers_norm)
 
     # ── โหลด scan_results ─────────────────────────────────────────────────
     scan_results = []
@@ -127,6 +236,8 @@ def main():
             "scan_results": scan_results,
             "live_prices": live_prices,
             "market_tickers": market_tickers,
+            "btc_fg":         _indices["btc_fg"],
+            "altcoin_season": _indices["altcoin_season"],
             "last_scan": last_scan,
             "generated": last_scan,
         }
@@ -264,10 +375,12 @@ def main():
         "equity":        equity,
         "signals":       signals,
         "scan_results":  scan_results,
-        "live_prices":   live_prices,
+        "live_prices":    live_prices,
         "market_tickers": market_tickers,
-        "last_scan":     last_scan,
-        "generated":     last_scan,
+        "btc_fg":         _indices["btc_fg"],
+        "altcoin_season": _indices["altcoin_season"],
+        "last_scan":      last_scan,
+        "generated":      last_scan,
     }
 
     with open(OUT_PATH, "w") as f:
