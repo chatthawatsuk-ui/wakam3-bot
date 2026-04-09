@@ -16,7 +16,8 @@ DB_PATH       = "paper_trades.db"
 PORT_SIZE     = 1000.0   # ยอดเริ่มต้น USD
 RISK_PCT      = 0.01     # A: 1% ของ balance คงเหลือ (dynamic)
 MAX_LEVERAGE  = 5        # B: leverage สูงสุด (cap)
-MAX_OPEN      = 5        # จำนวน position เปิดพร้อมกันสูงสุด
+MAX_OPEN           = 5    # จำนวน position เปิดพร้อมกันสูงสุด
+TRADE_TIMEOUT_HRS  = 48   # ปิด trade อัตโนมัติถ้าค้างเกิน N ชั่วโมง
 TP1_R         = 1.2
 TP2_R         = 2.0
 
@@ -190,21 +191,74 @@ def open_trade(conn, sig):
     return trade_id
 
 
+# ── ENFORCE MAX POSITIONS — ปิด positions ส่วนเกิน ────────────────────────────
+def enforce_max_positions(conn):
+    """
+    ถ้า open positions > MAX_OPEN → void ตัวที่ score ต่ำสุดออก
+    รัน 1 ครั้งตอน startup เพื่อ cleanup trades เก่าก่อน code ใหม่
+    """
+    opens = conn.execute("""
+        SELECT id, symbol, side, score
+        FROM trades WHERE status='OPEN'
+        ORDER BY score DESC, id ASC
+    """).fetchall()
+
+    excess = len(opens) - MAX_OPEN
+    if excess <= 0:
+        return 0
+
+    # void ตัวที่ score ต่ำที่สุด (ท้ายสุดของ list)
+    to_void = opens[-excess:]
+    now = datetime.now(timezone.utc).isoformat()
+    for t in to_void:
+        tid, sym, side, score = t
+        conn.execute("""
+            UPDATE trades SET status='CLOSED', outcome='VOID',
+            pnl_usd=0, exit_px=entry_px, closed_at=? WHERE id=?
+        """, (now, tid))
+        print(f"  [VOID] #{tid} {sym} {side} score={score} (เกิน MAX_OPEN={MAX_OPEN})")
+    conn.commit()
+    return excess
+
+
 # ── CHECK OPEN TRADES ─────────────────────────────────────────────────────────
 def check_open_trades(conn):
     trades = conn.execute("""
         SELECT id, symbol, side, entry_px, sl_px, tp1_px, tp2_px,
-               tp1_hit, qty, risk_usd
+               tp1_hit, qty, risk_usd, opened_at
         FROM trades WHERE status='OPEN'
     """).fetchall()
 
     balance = get_balance(conn)
     closed  = []
+    now     = datetime.now(timezone.utc)
 
     for t in trades:
-        tid, sym, side, ep, sl, tp1, tp2, tp1_hit, qty, risk_usd = t
+        tid, sym, side, ep, sl, tp1, tp2, tp1_hit, qty, risk_usd, opened_at = t
         px = get_price(sym)
         if not px:
+            continue
+
+        # ── Trade Timeout — ปิดอัตโนมัติถ้าค้างเกิน TRADE_TIMEOUT_HRS ──
+        try:
+            opened_dt = datetime.fromisoformat(opened_at)
+            if opened_dt.tzinfo is None:
+                opened_dt = opened_dt.replace(tzinfo=timezone.utc)
+            hours_open = (now - opened_dt).total_seconds() / 3600
+        except Exception:
+            hours_open = 0
+
+        if hours_open > TRADE_TIMEOUT_HRS:
+            # คำนวณ PnL จริง ณ ราคาตลาด
+            if qty and qty > 0 and ep and ep > 0:
+                diff = (px - ep) if side == "LONG" else (ep - px)
+                pnl  = qty * diff
+            else:
+                pnl = 0
+            outcome = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
+            _close(conn, tid, px, outcome, pnl,
+                   reason=f"Timeout {TRADE_TIMEOUT_HRS}h ⏰")
+            closed.append((tid, sym, outcome, pnl))
             continue
 
         hit_sl  = (side == "LONG"  and px <= sl) or (side == "SHORT" and px >= sl)
@@ -386,6 +440,13 @@ def main():
     print("=" * 56)
 
     conn = init_db()
+
+    print(f"\n[0] Enforce MAX_OPEN={MAX_OPEN}...")
+    voided = enforce_max_positions(conn)
+    if voided:
+        print(f"  Voided {voided} positions ส่วนเกิน")
+    cnt = conn.execute("SELECT COUNT(*) FROM trades WHERE status='OPEN'").fetchone()[0]
+    print(f"  Open positions: {cnt}/{MAX_OPEN}")
 
     print("\n[1] เช็ค Open Trades...")
     closed = check_open_trades(conn)

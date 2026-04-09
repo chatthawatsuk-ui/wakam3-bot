@@ -434,25 +434,24 @@ def main():
 
     open_rows = conn.execute("""
         SELECT id, symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
-               tp1_hit, rsi, opened_at
-        FROM trades WHERE status='OPEN' ORDER BY id DESC
+               tp1_hit, rsi, opened_at, notional_usd, leverage, risk_usd
+        FROM trades WHERE status='OPEN' ORDER BY score DESC, id DESC
     """).fetchall()
-    # ── live_prices ต้องพร้อมก่อน open_rows loop ─────────────────────────────
-    # (fetch_okx_prices() รันแล้วข้างบน ก่อนถึง DB section)
-
-    RISK_USD = PORT_SIZE * 0.01   # $10 per trade (1% risk)
 
     opens = []
     for r in open_rows:
-        sym    = r["symbol"]
-        ep     = float(r["entry_px"] or 0)
-        sl     = float(r["sl_px"]    or 0)
-        side   = r["side"]
-        tp1_hit = r["tp1_hit"]
+        sym      = r["symbol"]
+        ep       = float(r["entry_px"]     or 0)
+        sl       = float(r["sl_px"]        or 0)
+        side     = r["side"]
+        tp1_hit  = r["tp1_hit"]
+        notional = float(r["notional_usd"] or 0)
+        lev      = float(r["leverage"]     or 0)
+        risk_usd = float(r["risk_usd"]     or 0)
 
         # ── Unrealized P&L ───────────────────────────────────────────────────
-        lv       = live_prices.get(sym, {})
-        curr_px  = float(lv.get("price") or ep)  # fallback to entry if no live price
+        lv      = live_prices.get(sym, {})
+        curr_px = float(lv.get("price") or ep)
 
         pnl_pct = 0.0
         pnl_usd = 0.0
@@ -460,23 +459,29 @@ def main():
             raw_pct = (curr_px - ep) / ep * 100
             pnl_pct = raw_pct if side == "LONG" else -raw_pct
 
-            sl_dist_pct = abs(ep - sl) / ep if (ep > 0 and sl > 0) else 0.005
-            pos_usd     = RISK_USD / sl_dist_pct if sl_dist_pct > 0 else 0
-            pnl_usd     = pnl_pct / 100 * pos_usd
+            if notional > 0:                          # ใช้ notional จาก DB (ถูกต้อง)
+                pnl_usd = pnl_pct / 100 * notional
+            else:                                     # fallback สำหรับ trades เก่า
+                sl_dist = abs(ep - sl) / ep if (ep > 0 and sl > 0) else 0.005
+                pos_usd = (PORT_SIZE * 0.01) / sl_dist if sl_dist > 0 else 0
+                pnl_usd = pnl_pct / 100 * pos_usd
 
         opens.append({
-            "id":           r["id"],
-            "symbol":       sym,
-            "side":         side,
-            "score":        r["score"],
-            "entry_price":  ep,
+            "id":            r["id"],
+            "symbol":        sym,
+            "side":          side,
+            "score":         r["score"],
+            "entry_price":   ep,
             "current_price": round(curr_px, 8),
-            "sl_price":     sl,
-            "tp_price":     float(r["tp1_px"] or 0),
-            "tp2_price":    float(r["tp2_px"] or 0),
-            "tp1_hit":      bool(tp1_hit),
-            "rsi":          r["rsi"],
-            "pnl_pct":      round(pnl_pct, 2),
+            "sl_price":      sl,
+            "tp_price":      float(r["tp1_px"] or 0),
+            "tp2_price":     float(r["tp2_px"] or 0),
+            "tp1_hit":       bool(tp1_hit),
+            "rsi":           r["rsi"],
+            "notional":      round(notional, 2),
+            "leverage":      round(lev, 2),
+            "risk_usd":      round(risk_usd, 2),
+            "pnl_pct":       round(pnl_pct, 2),
             "pnl":          round(pnl_usd, 2),
             "open_time":    r["opened_at"],
         })
