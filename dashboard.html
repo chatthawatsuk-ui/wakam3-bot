@@ -1036,6 +1036,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="pill pill-stop"><div class="pill-dot" style="background:var(--red)"></div>0 Stopped</div>
       </div>
       <div class="ag-grid" id="ag-grid"></div>
+
+      <!-- ── Level 2: Specialist Win Rate Panel ── -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-h">
+          <div class="card-title">★ SPECIALIST WIN RATE <span style="font-size:10px;color:var(--t2);font-weight:400">— จาก Paper Trades ที่ปิดแล้ว</span></div>
+          <div class="card-meta" id="wr-total-closed">รอ closed trades...</div>
+        </div>
+        <div id="wr-panel" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 0 8px"></div>
+        <div id="wr-empty" style="padding:20px;text-align:center;color:var(--t2);font-size:12px;display:none">
+          ยังไม่มี closed trades — win rate จะแสดงเมื่อ SL/TP hit ครั้งแรก
+        </div>
+      </div>
+
       <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div>RUNNING — active</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div>STALE — ไม่มี supervisor</div>
@@ -2200,6 +2213,84 @@ function renderAgents(){
     core.map(cardHtml).join('')+
     `<div style="grid-column:1/-1;font-size:10px;color:var(--yellow);letter-spacing:.08em;padding:10px 0 4px">★ PINE SPECIALISTS → reports to Signal Scanner</div>`+
     specialists.map(cardHtml).join('')
+
+  // ── Level 2: Specialist Win Rate ──────────────────────────
+  renderSpecialistWR()
+}
+
+function renderSpecialistWR(){
+  const wr  = D.specialist_wr || {}
+  const tot = wr.total_closed || 0
+  const panel  = document.getElementById('wr-panel')
+  const empty  = document.getElementById('wr-empty')
+  const totEl  = document.getElementById('wr-total-closed')
+  if(!panel) return
+
+  if(totEl) totEl.textContent = tot > 0
+    ? `${tot} closed trades`
+    : 'รอ closed trades...'
+
+  const specs=[
+    {key:'trend', emoji:'🎯', name:'Trend Agent',  color:'#f7931a', maxScore:11,
+     desc:'CDC EMA12/26 + SMA + ATR Trail'},
+    {key:'smc',   emoji:'🏦', name:'SMC Agent',    color:'#2157f3', maxScore:10,
+     desc:'BOS/CHoCH/QM + Zones'},
+    {key:'osc',   emoji:'📈', name:'Oscillator',   color:'#26a69a', maxScore:9,
+     desc:'RSI Div + Stoch + MACD'},
+  ]
+
+  if(tot===0){
+    panel.style.display='none'
+    if(empty) empty.style.display='block'
+    return
+  }
+  panel.style.display='grid'
+  if(empty) empty.style.display='none'
+
+  panel.innerHTML=specs.map(sp=>{
+    const d  = wr[sp.key] || {}
+    const pct= d.winrate ?? null
+    const barW = pct !== null ? Math.round(pct) : 0
+    const barCol = pct>=60?'var(--green)':pct>=40?'var(--yellow)':'var(--red)'
+    const wrTxt  = pct !== null ? `${pct}%` : '—'
+
+    const bucketsHtml = (d.buckets||[]).map(b=>`
+      <div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+        <span style="font-size:9px;color:var(--t2);min-width:56px">${b.label}</span>
+        <div style="flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px">
+          <div style="width:${b.winrate}%;height:3px;background:${sp.color};border-radius:2px;opacity:.7"></div>
+        </div>
+        <span style="font-size:9px;color:${sp.color};min-width:30px;text-align:right">${b.winrate}%</span>
+        <span style="font-size:9px;color:var(--t2)">(${b.trades})</span>
+      </div>`).join('')
+
+    return`<div style="background:var(--c2);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-size:20px">${sp.emoji}</span>
+        <div>
+          <div style="font-weight:600;font-size:12px">${sp.name}</div>
+          <div style="font-size:10px;color:var(--t2)">${sp.desc}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+        <span style="font-size:28px;font-weight:700;color:${pct>=60?'var(--green)':pct>=40?'var(--yellow)':'var(--red)'}">${wrTxt}</span>
+        <span style="font-size:11px;color:var(--t2)">win rate</span>
+      </div>
+      <div style="height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin-bottom:8px">
+        <div style="width:${barW}%;height:5px;background:${barCol};border-radius:3px;transition:.4s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:8px">
+        <span>✅ ${d.wins||0} wins</span>
+        <span>${d.trades||0} trades</span>
+        <span>❌ ${d.losses||0} loss</span>
+      </div>
+      <div style="font-size:10px;color:var(--t2);border-top:1px solid rgba(255,255,255,.06);padding-top:6px">
+        avg score — WIN: <span style="color:var(--green)">${d.avg_score_win??'—'}</span> ·
+        LOSS: <span style="color:var(--red)">${d.avg_score_loss??'—'}</span>
+      </div>
+      ${bucketsHtml}
+    </div>`
+  }).join('')
 }
 
 // ═══════════════════════════════════════════════════════════

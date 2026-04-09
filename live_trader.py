@@ -409,18 +409,23 @@ def scan():
             tp1  = ep + dist*TP1_R if side=="LONG" else ep - dist*TP1_R
             tp2  = ep + dist*TP2_R if side=="LONG" else ep - dist*TP2_R
 
+            bk = specialist_breakdown(r, side)
             sig = {
-                "symbol":  sym,
-                "side":    side,
-                "score":   score,
-                "price":   round(ep, 4),
-                "sl":      round(sl_p, 4),
-                "tp1":     round(tp1, 4),
-                "tp2":     round(tp2, 4),
-                "sl_pct":  round(dist/ep*100, 3),
-                "rsi":     round(float(r["rsi"]), 1),
-                "in_kz":   bool(r["kz"]),
-                "ts":      datetime.now(timezone.utc).isoformat(),
+                "symbol":      sym,
+                "side":        side,
+                "score":       score,
+                "price":       round(ep, 4),
+                "sl":          round(sl_p, 4),
+                "tp1":         round(tp1, 4),
+                "tp2":         round(tp2, 4),
+                "sl_pct":      round(dist/ep*100, 3),
+                "rsi":         round(float(r["rsi"]), 1),
+                "in_kz":       bool(r["kz"]),
+                # ── specialist scores ──────────────────────────
+                "score_trend": bk["trend"],
+                "score_smc":   bk["smc"],
+                "score_osc":   bk["osc"],
+                "ts":          datetime.now(timezone.utc).isoformat(),
             }
             signals.append(sig)
             log(f"  ✅ {sym} {side} score={score} px={ep:.4f} sl={sl_p:.4f} tp1={tp1:.4f} tp2={tp2:.4f}")

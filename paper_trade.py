@@ -23,25 +23,34 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS trades (
-            id        INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol    TEXT,
-            side      TEXT,
-            score     INTEGER,
-            entry_px  REAL,
-            sl_px     REAL,
-            tp1_px    REAL,
-            tp2_px    REAL,
-            sl_pct    REAL,
-            rsi       REAL,
-            status    TEXT DEFAULT 'OPEN',
-            tp1_hit   INTEGER DEFAULT 0,
-            exit_px   REAL,
-            outcome   TEXT,
-            pnl_usd   REAL,
-            opened_at TEXT,
-            closed_at TEXT
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol      TEXT,
+            side        TEXT,
+            score       INTEGER,
+            entry_px    REAL,
+            sl_px       REAL,
+            tp1_px      REAL,
+            tp2_px      REAL,
+            sl_pct      REAL,
+            rsi         REAL,
+            status      TEXT DEFAULT 'OPEN',
+            tp1_hit     INTEGER DEFAULT 0,
+            exit_px     REAL,
+            outcome     TEXT,
+            pnl_usd     REAL,
+            opened_at   TEXT,
+            closed_at   TEXT,
+            score_trend INTEGER DEFAULT 0,
+            score_smc   INTEGER DEFAULT 0,
+            score_osc   INTEGER DEFAULT 0
         )
     """)
+    # migrate: เพิ่ม columns ถ้า DB เก่ายังไม่มี
+    for col in ("score_trend", "score_smc", "score_osc"):
+        try:
+            conn.execute(f"ALTER TABLE trades ADD COLUMN {col} INTEGER DEFAULT 0")
+        except Exception:
+            pass  # column มีอยู่แล้ว
     conn.execute("""
         CREATE TABLE IF NOT EXISTS portfolio (
             id        INTEGER PRIMARY KEY,
@@ -77,12 +86,16 @@ def open_trade(conn, sig):
 
     conn.execute("""
         INSERT INTO trades
-        (symbol,side,score,entry_px,sl_px,tp1_px,tp2_px,sl_pct,rsi,opened_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+        (symbol,side,score,entry_px,sl_px,tp1_px,tp2_px,sl_pct,rsi,
+         score_trend,score_smc,score_osc,opened_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig["score"],
         sig["price"], sig["sl"], sig["tp1"], sig["tp2"],
         sig["sl_pct"], sig["rsi"],
+        sig.get("score_trend", 0),
+        sig.get("score_smc",   0),
+        sig.get("score_osc",   0),
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()

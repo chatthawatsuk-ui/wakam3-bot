@@ -197,6 +197,74 @@ def calc_market_indices(tickers_norm):
     return result
 
 
+def calc_specialist_winrate(conn):
+    """
+    Level 2 — วัด Win Rate ต่อ Specialist จาก closed trades
+    คืน dict พร้อมแสดงในหน้า Agent Team
+    """
+    empty = {"trades": 0, "wins": 0, "losses": 0, "winrate": None,
+             "avg_score_win": None, "avg_score_loss": None,
+             "buckets": []}
+
+    try:
+        rows = conn.execute("""
+            SELECT score_trend, score_smc, score_osc, outcome
+            FROM trades
+            WHERE outcome IS NOT NULL
+        """).fetchall()
+    except Exception:
+        return {"trend": empty, "smc": empty, "osc": empty, "total_closed": 0}
+
+    if not rows:
+        return {"trend": empty, "smc": empty, "osc": empty, "total_closed": 0}
+
+    def _stat(scores_wins):
+        """scores_wins = list of (score, is_win)"""
+        if not scores_wins:
+            return empty.copy()
+        total  = len(scores_wins)
+        wins   = sum(1 for _, w in scores_wins if w)
+        losses = total - wins
+        win_sc  = [s for s, w in scores_wins if w]
+        loss_sc = [s for s, w in scores_wins if not w]
+        # score buckets: Low(0-3) / Mid(4-6) / High(7+)
+        buckets = []
+        for lbl, lo, hi in [("Low 0-3",0,3),("Mid 4-6",4,6),("High 7+",7,99)]:
+            b = [(s,w) for s,w in scores_wins if lo <= s <= hi]
+            if b:
+                bw = sum(1 for _,w in b if w)
+                buckets.append({
+                    "label":   lbl,
+                    "trades":  len(b),
+                    "winrate": round(bw/len(b)*100,1)
+                })
+        return {
+            "trades":         total,
+            "wins":           wins,
+            "losses":         losses,
+            "winrate":        round(wins/total*100, 1),
+            "avg_score_win":  round(sum(win_sc)/len(win_sc), 1) if win_sc  else None,
+            "avg_score_loss": round(sum(loss_sc)/len(loss_sc),1) if loss_sc else None,
+            "buckets":        buckets,
+        }
+
+    trend_data = [(r[0], r[3]=="WIN") for r in rows]
+    smc_data   = [(r[1], r[3]=="WIN") for r in rows]
+    osc_data   = [(r[2], r[3]=="WIN") for r in rows]
+
+    result = {
+        "trend":        _stat(trend_data),
+        "smc":          _stat(smc_data),
+        "osc":          _stat(osc_data),
+        "total_closed": len(rows),
+    }
+    print(f"  Specialist WinRate — {len(rows)} closed trades "
+          f"| Trend:{result['trend']['winrate']}% "
+          f"SMC:{result['smc']['winrate']}% "
+          f"Osc:{result['osc']['winrate']}%")
+    return result
+
+
 def main():
     last_scan = datetime.now(timezone.utc).isoformat()
 
@@ -341,6 +409,9 @@ def main():
             "open_time":    r["opened_at"],
         })
 
+    # ── Level 2: Specialist Win Rate ─────────────────────────────────────────
+    specialist_wr = calc_specialist_winrate(conn)
+
     sess_data = {}
     for t in closed:
         try:
@@ -379,8 +450,9 @@ def main():
         "market_tickers": market_tickers,
         "btc_fg":         _indices["btc_fg"],
         "altcoin_season": _indices["altcoin_season"],
-        "last_scan":      last_scan,
-        "generated":      last_scan,
+        "last_scan":        last_scan,
+        "generated":        last_scan,
+        "specialist_wr":    specialist_wr,
     }
 
     with open(OUT_PATH, "w") as f:
