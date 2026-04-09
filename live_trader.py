@@ -59,8 +59,11 @@ RISK_PCT   = 0.01
 SL_PCT     = 0.005
 LEVERAGE   = 20         # x20 (ปลอดภัยกว่า x100)
 
-DB_PATH    = "paper_trades.db"
-LOG_PATH   = "signals.log"
+DB_PATH      = "paper_trades.db"
+LOG_PATH     = "signals.log"
+WEIGHTS_PATH = "weights.json"
+MIN_TRADES   = 10    # closed trades ขั้นต่ำก่อนปรับ weight
+SMOOTHING    = 0.4   # blend กับ equal weight — ป้องกัน overfit
 
 # ── EXCHANGES ─────────────────────────────────────────────────────────────────
 exchange_futures = ccxt.okx({
@@ -72,6 +75,37 @@ exchange_spot = ccxt.okx({
     "options": {"defaultType": "spot"},
 })
 exchange = exchange_futures  # default (ใช้ใน htf_bias ทั่วไป)
+
+# ── DYNAMIC WEIGHTS ──────────────────────────────────────────────────────────
+def load_weights():
+    """
+    อ่าน weights.json (สร้างโดย generate_dashboard.py หลัง calc win rate)
+    ถ้าไม่มีหรือ locked → equal weights 1/3 ทุก specialist
+    """
+    try:
+        if os.path.exists(WEIGHTS_PATH):
+            with open(WEIGHTS_PATH) as f:
+                w = json.load(f)
+            if not w.get("locked", True):
+                t, s, o = w["trend"], w["smc"], w["osc"]
+                return float(t), float(s), float(o)
+    except Exception:
+        pass
+    return 1/3, 1/3, 1/3   # equal weights (default)
+
+# โหลด weights ครั้งเดียวตอน import / startup
+W_TREND, W_SMC, W_OSC = load_weights()
+
+def _weighted_score(trend_s, smc_s, osc_s, kz=False):
+    """
+    แปลง specialist scores → weighted total (max คงที่ 31 เสมอ)
+    normalize แต่ละ specialist ก่อน (÷ max) แล้ว weighted sum × 30 + KZ
+    """
+    t_norm = trend_s / 11
+    s_norm = smc_s   / 10
+    o_norm = osc_s   / 9
+    combined = t_norm * W_TREND + s_norm * W_SMC + o_norm * W_OSC
+    return round(combined * 30) + (1 if kz else 0)
 
 # ── LOGGER ────────────────────────────────────────────────────────────────────
 def log(msg):
@@ -286,22 +320,18 @@ def _osc_short(r):
     if r["macd_dn"]:      s += 2
     return s  # max 9
 
-# ── MAIN SIGNAL (รวม 3 specialist + Kill Zone bonus) ──────────────────────────
+# ── MAIN SIGNAL — weighted by dynamic weights ─────────────────────────────────
 def score_long(r):
-    """Total max = 11 + 10 + 9 + 1 = 31"""
+    """Weighted max = 31 (normalize per specialist → weighted sum × 30 + KZ)"""
     if not (r["htf_bull"] and r["htf_sma"]):
         return 0
-    s = _trend_long(r) + _smc_long(r) + _osc_long(r)
-    if r["kz"]: s += 1
-    return s
+    return _weighted_score(_trend_long(r), _smc_long(r), _osc_long(r), r["kz"])
 
 def score_short(r):
-    """Total max = 11 + 10 + 9 + 1 = 31"""
+    """Weighted max = 31"""
     if r["htf_bull"] or r["htf_sma"]:
         return 0
-    s = _trend_short(r) + _smc_short(r) + _osc_short(r)
-    if r["kz"]: s += 1
-    return s
+    return _weighted_score(_trend_short(r), _smc_short(r), _osc_short(r), r["kz"])
 
 def specialist_breakdown(r, side):
     """ส่ง score แต่ละ specialist กลับมาเพื่อแสดงใน dashboard"""
@@ -506,6 +536,7 @@ if __name__ == "__main__":
     log("=" * 50)
     log("AI TRADE SYSTEM — LIVE SIGNAL ENGINE")
     log("🎯 Trend(CDC EMA12/26·SMA50/100/200·ATR Trail) | 🏦 SMC(BOS/CHoCH/QM·Zones) | 📈 Osc(RSI Div·Stoch·MACD)")
+    log(f"⚖️  Weights — Trend:{W_TREND:.3f}  SMC:{W_SMC:.3f}  Osc:{W_OSC:.3f}  ({'dynamic' if abs(W_TREND-1/3)>0.01 else 'equal (default)'})")
     log("=" * 50)
 
     signals      = []

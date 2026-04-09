@@ -265,6 +265,68 @@ def calc_specialist_winrate(conn):
     return result
 
 
+MIN_TRADES = 10    # ต้องปิดกี่ trade ถึงจะ unlock weights
+SMOOTHING  = 0.4   # blend กับ equal weight ป้องกัน overfit
+
+def calc_dynamic_weights(specialist_wr):
+    """
+    Level 3 — คำนวณ dynamic weights จาก win rate แต่ละ specialist
+    บันทึก weights.json ให้ live_trader.py อ่านใช้ run ถัดไป
+    """
+    total_closed = specialist_wr.get("total_closed", 0)
+    eq = 1 / 3
+
+    if total_closed < MIN_TRADES:
+        weights = {
+            "trend":   round(eq, 4),
+            "smc":     round(eq, 4),
+            "osc":     round(eq, 4),
+            "locked":  True,
+            "reason":  f"ต้องการ {MIN_TRADES} closed trades (มีอยู่ {total_closed})",
+            "total_closed": total_closed,
+            "generated": datetime.now(timezone.utc).isoformat(),
+        }
+    else:
+        # win rate ต่อ specialist (fallback 0.5 ถ้าไม่มีข้อมูล)
+        def _wr(key):
+            d = specialist_wr.get(key, {})
+            return d["winrate"] / 100 if d.get("winrate") is not None else 0.5
+
+        wr_t = _wr("trend")
+        wr_s = _wr("smc")
+        wr_o = _wr("osc")
+
+        # blend กับ equal weight (SMOOTHING)
+        raw = {
+            "trend": (1 - SMOOTHING) * wr_t + SMOOTHING * eq,
+            "smc":   (1 - SMOOTHING) * wr_s + SMOOTHING * eq,
+            "osc":   (1 - SMOOTHING) * wr_o + SMOOTHING * eq,
+        }
+        total = sum(raw.values())
+        weights = {
+            "trend":   round(raw["trend"] / total, 4),
+            "smc":     round(raw["smc"]   / total, 4),
+            "osc":     round(raw["osc"]   / total, 4),
+            "locked":  False,
+            "reason":  f"Adapted from {total_closed} closed trades (smoothing={SMOOTHING})",
+            "total_closed": total_closed,
+            "wr_trend": round(wr_t * 100, 1),
+            "wr_smc":   round(wr_s * 100, 1),
+            "wr_osc":   round(wr_o * 100, 1),
+            "generated": datetime.now(timezone.utc).isoformat(),
+        }
+
+    try:
+        with open("weights.json", "w") as f:
+            json.dump(weights, f, indent=2, ensure_ascii=False)
+        status = "🔒 locked" if weights["locked"] else "✅ adapted"
+        print(f"  Dynamic Weights {status} — Trend:{weights['trend']} SMC:{weights['smc']} Osc:{weights['osc']}")
+    except Exception as e:
+        print(f"  [WARN] weights.json write: {e}")
+
+    return weights
+
+
 def main():
     last_scan = datetime.now(timezone.utc).isoformat()
 
@@ -412,6 +474,9 @@ def main():
     # ── Level 2: Specialist Win Rate ─────────────────────────────────────────
     specialist_wr = calc_specialist_winrate(conn)
 
+    # ── Level 3: Dynamic Weights ──────────────────────────────────────────────
+    dyn_weights = calc_dynamic_weights(specialist_wr)
+
     sess_data = {}
     for t in closed:
         try:
@@ -453,6 +518,7 @@ def main():
         "last_scan":        last_scan,
         "generated":        last_scan,
         "specialist_wr":    specialist_wr,
+        "dyn_weights":      dyn_weights,
     }
 
     with open(OUT_PATH, "w") as f:

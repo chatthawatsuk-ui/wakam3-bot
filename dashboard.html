@@ -1037,6 +1037,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
       <div class="ag-grid" id="ag-grid"></div>
 
+      <!-- ── Level 3: Dynamic Weight Panel ── -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-h">
+          <div class="card-title">⚖️ DYNAMIC WEIGHTS <span id="dw-lock-badge" style="font-size:10px;margin-left:6px"></span></div>
+          <div class="card-meta" id="dw-reason">—</div>
+        </div>
+        <div id="dw-panel" style="padding:4px 0 8px"></div>
+      </div>
+
       <!-- ── Level 2: Specialist Win Rate Panel ── -->
       <div class="card" style="margin-top:14px">
         <div class="card-h">
@@ -2214,6 +2223,8 @@ function renderAgents(){
     `<div style="grid-column:1/-1;font-size:10px;color:var(--yellow);letter-spacing:.08em;padding:10px 0 4px">★ PINE SPECIALISTS → reports to Signal Scanner</div>`+
     specialists.map(cardHtml).join('')
 
+  // ── Level 3: Dynamic Weights ─────────────────────────────
+  renderDynWeights()
   // ── Level 2: Specialist Win Rate ──────────────────────────
   renderSpecialistWR()
 }
@@ -2291,6 +2302,62 @@ function renderSpecialistWR(){
       ${bucketsHtml}
     </div>`
   }).join('')
+}
+
+function renderDynWeights(){
+  const w   = D.dyn_weights || {}
+  const panel  = document.getElementById('dw-panel')
+  const badge  = document.getElementById('dw-lock-badge')
+  const reason = document.getElementById('dw-reason')
+  if(!panel) return
+
+  const locked = w.locked !== false
+  if(badge)  badge.innerHTML = locked
+    ? `<span style="background:#f7931a22;color:#f7931a;padding:1px 6px;border-radius:4px;font-size:9px">🔒 LOCKED</span>`
+    : `<span style="background:rgba(0,201,123,.15);color:var(--green);padding:1px 6px;border-radius:4px;font-size:9px">✅ ACTIVE</span>`
+  if(reason) reason.textContent = w.reason || '—'
+
+  const specs = [
+    {key:'trend', emoji:'🎯', name:'Trend Agent',  color:'#f7931a', max:11},
+    {key:'smc',   emoji:'🏦', name:'SMC Agent',    color:'#2157f3', max:10},
+    {key:'osc',   emoji:'📈', name:'Oscillator',   color:'#26a69a', max:9},
+  ]
+  const eq = (1/3*100).toFixed(1)
+
+  panel.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
+    ${specs.map(sp=>{
+      const wPct = w[sp.key] ? (w[sp.key]*100).toFixed(1) : eq
+      const wrPct= w['wr_'+sp.key] ?? null
+      const barW = parseFloat(wPct)
+      const delta = (parseFloat(wPct) - parseFloat(eq)).toFixed(1)
+      const deltaCol = delta>0?'var(--green)':delta<0?'var(--red)':'var(--t2)'
+      const deltaStr = delta>0?`+${delta}%`:delta<0?`${delta}%`:'—'
+      return`<div style="background:var(--c2);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,.06)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+          <span style="font-size:18px">${sp.emoji}</span>
+          <div>
+            <div style="font-size:11px;font-weight:600">${sp.name}</div>
+            <div style="font-size:9px;color:var(--t2)">max ${sp.max} pts</div>
+          </div>
+        </div>
+        <div style="font-size:26px;font-weight:700;color:${sp.color};line-height:1">${wPct}%</div>
+        <div style="font-size:10px;color:${deltaCol};margin-bottom:6px">
+          ${locked?'equal weight':deltaStr+' vs equal'}
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;margin-bottom:6px">
+          <div style="width:${barW}%;height:6px;background:${sp.color};border-radius:3px;transition:.5s"></div>
+        </div>
+        ${wrPct!==null?`<div style="font-size:10px;color:var(--t2)">win rate basis: <span style="color:${sp.color}">${wrPct}%</span></div>`:''}
+      </div>`
+    }).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--t2);padding:4px 2px">
+      ${locked
+        ? `🔒 ใช้ equal weight จนกว่าจะมี ${w.total_closed||0} → <b style="color:var(--yellow)">10</b> closed trades`
+        : `⚖️ ปรับ weight อัตโนมัติจาก ${w.total_closed} closed trades · smoothing 40% กับ equal weight · อัพเดททุก run`
+      }
+    </div>`
 }
 
 // ═══════════════════════════════════════════════════════════
