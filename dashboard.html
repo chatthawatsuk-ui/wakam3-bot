@@ -1038,8 +1038,17 @@ tr:hover td{background:rgba(255,255,255,.02)}
 // ═══════════════════════════════════════════════════════════
 let D={},LIVE={},MKT=[],FG={value:50,label:'Neutral',yesterday:50,lastWeek:50}
 let currentPage='dash',labFilterMode='all',posTab='open'
-const SYMS=['BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT','XRP/USDT',
-            'DOGE/USDT','AVAX/USDT','LINK/USDT','ADA/USDT','DOT/USDT']
+const SYMS=[
+  'BTC/USDT','ETH/USDT','BNB/USDT','XRP/USDT','SOL/USDT',
+  'TRX/USDT','DOGE/USDT','ADA/USDT','BCH/USDT','LTC/USDT',
+  'LINK/USDT','AVAX/USDT','SUI/USDT','TON/USDT','DOT/USDT',
+  'SHIB/USDT','HBAR/USDT','XLM/USDT','UNI/USDT','NEAR/USDT',
+  'TAO/USDT','MNT/USDT','PEPE/USDT','AAVE/USDT','ICP/USDT',
+  'ETC/USDT','RENDER/USDT','ALGO/USDT','POL/USDT','ATOM/USDT',
+  'WLD/USDT','ENA/USDT','FIL/USDT','APT/USDT','VET/USDT',
+  'CRO/USDT','TRUMP/USDT','ONDO/USDT','HYPE/USDT','DEXE/USDT',
+  'MORPHO/USDT','KAS/USDT','QNT/USDT','ZEC/USDT','FLR/USDT',
+]
 const TV_LAYOUT='53w8NZMb'
 
 // FUTURES set — sync กับ live_trader.py / generate_dashboard.py
@@ -1397,8 +1406,9 @@ function renderDash(){
     else{
       posEl.innerHTML=open.slice(0,8).map(t=>{
         const pnlPct=t.pnl_pct||0
+        const fut=isFutures(t.symbol)
         return`<div class="pos-row">
-          <span class="pos-sym">${t.symbol?.replace('/USDT','')}</span>
+          <span class="pos-sym">${t.symbol?.replace('/USDT','')}${fut?'<span style="font-size:8px;color:#f7931a">.P</span>':''}</span>
           <span class="${t.side==='LONG'?'pos-side-l':'pos-side-s'}">${t.side==='LONG'?'L':'S'}</span>
           <span class="t2" style="font-size:10px;flex:1">${pxFmt(t.entry_price)}</span>
           <span class="pos-pnl pos-ml ${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</span>
@@ -1416,8 +1426,16 @@ function renderDash(){
     else sigTb.innerHTML=topSigs.map(r=>{
       const lv=LIVE[r.symbol]
       const px=lv?pxFmt(lv.price):pxFmt(r.price)
+      const base=r.symbol?.replace('/USDT','')||'?'
+      const fut=isFutures(r.symbol)
+      const url=tvUrl(r.symbol)
       return`<tr>
-        <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
+        <td class="txt">
+          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
+            ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
+            ${fut?'<span style="font-size:8px;background:#f7931a22;color:#f7931a;border-radius:3px;padding:1px 3px;margin-left:3px">PERP</span>':'<span style="font-size:8px;background:rgba(255,255,255,.06);color:var(--t2);border-radius:3px;padding:1px 3px;margin-left:3px">SPOT</span>'}
+          </a>
+        </td>
         <td>${sBadge(r.status)}</td>
         <td>${sideBadge(r.side)}</td>
         <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/26</span>
@@ -1435,14 +1453,23 @@ function renderDash(){
   setText('d-tq-cnt',topQ.length+' top')
   if(tqTb){
     if(topQ.length===0){tqTb.innerHTML='<tr><td colspan="6"><div class="empty">—</div></td></tr>'}
-    else tqTb.innerHTML=topQ.map(r=>`<tr>
-      <td class="txt"><b>${r.symbol?.replace('/USDT','')}</b></td>
-      <td>${sideBadge(r.side)}</td>
-      <td><span style="font-family:var(--mono);color:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}">⚡ ${r.best_score}</span></td>
-      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
-      <td>${r.htf_bull?'<span class="up">▲BULL</span>':'<span class="dn">▼BEAR</span>'}</td>
-      <td>${r.in_kz?'<span class="up">⚡YES</span>':'<span class="t2">—</span>'}</td>
-    </tr>`).join('')
+    else tqTb.innerHTML=topQ.map(r=>{
+      const base=r.symbol?.replace('/USDT','')||'?'
+      const fut=isFutures(r.symbol)
+      const url=tvUrl(r.symbol)
+      return`<tr>
+        <td class="txt">
+          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
+            ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
+          </a>
+        </td>
+        <td>${sideBadge(r.side)}</td>
+        <td><span style="font-family:var(--mono);color:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}">⚡ ${r.best_score}</span></td>
+        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+        <td>${r.htf_bull?'<span class="up">▲BULL</span>':'<span class="dn">▼BEAR</span>'}</td>
+        <td>${r.in_kz?'<span class="up">⚡YES</span>':'<span class="t2">—</span>'}</td>
+      </tr>`
+    }).join('')
   }
 
   // Strategy (simplified — by score range)
@@ -1498,11 +1525,12 @@ function renderWatchlist(){
     const lv=LIVE[sym]
     if(!lv) return''
     const base=sym.replace('/USDT','')
+    const fut=isFutures(sym)
     const chgTxt=(lv.change>=0?'+':'')+lv.change.toFixed(2)+'%'
     const url=tvUrl(sym)
     return`<a class="wl-row" href="${url}" target="_blank" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;padding:7px 13px;border-bottom:1px solid var(--border);transition:.12s;" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
-      <span class="wl-sym">${base}</span>
-      <span style="font-size:9px;color:var(--t2);opacity:.6">TV↗</span>
+      <span class="wl-sym">${base}${fut?'<span style="font-size:8px;color:#f7931a">.P</span>':'<span style="font-size:8px;color:var(--t2)">·S</span>'}</span>
+      <span style="font-size:9px;color:var(--t2);opacity:.6">↗</span>
       <span class="wl-px" style="flex:1;text-align:right">${pxFmt(lv.price)}</span>
       <span class="wl-chg ${lv.change>=0?'up':'dn'}">${chgTxt}</span>
       <span class="wl-vol">$${shortNum(lv.vol)}</span>

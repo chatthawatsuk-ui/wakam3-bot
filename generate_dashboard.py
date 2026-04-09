@@ -47,11 +47,14 @@ def fetch_okx_prices():
         tickers_fut  = exch_fut.fetch_tickers()
         tickers_spot = exch_spot.fetch_tickers()
 
-        # รวม: ถ้า symbol อยู่ใน FUTURES_SET ใช้ futures ticker ก่อน fallback spot
-        tickers = tickers_spot.copy()
-        tickers.update(tickers_fut)   # futures ทับ spot สำหรับ key เดียวกัน
+        # normalize futures keys: "BTC/USDT:USDT" → "BTC/USDT"
+        tickers_fut_norm = {k.split(':')[0]: v for k, v in tickers_fut.items()}
 
-        # ── watchlist 10 coins ────────────────────────────────────────────
+        # รวม: spot เป็น base, futures (normalized) ทับเพื่อให้ได้ราคา perp
+        tickers = tickers_spot.copy()
+        tickers.update(tickers_fut_norm)
+
+        # ── live prices ทุกเหรียญใน SYMBOLS ──────────────────────────────
         for sym in SYMBOLS:
             t = tickers.get(sym)
             if not t:
