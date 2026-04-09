@@ -2108,11 +2108,33 @@ function renderLab(){
 // AGENT TEAM
 // ═══════════════════════════════════════════════════════════
 const AGENTS=[
-  {id:'data',emoji:'📡',name:'Data Collector',desc:'ดึง OHLCV + ราคา จาก OKX ทุก 15 นาที',cycle:'~15m',status:'stale'},
-  {id:'signal',emoji:'🔍',name:'Signal Scanner',desc:'วิเคราะห์ EMA/RSI/BOS/CHoCH/QM ทุก coin',cycle:'~15m',status:'stale'},
-  {id:'trader',emoji:'🤖',name:'Paper Trader',desc:'เปิด/ปิด paper trade ตาม signal',cycle:'~15m',status:'stale'},
-  {id:'dash',emoji:'📊',name:'Dashboard Builder',desc:'สร้าง dashboard_data.json ทุก run',cycle:'~15m',status:'stale'},
-  {id:'notify',emoji:'📱',name:'Telegram Notifier',desc:'ส่ง alert ผ่าน Telegram Bot',cycle:'~15m',status:'stale'},
+  // ── Core Pipeline ──────────────────────────────────────────
+  {id:'data',   emoji:'📡', name:'Data Collector',
+   desc:'ดึง OHLCV + ราคา จาก OKX ทุก 15 นาที',
+   cycle:'~15m', role:'core'},
+  {id:'signal', emoji:'🔍', name:'Signal Scanner',
+   desc:'รวม score จาก Trend / SMC / Oscillator → LONG/SHORT/WAIT + confidence%',
+   cycle:'~15m', role:'core'},
+  {id:'trader', emoji:'🤖', name:'Paper Trader',
+   desc:'เปิด/ปิด paper trade ตาม signal',
+   cycle:'~15m', role:'core'},
+  {id:'dash',   emoji:'📊', name:'Dashboard Builder',
+   desc:'สร้าง dashboard_data.json ทุก run',
+   cycle:'~15m', role:'core'},
+  {id:'notify', emoji:'📱', name:'Telegram Notifier',
+   desc:'ส่ง alert ผ่าน Telegram Bot',
+   cycle:'~15m', role:'core'},
+  // ── WaKam3.pine Specialists ────────────────────────────────
+  {id:'trend',  emoji:'🎯', name:'Trend Agent',
+   desc:'WaKam3 › CDC ActionZone (EMA 12/26) + SMA 50/100/200 + ATR Trailing Stop → trend_direction / ema_cross / atr_sl',
+   cycle:'~15m', role:'specialist'},
+  {id:'smc',    emoji:'🏦', name:'SMC Agent',
+   desc:'WaKam3 › BOS/CHoCH (Internal+Swing) + Order Blocks + Fair Value Gaps + EQH/EQL + Premium/Discount Zones',
+   cycle:'~15m', role:'specialist'},
+  // ── WAKAME_RSI_MACD_STOCH.pine Specialist ─────────────────
+  {id:'osc',    emoji:'📈', name:'Oscillator Agent',
+   desc:'RSI(14) Divergence (Regular+Hidden) + Stochastic (14,1,3) + MACD (12,26,9) normalized → momentum score → Signal Scanner',
+   cycle:'~15m', role:'specialist'},
 ]
 
 function renderAgents(){
@@ -2136,27 +2158,39 @@ function renderAgents(){
 
   const grid=document.getElementById('ag-grid')
   if(!grid) return
-  grid.innerHTML=agents.map(a=>{
+
+  const core=agents.filter(a=>a.role==='core')
+  const specialists=agents.filter(a=>a.role==='specialist')
+
+  const cardHtml=a=>{
     const s=a.status
     const cls=s==='run'?'ag-run':'ag-stale'
     const badgeCls=s==='run'?'b-run':'b-stale'
     const badge=s==='run'?'RUNNING':'STALE'
     const lastSeen=D.last_scan?timeAgo(D.last_scan):'—'
+    const roleLbl=a.role==='specialist'
+      ?'<span style="font-size:9px;color:var(--yellow);margin-left:4px">★ SPECIALIST</span>':''
     return`<div class="ag-card ${cls}">
       <div class="ag-header">
         <div class="ag-avatar">${a.emoji}</div>
         <div class="ag-info">
-          <div class="ag-name">${a.name} <span class="bdg ${badgeCls}" style="font-size:9px">${badge}</span></div>
+          <div class="ag-name">${a.name} <span class="bdg ${badgeCls}" style="font-size:9px">${badge}</span>${roleLbl}</div>
           <div class="ag-desc">${a.desc}</div>
         </div>
       </div>
       <div class="ag-stats">
         <div class="ag-stat"><div class="ag-stat-lbl">LAST SEEN</div><div class="ag-stat-val ${s==='run'?'up':'yl'}">${s==='run'?lastSeen:'—'}</div></div>
         <div class="ag-stat"><div class="ag-stat-lbl">CYCLE</div><div class="ag-stat-val">${a.cycle}</div></div>
-        <div class="ag-stat"><div class="ag-stat-lbl">SUPERVISOR</div><div class="ag-stat-val t2">GitHub Actions</div></div>
+        <div class="ag-stat"><div class="ag-stat-lbl">ROLE</div><div class="ag-stat-val t2">${a.role==='specialist'?'Pine Specialist':'Core Pipeline'}</div></div>
       </div>
     </div>`
-  }).join('')
+  }
+
+  grid.innerHTML=
+    `<div style="grid-column:1/-1;font-size:10px;color:var(--t2);letter-spacing:.08em;padding:2px 0 4px">CORE PIPELINE</div>`+
+    core.map(cardHtml).join('')+
+    `<div style="grid-column:1/-1;font-size:10px;color:var(--yellow);letter-spacing:.08em;padding:10px 0 4px">★ PINE SPECIALISTS → reports to Signal Scanner</div>`+
+    specialists.map(cardHtml).join('')
 }
 
 // ═══════════════════════════════════════════════════════════
