@@ -946,14 +946,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="card">
         <div class="card-h">
           <div class="card-title">FULL SCANNER</div>
-          <div class="card-meta">Score threshold: ≥8 = SIGNAL, 5-7 = WATCH</div>
+          <div class="card-meta">Score threshold: ≥8 = SIGNAL · max 31 (Trend11 + SMC10 + Osc9 + KZ1)</div>
         </div>
         <div class="tw"><table>
           <thead><tr>
-            <th>Symbol</th><th>Price</th><th>24H%</th>
-            <th>Status</th><th>Side</th>
-            <th>Long Score</th><th>Short Score</th>
-            <th>Best</th><th>RSI</th><th>HTF</th><th>Key Zone</th>
+            <th>#</th><th>Symbol</th><th>Side</th><th>Status</th>
+            <th>Total /31</th>
+            <th title="🎯 CDC EMA12/26 + SMA50/200 + ATR Trail (max 11)">🎯 Trend /11</th>
+            <th title="🏦 BOS/CHoCH/QM + Discount Zone (max 10)">🏦 SMC /10</th>
+            <th title="📈 RSI Div + Stoch + MACD (max 9)">📈 Osc /9</th>
+            <th>Price</th><th>RSI</th><th>HTF</th><th>KZ</th>
           </tr></thead>
           <tbody id="sc-tb"></tbody>
         </table></div>
@@ -1537,8 +1539,8 @@ function renderDash(){
         </td>
         <td>${sBadge(r.status)}</td>
         <td>${sideBadge(r.side)}</td>
-        <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/26</span>
-          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/26*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
+        <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/31</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/31*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
         </div></td>
         <td>${px}</td>
         <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
@@ -1719,7 +1721,7 @@ function renderSignals(){
         <div class="sig-sym">${symDisp(r.symbol)}</div>
         <div class="sig-type">EMA SCORE · ${isFutures(r.symbol)?'PERP':'SPOT'}</div>
         <div class="sig-score">⚡ ${r.best_score}</div>
-        <div class="sig-score-lbl">/ 26 max score</div>
+        <div class="sig-score-lbl">/ 31 max score</div>
         <div class="sig-meta">
           <span>RSI ${r.rsi||'—'}</span>
           ${chg!==null?`<span class="${chg>=0?'up':'dn'}">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''}
@@ -1786,25 +1788,32 @@ function renderSignals(){
       const missingHtml=missing.length>0
         ?`<div style="font-size:9px;color:var(--t2);margin-top:3px">ขาด: ${missing.join(', ')}</div>`
         :''
+      const st=r.score_trend||0, ss2=r.score_smc||0, so=r.score_osc||0
+      const miniBar=(v,mx,col)=>`<div style="display:flex;align-items:center;gap:4px">
+        <span style="min-width:18px;font-weight:600;color:${col};font-size:11px">${v}</span>
+        <div style="flex:1;height:4px;background:rgba(255,255,255,.08);border-radius:2px">
+          <div style="width:${Math.round(v/mx*100)}%;height:4px;background:${col};border-radius:2px"></div>
+        </div></div>`
       return`<tr style="${r.status==='SIGNAL'?'background:rgba(0,201,123,.04)':''}">
-        <td class="t2">${i+1}</td>
+        <td class="t2" style="font-size:10px">${i+1}</td>
         <td>
-          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:600;font-family:var(--mono)" title="เปิด TradingView — IamKampo">${base}${isFutures(r.symbol)?'<span style="font-size:9px;color:#f7931a">.P</span>':''} ${mktBadge} <span style="font-size:9px;color:var(--t2)">↗</span></a>
+          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:600;font-family:var(--mono)" title="เปิด TradingView">${base}${isFutures(r.symbol)?'<span style="font-size:9px;color:#f7931a">.P</span>':''} ${mktBadge}</a>
         </td>
         <td>${sideBadge(r.side)}</td>
-        <td>${sBadge(r.status)}</td>
+        <td>${sBadge(r.status)}${missingHtml}</td>
         <td>
           <div class="sbar">
-            <span style="min-width:32px;color:${bc};font-weight:600">${sc}/26</span>
-            <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/26*100)}%;background:${bc}"></div></div>
+            <span style="min-width:36px;color:${bc};font-weight:700">${sc}/31</span>
+            <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/31*100)}%;background:${bc}"></div></div>
           </div>
-          ${missingHtml}
         </td>
-        <td>${px} ${chg!==null?`<span class="${chg>=0?'up':'dn'}" style="font-size:10px">(${chg>=0?'+':''}${chg.toFixed(1)}%)</span>`:''}</td>
-        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
-        <td>${r.htf_bull?'<span class="up">▲ BULL</span>':'<span class="dn">▼ BEAR</span>'}</td>
-        <td>${r.in_kz?'<span class="up">⚡ YES</span>':'<span class="t2">—</span>'}</td>
-        <td><a href="${url}" target="_blank" class="btn-sm" style="font-size:10px">Chart ↗</a></td>
+        <td style="min-width:70px">${miniBar(st,11,'#f7931a')}</td>
+        <td style="min-width:70px">${miniBar(ss2,10,'#2157f3')}</td>
+        <td style="min-width:70px">${miniBar(so,9,'#26a69a')}</td>
+        <td style="font-size:11px">${px}${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:10px">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''}</td>
+        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}" style="font-size:11px">${r.rsi||'—'}</td>
+        <td style="font-size:11px">${r.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'}</td>
+        <td>${r.in_kz?'<span class="up" style="font-size:11px">⚡</span>':'<span class="t2">—</span>'}</td>
       </tr>`
     }).join('')
   }
@@ -1944,8 +1953,8 @@ function renderScanner(){
       <td class="${r.score_short>=8?'dn':''}">${r.score_short}</td>
       <td>
         <div class="sbar">
-          <span style="min-width:32px;color:${bc}">${sc}/26</span>
-          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/26*100)}%;background:${bc}"></div></div>
+          <span style="min-width:32px;color:${bc}">${sc}/31</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/31*100)}%;background:${bc}"></div></div>
         </div>
       </td>
       <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
@@ -1976,7 +1985,7 @@ function renderHeatmap(id,scan){
       <div class="hmc-px">$${px}</div>
       ${chgTxt}
       <div class="hmc-bar" style="background:${bc}"></div>
-      <div class="hmc-sc" style="color:${tc}">${sc}/26</div>
+      <div class="hmc-sc" style="color:${tc}">${sc}/31</div>
     </div>`
   }).join('')
 }

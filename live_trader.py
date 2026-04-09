@@ -431,8 +431,70 @@ def scan():
             log(f"  [ERR] {sym}: {e}")
 
     log(f"SCAN เสร็จ — พบ {len(signals)} signals")
+    save_specialist_history(scan_results)
     return signals, scan_results
 
+
+# ── SPECIALIST HISTORY (Level 1 — Track scores per scan) ─────────────────────
+def save_specialist_history(scan_results):
+    """บันทึก specialist scores ลง SQLite ทุก scan — เก็บ 7 วัน"""
+    if not scan_results:
+        return
+    try:
+        con = sqlite3.connect(DB_PATH)
+        cur = con.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS specialist_history (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                scan_ts     TEXT    NOT NULL,
+                symbol      TEXT    NOT NULL,
+                status      TEXT,
+                side        TEXT,
+                best_score  INTEGER DEFAULT 0,
+                score_trend INTEGER DEFAULT 0,
+                score_smc   INTEGER DEFAULT 0,
+                score_osc   INTEGER DEFAULT 0,
+                rsi         REAL    DEFAULT 0,
+                htf_bull    INTEGER DEFAULT 0,
+                in_discount INTEGER DEFAULT 0,
+                trail_bull  INTEGER DEFAULT 0
+            )
+        """)
+        scan_ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")
+        rows = [
+            (
+                scan_ts,
+                r.get("symbol",""),
+                r.get("status",""),
+                r.get("side",""),
+                r.get("best_score",0),
+                r.get("score_trend",0),
+                r.get("score_smc",0),
+                r.get("score_osc",0),
+                r.get("rsi",0),
+                int(r.get("htf_bull",False)),
+                int(r.get("in_discount",False)),
+                int(r.get("trail_bull",False)),
+            )
+            for r in scan_results
+        ]
+        cur.executemany("""
+            INSERT INTO specialist_history
+              (scan_ts,symbol,status,side,best_score,
+               score_trend,score_smc,score_osc,
+               rsi,htf_bull,in_discount,trail_bull)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        """, rows)
+        # เก็บแค่ 7 วัน — ลบข้อมูลเก่าออก
+        cur.execute("""
+            DELETE FROM specialist_history
+            WHERE scan_ts < datetime('now','-7 days')
+        """)
+        con.commit()
+        con.close()
+        log(f"บันทึก specialist_history → {len(rows)} rows (7-day rolling)")
+    except Exception as e:
+        log(f"[ERR] save_specialist_history: {e}")
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
