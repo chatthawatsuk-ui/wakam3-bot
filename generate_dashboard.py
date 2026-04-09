@@ -384,29 +384,39 @@ def main():
 
     closed_rows = conn.execute("""
         SELECT id, symbol, side, entry_px, exit_px, outcome, pnl_usd,
-               sl_px, tp1_px, tp1_hit, opened_at, closed_at
+               sl_px, tp1_px, tp1_hit, opened_at, closed_at,
+               notional_usd, leverage, risk_usd
         FROM trades WHERE status='CLOSED' ORDER BY id
     """).fetchall()
 
     closed = []
     for r in closed_rows:
-        ep = r["entry_px"] or 0
-        xp = r["exit_px"] or 0
-        pnl_pct = 0.0
-        if ep > 0 and xp > 0:
+        ep       = r["entry_px"]    or 0
+        xp       = r["exit_px"]     or 0
+        pnl      = r["pnl_usd"]     or 0
+        notional = r["notional_usd"] or 0
+        # %PNL = PnL / notional (% ของ position size จริง)
+        # fallback: ถ้าไม่มี notional (trades เก่า) ใช้ price movement
+        if notional > 0:
+            pnl_pct = round(pnl / notional * 100, 2)
+        elif ep > 0 and xp > 0:
             raw_pct = (xp - ep) / ep * 100
-            pnl_pct = raw_pct if r["side"] == "LONG" else -raw_pct
+            pnl_pct = round(raw_pct if r["side"] == "LONG" else -raw_pct, 2)
+        else:
+            pnl_pct = 0.0
         closed.append({
             "id":          r["id"],
             "symbol":      r["symbol"],
             "side":        r["side"],
-            "entry_price": r["entry_px"],
-            "exit_price":  r["exit_px"],
+            "entry_price": ep,
+            "exit_price":  xp,
             "sl_price":    r["sl_px"],
             "tp_price":    r["tp1_px"],
             "outcome":     r["outcome"],
-            "pnl":         r["pnl_usd"],
-            "pnl_pct":     round(pnl_pct, 2),
+            "pnl":         pnl,
+            "pnl_pct":     pnl_pct,
+            "leverage":    r["leverage"]    or 0,
+            "notional":    notional,
             "open_time":   r["opened_at"],
             "close_time":  r["closed_at"],
         })

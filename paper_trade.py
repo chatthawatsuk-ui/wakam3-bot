@@ -362,7 +362,14 @@ def main():
         with open("latest_signals.json") as f:
             signals = json.load(f)
         print(f"  พบ {len(signals)} signals")
+
+        # cooldown: symbols ที่เพิ่งปิดในรอบนี้ → ห้ามเปิดใหม่ทันที
+        just_closed = {sym for _, sym, _, _ in closed}
+
         for sig in signals:
+            if sig["symbol"] in just_closed:
+                print(f"  [COOLDOWN] {sig['symbol']} เพิ่งปิดในรอบนี้ — รอรอบหน้า")
+                continue
             open_trade(conn, sig)
 
     summary(conn)

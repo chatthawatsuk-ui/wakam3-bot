@@ -44,6 +44,23 @@ def load_weights():
 W_TREND, W_SMC, W_OSC = load_weights()
 
 
+def _fmt_price(px):
+    """
+    round ราคาให้เหมาะกับขนาด — ป้องกัน PEPE/SHIB/FLR กลายเป็น 0.0
+    """
+    if px <= 0:
+        return 0.0
+    if px < 0.0001:
+        return round(px, 10)
+    if px < 0.001:
+        return round(px, 8)
+    if px < 0.1:
+        return round(px, 6)
+    if px < 10:
+        return round(px, 4)
+    return round(px, 2)
+
+
 def _weighted_score(trend_s, smc_s, osc_s, kz=False):
     """
     normalize แต่ละ specialist (÷ max) → weighted sum → ×30 + KZ
@@ -125,7 +142,7 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
         "score_short": ss,
         "best_score":  best,
         "score_pct":   round(best / 31 * 100, 1),
-        "price":       round(px, 4),
+        "price":       _fmt_price(px),
         "rsi":         o_rep["rsi"],
         "htf_bull":    htf_bull,
         "in_kz":       kz,
@@ -160,10 +177,10 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
         "symbol":      sym,
         "side":        side,
         "score":       sl if side == "LONG" else ss,
-        "price":       round(ep,   4),
-        "sl":          round(sl_p, 4),
-        "tp1":         round(tp1,  4),
-        "tp2":         round(tp2,  4),
+        "price":       _fmt_price(ep),
+        "sl":          _fmt_price(sl_p),
+        "tp1":         _fmt_price(tp1),
+        "tp2":         _fmt_price(tp2),
         "sl_pct":      round(dist / ep * 100, 3),
         "rsi":         o_rep["rsi"],
         "in_kz":       kz,
