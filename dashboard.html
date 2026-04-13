@@ -200,6 +200,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pc-tp1hit{background:rgba(0,201,123,.12);color:var(--green);
   font-size:9px;border-radius:3px;padding:2px 6px;font-weight:600}
 
+/* ─── WATCHLIST TABS ─────────────────────── */
+.wl-tab{background:none;border:none;color:var(--t2);padding:9px 16px;font-size:11px;
+  cursor:pointer;border-bottom:2px solid transparent;transition:.15s;font-family:inherit}
+.wl-tab:hover{color:var(--text)}
+.wl-tab.active{color:var(--text);border-bottom-color:var(--green);font-weight:600}
+
 /* ─── SIGNAL CARD (top opportunities) ────── */
 .sig-cards{display:flex;gap:8px;overflow-x:auto;padding:12px;scrollbar-width:none}
 .sig-cards::-webkit-scrollbar{display:none}
@@ -471,7 +477,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <span>Scanner</span>
   </button>
-  <button class="nav-btn dim" onclick="nav('watchlist')" id="nb-watchlist">
+  <button class="nav-btn" onclick="nav('watchlist')" id="nb-watchlist">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
     <span>Watchlist</span>
   </button>
@@ -1063,12 +1069,48 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
     </div><!-- end lab -->
 
-    <!-- ══ WATCHLIST (stub) ══ -->
+    <!-- ══ WATCHLIST ══ -->
     <div id="pg-watchlist" class="page">
-      <div class="coming-soon">
-        <div class="coming-soon-ico">⭐</div>
-        <div class="coming-soon-t">Watchlist</div>
-        <div class="coming-soon-s">Custom watchlist feature — coming soon</div>
+
+      <!-- Header + Add input -->
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-h">
+          <div class="card-title"><span class="icon">⭐</span> WATCHLIST</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="wl-add-input" type="text" placeholder="เพิ่มเหรียญ เช่น SOL, AVAX"
+              style="background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:4px;
+                     padding:5px 10px;font-size:11px;width:150px;outline:none;font-family:var(--mono)"
+              onkeydown="if(event.key==='Enter')wlAdd()">
+            <button class="btn-sm" onclick="wlAdd()">+ เพิ่ม</button>
+          </div>
+        </div>
+        <!-- Filter tabs -->
+        <div style="display:flex;gap:0;border-top:1px solid var(--border)">
+          <button class="wl-tab" id="wl-tab-all"    onclick="wlFilter('all')">ทั้งหมด</button>
+          <button class="wl-tab" id="wl-tab-signal" onclick="wlFilter('signal')">🟢 Signal</button>
+          <button class="wl-tab" id="wl-tab-watch"  onclick="wlFilter('watch')">👀 Watch</button>
+          <button class="wl-tab" id="wl-tab-custom" onclick="wlFilter('custom')">⭐ Custom</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">
+        <div class="stat-card"><div class="stat-lbl">WATCHING</div><div class="stat-val" id="wl-cnt">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">SIGNAL</div><div class="stat-val up" id="wl-sig">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">BULLISH</div><div class="stat-val" id="wl-bull">0/0</div></div>
+        <div class="stat-card"><div class="stat-lbl">CUSTOM</div><div class="stat-val yl" id="wl-custom-cnt">0</div></div>
+      </div>
+
+      <!-- Table -->
+      <div class="card">
+        <div class="tw"><table>
+          <thead><tr>
+            <th>Symbol</th><th>Price</th><th>24h %</th>
+            <th>Score</th><th>Status</th><th>Side</th><th>RSI</th>
+            <th>HTF</th><th>KZ</th><th>Chart</th><th></th>
+          </tr></thead>
+          <tbody id="wl-tb"></tbody>
+        </table></div>
       </div>
     </div>
 
@@ -1370,6 +1412,7 @@ function nav(page){
   if(page==='health') renderHealth()
   if(page==='btc') renderBTCLive()
   if(page==='backtest') renderBacktest()
+  if(page==='watchlist') renderWatchlistPage()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1825,7 +1868,118 @@ function renderDash(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// WATCHLIST
+// ═══════════════════════════════════════════════════════════
+// WATCHLIST PAGE — full featured
+// ═══════════════════════════════════════════════════════════
+let WL_FILTER='all'
+let WL_CUSTOM=JSON.parse(localStorage.getItem('wl_custom')||'[]')
+function wlSave(){localStorage.setItem('wl_custom',JSON.stringify(WL_CUSTOM))}
+
+function wlAdd(){
+  const inp=document.getElementById('wl-add-input')
+  if(!inp) return
+  let val=inp.value.trim().toUpperCase().replace(/\s+/g,'')
+  if(!val) return
+  if(!val.includes('/')) val=val+'/USDT'
+  if(!WL_CUSTOM.includes(val)) WL_CUSTOM.push(val)
+  wlSave(); inp.value=''; renderWatchlistPage()
+}
+
+function wlRemove(sym){
+  WL_CUSTOM=WL_CUSTOM.filter(s=>s!==sym)
+  wlSave(); renderWatchlistPage()
+}
+
+function wlFilter(f){
+  WL_FILTER=f
+  ;['all','signal','watch','custom'].forEach(t=>{
+    const el=document.getElementById('wl-tab-'+t)
+    if(el) el.className='wl-tab'+(t===f?' active':'')
+  })
+  renderWatchlistPage()
+}
+
+function renderWatchlistPage(){
+  // activate correct tab
+  ;['all','signal','watch','custom'].forEach(t=>{
+    const el=document.getElementById('wl-tab-'+t)
+    if(el) el.className='wl-tab'+(t===WL_FILTER?' active':'')
+  })
+
+  const scanMap={}
+  ;(D.scan_results||[]).forEach(r=>scanMap[r.symbol]=r)
+  const sysCoin=(D.scan_results||[]).map(r=>r.symbol)
+  const allSyms=[...new Set([...sysCoin,...WL_CUSTOM])]
+
+  // stats
+  const sigCnt=allSyms.filter(s=>scanMap[s]?.status==='SIGNAL').length
+  const bullCnt=allSyms.filter(s=>scanMap[s]?.htf_bull).length
+  setText('wl-cnt',allSyms.length)
+  setText('wl-sig',sigCnt)
+  setText('wl-bull',bullCnt+'/'+allSyms.length)
+  setText('wl-custom-cnt',WL_CUSTOM.length)
+
+  // filter
+  let filtered=allSyms
+  if(WL_FILTER==='signal') filtered=allSyms.filter(s=>scanMap[s]?.status==='SIGNAL')
+  if(WL_FILTER==='watch')  filtered=allSyms.filter(s=>scanMap[s]?.status==='WATCH')
+  if(WL_FILTER==='custom') filtered=[...WL_CUSTOM]
+
+  // sort: signal→watch→idle→custom-only, then by score
+  const ord={SIGNAL:0,WATCH:1,IDLE:2}
+  filtered.sort((a,b)=>{
+    const sa=scanMap[a],sb=scanMap[b]
+    const oa=sa?(ord[sa.status]??3):3, ob=sb?(ord[sb.status]??3):3
+    if(oa!==ob) return oa-ob
+    return (sb?.best_score||0)-(sa?.best_score||0)
+  })
+
+  const tb=document.getElementById('wl-tb')
+  if(!tb) return
+  if(filtered.length===0){
+    tb.innerHTML='<tr><td colspan="11"><div class="empty">ไม่มีเหรียญในรายการ — กด "+ เพิ่ม" เพื่อเพิ่มเหรียญ</div></td></tr>'
+    return
+  }
+
+  tb.innerHTML=filtered.map(sym=>{
+    const lv=LIVE[sym], sc=scanMap[sym]
+    const isCustom=WL_CUSTOM.includes(sym)
+    const px=lv?pxFmt(lv.price):sc?pxFmt(sc.price):'—'
+    const chg=lv?lv.change:null
+    const score=sc?.best_score||0
+    const bc=score>=8?'var(--green)':score>=5?'var(--yellow)':'var(--t2)'
+    const url=tvUrl(sym)
+    const isSig=sc?.status==='SIGNAL'
+    return`<tr style="${isSig?'background:rgba(0,201,123,.04)':''}">
+      <td style="white-space:nowrap">
+        <span style="font-weight:700;font-family:var(--mono)">${symDisp(sym)}</span>
+        ${isCustom?'<span style="font-size:9px;background:rgba(240,180,41,.12);color:var(--yellow);border-radius:3px;padding:1px 5px;margin-left:5px">★</span>':''}
+      </td>
+      <td style="font-family:var(--mono);font-size:12px">${px}
+        ${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:10px">${chg>=0?'+':''}${chg.toFixed(2)}%</span>`:''}
+      </td>
+      <td class="${chg===null?'t2':chg>=0?'up':'dn'}" style="font-size:11px">${chg===null?'—':(chg>=0?'+':'')+chg.toFixed(2)+'%'}</td>
+      <td style="min-width:80px">
+        ${sc?`<div class="sbar">
+          <span style="min-width:30px;color:${bc};font-weight:700;font-size:11px">${score}/31</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(score/31*100)}%;background:${bc}"></div></div>
+        </div>`:'<span class="t2" style="font-size:11px">—</span>'}
+      </td>
+      <td>${sc?sBadge(sc.status):'<span class="t2">—</span>'}</td>
+      <td>${sc?sideBadge(sc.side):'<span class="t2">—</span>'}</td>
+      <td class="${sc?.rsi<40?'up':sc?.rsi>60?'dn':''}" style="font-size:11px">${sc?.rsi||'—'}</td>
+      <td>${sc?(sc.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'):'<span class="t2">—</span>'}</td>
+      <td>${sc?(sc.in_kz?'<span class="up">⚡</span>':'<span class="t2">—</span>'):'<span class="t2">—</span>'}</td>
+      <td><a href="${url}" target="_blank" style="color:var(--t2);text-decoration:none;font-size:14px" title="เปิด TradingView">↗</a></td>
+      <td>${isCustom?`<button onclick="wlRemove('${sym.replace(/'/g,"\\'")}');event.stopPropagation()"
+          style="background:none;border:none;color:var(--t2);cursor:pointer;font-size:16px;line-height:1;padding:0 4px"
+          title="ลบออกจาก Watchlist">×</button>`:''}
+      </td>
+    </tr>`
+  }).join('')
+}
+
+// WATCHLIST (dashboard sidebar mini)
 // ═══════════════════════════════════════════════════════════
 function renderWatchlist(){
   const el=document.getElementById('d-wl-list')
