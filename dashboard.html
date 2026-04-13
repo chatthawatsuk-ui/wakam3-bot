@@ -167,6 +167,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pos-ml{margin-left:auto}
 .pos-pnl{font-family:var(--mono);font-size:11px}
 
+/* ─── OPEN POSITION ROW (signals page) ─────── */
+.pos-row{display:grid;grid-template-columns:1fr 2fr auto;align-items:center;
+  gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);
+  position:relative;overflow:hidden}
+.pos-row:last-child{border-bottom:none}
+.pos-row::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.pos-row.lng::before{background:var(--green)}
+.pos-row.sht::before{background:var(--red)}
+.pos-left{display:flex;flex-direction:column;gap:4px}
+.pos-sym{font-size:14px;font-weight:700;font-family:var(--mono)}
+.pos-mid{font-size:11px}
+.pos-right{text-align:right}
+
 /* ─── SIGNAL CARD (top opportunities) ────── */
 .sig-cards{display:flex;gap:8px;overflow-x:auto;padding:12px;scrollbar-width:none}
 .sig-cards::-webkit-scrollbar{display:none}
@@ -721,6 +734,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
     <!-- ══ SIGNALS ══ -->
     <div id="pg-sig" class="page">
+
+      <!-- Open Positions -->
+      <div class="card" id="sig-pos-card" style="margin-bottom:10px;display:none">
+        <div class="card-h">
+          <div class="card-title"><span class="icon">📊</span> OPEN POSITIONS</div>
+          <div class="card-meta" id="sig-pos-cnt">0 open</div>
+        </div>
+        <div id="sig-pos-list"></div>
+      </div>
+
       <!-- Top opportunities -->
       <div class="card" style="margin-bottom:10px">
         <div class="card-h">
@@ -1816,6 +1839,56 @@ function drawEquity(eq){
 // SIGNALS PAGE
 // ═══════════════════════════════════════════════════════════
 function renderSignals(){
+  // ── Open Positions ──────────────────────────────
+  const pos=D.open_trades||[]
+  const posCard=document.getElementById('sig-pos-card')
+  const posList=document.getElementById('sig-pos-list')
+  setText('sig-pos-cnt', pos.length+' open')
+  if(posCard) posCard.style.display=pos.length?'':'none'
+  if(posList && pos.length){
+    posList.innerHTML=pos.map(p=>{
+      const pnl=p.pnl||0, pct=p.pnl_pct||0
+      const pnlCls=pnl>=0?'up':'dn'
+      const sign=pnl>=0?'+':''
+      const lv=LIVE[p.symbol]
+      const curPx=lv?lv.price:p.current_price
+      // Distance to SL / TP1
+      const dist=(a,b)=>a&&b?((b-a)/a*100).toFixed(2):null
+      const toSL=p.side==='LONG'?dist(curPx,p.sl_price):dist(p.sl_price,curPx)
+      const toTP=p.side==='LONG'?dist(curPx,p.tp_price):dist(p.tp_price,curPx)
+      return`<div class="pos-row ${p.side==='LONG'?'lng':'sht'}">
+        <div class="pos-left">
+          ${sideBadge(p.side)}
+          <span class="pos-sym">${symDisp(p.symbol)}</span>
+          <span class="t2" style="font-size:10px">Score ${p.score} · RSI ${p.rsi}</span>
+          <span class="t2" style="font-size:10px">${timeAgo(p.open_time)}</span>
+        </div>
+        <div class="pos-mid">
+          <div style="color:var(--t2);margin-bottom:3px">Entry → ราคาปัจจุบัน</div>
+          <div style="font-family:var(--mono);font-size:12px;margin-bottom:4px">
+            ${pxFmt(p.entry_price)} <span class="t2">→</span> <b>${pxFmt(curPx)}</b>
+          </div>
+          <div style="color:var(--t2)">
+            <span class="dn">SL ${pxFmt(p.sl_price)}</span>
+            ${toSL!==null?`<span class="t2" style="font-size:9px"> (${toSL}%)</span>`:''}
+            &nbsp;·&nbsp;
+            <span class="up">TP1 ${pxFmt(p.tp_price)}</span>
+            ${toTP!==null?`<span class="t2" style="font-size:9px"> (${toTP}%)</span>`:''}
+            &nbsp;·&nbsp;
+            <span style="color:var(--yellow)">TP2 ${pxFmt(p.tp2_price)}</span>
+          </div>
+          ${p.tp1_hit?'<div class="up" style="font-size:10px;margin-top:3px">✅ TP1 Hit → SL moved to BE</div>':''}
+        </div>
+        <div class="pos-right">
+          <div class="${pnlCls}" style="font-size:18px;font-weight:700">${sign}$${pnl.toFixed(2)}</div>
+          <div class="${pnlCls}" style="font-size:11px">${sign}${pct.toFixed(2)}%</div>
+          <div class="t2" style="font-size:10px;margin-top:4px">Risk $${(p.risk_usd||0).toFixed(2)}</div>
+        </div>
+      </div>`
+    }).join('')
+  }
+
+  // ── Scanner Data ────────────────────────────────
   const scan=D.scan_results||[]
   const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
   const watchCnt=scan.filter(r=>r.status==='WATCH').length
