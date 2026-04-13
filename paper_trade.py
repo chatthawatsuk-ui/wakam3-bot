@@ -95,6 +95,7 @@ def init_db():
         ("margin_usd",   "REAL DEFAULT 0"),
         ("risk_usd",     "REAL DEFAULT 0"),
         ("exit_reason",  "TEXT"),
+        ("regime",       "TEXT DEFAULT 'UNKNOWN'"),
     ]
     for col, definition in new_cols:
         try:
@@ -161,8 +162,8 @@ def open_trade(conn, sig):
         INSERT INTO trades
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px, sl_pct, rsi,
          qty, notional_usd, leverage, margin_usd, risk_usd,
-         score_trend, score_smc, score_osc, opened_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         score_trend, score_smc, score_osc, regime, opened_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig["score"],
         sig["price"], sig["sl"], sig["tp1"], sig["tp2"],
@@ -171,6 +172,7 @@ def open_trade(conn, sig):
         sig.get("score_trend", 0),
         sig.get("score_smc",   0),
         sig.get("score_osc",   0),
+        sig.get("regime", "UNKNOWN"),
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()

@@ -212,7 +212,7 @@ def calc_specialist_winrate(conn):
         rows = conn.execute("""
             SELECT score_trend, score_smc, score_osc, outcome
             FROM trades
-            WHERE outcome IS NOT NULL
+            WHERE outcome IN ('WIN','LOSS')
         """).fetchall()
     except Exception:
         return {"trend": empty, "smc": empty, "osc": empty, "total_closed": 0}
@@ -409,12 +409,22 @@ def load_backtest_data():
                 "avg_pnl":   round(g["pnl"].mean(), 2),
             })
 
-        # by score band
+        # by score band — dynamic bins ตาม range จริงของ data
+        s_min = int(df["score"].min())
+        s_max = int(df["score"].max())
+        # สร้าง bins ทุก 3 คะแนน ครอบคลุม range จริง
+        step = 3
+        bin_start = (s_min // step) * step
+        bin_edges = list(range(bin_start, s_max + step + 1, step))
+        if len(bin_edges) < 2:
+            bin_edges = [s_min - 1, s_max + 1]
+        bin_labels = [f"{bin_edges[i]}–{bin_edges[i+1]-1}" for i in range(len(bin_edges)-1)]
         df2 = df.copy()
-        df2["band"] = pd.cut(df2["score"], bins=[0,10,15,20,25,31],
-                             labels=["≤10","11-15","16-20","21-25","≥26"])
+        df2["band"] = pd.cut(df2["score"], bins=bin_edges, labels=bin_labels, include_lowest=True)
         by_score = []
         for band, g in df2.groupby("band", observed=True):
+            if len(g) == 0:
+                continue
             wins_b = (g["outcome"] == "WIN").sum()
             by_score.append({
                 "band":    str(band),
