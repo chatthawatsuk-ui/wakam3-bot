@@ -599,7 +599,7 @@ def main():
 
     open_rows = conn.execute("""
         SELECT id, symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
-               tp1_hit, rsi, opened_at, notional_usd, leverage, risk_usd
+               tp1_hit, rsi, opened_at, notional_usd, leverage, margin_usd, risk_usd
         FROM trades WHERE status='OPEN' ORDER BY score DESC, id DESC
     """).fetchall()
 
@@ -612,6 +612,9 @@ def main():
         tp1_hit  = r["tp1_hit"]
         notional = float(r["notional_usd"] or 0)
         lev      = float(r["leverage"]     or 0)
+        raw_margin = float(r["margin_usd"] or 0)
+        # margin_usd ใน DB เก่าเก็บ portfolio balance — ถ้า margin > notional ให้คำนวณจาก notional/lev
+        margin_disp = raw_margin if (raw_margin > 0 and raw_margin < notional) else (notional / lev if lev > 0 else notional / 5)
         risk_usd = float(r["risk_usd"]     or 0)
 
         # ── Unrealized P&L ───────────────────────────────────────────────────
@@ -645,6 +648,7 @@ def main():
             "rsi":           r["rsi"],
             "notional":      round(notional, 2),
             "leverage":      round(lev, 2),
+            "margin_usd":    round(margin_disp, 2),
             "risk_usd":      round(risk_usd, 2),
             "pnl_pct":       round(pnl_pct, 2),
             "pnl":          round(pnl_usd, 2),
