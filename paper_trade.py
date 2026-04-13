@@ -94,6 +94,7 @@ def init_db():
         ("leverage",     "REAL DEFAULT 1"),
         ("margin_usd",   "REAL DEFAULT 0"),
         ("risk_usd",     "REAL DEFAULT 0"),
+        ("exit_reason",  "TEXT"),
     ]
     for col, definition in new_cols:
         try:
@@ -313,12 +314,25 @@ def check_open_trades(conn):
 
 
 def _close(conn, trade_id, exit_px, outcome, pnl, reason=""):
+    # กำหนด exit_reason จาก reason string
+    r_low = reason.lower()
+    if "tp2" in r_low or "tp 2" in r_low:
+        exit_reason = "TP2"
+    elif "tp1" in r_low or "tp 1" in r_low:
+        exit_reason = "TP1"
+    elif "timeout" in r_low:
+        exit_reason = "TIMEOUT"
+    elif "maxpos" in r_low or "max_pos" in r_low or "forced" in r_low:
+        exit_reason = "TIMEOUT"   # force-close ที่ราคาตลาด
+    else:
+        exit_reason = "SL"
+
     conn.execute("""
         UPDATE trades SET
-            status='CLOSED', exit_px=?, outcome=?, pnl_usd=?, closed_at=?
+            status='CLOSED', exit_px=?, outcome=?, pnl_usd=?, closed_at=?, exit_reason=?
         WHERE id=?
     """, (exit_px, outcome, round(pnl, 2),
-          datetime.now(timezone.utc).isoformat(), trade_id))
+          datetime.now(timezone.utc).isoformat(), exit_reason, trade_id))
     conn.execute("""
         UPDATE portfolio SET balance = balance + ?, updated = ? WHERE id=1
     """, (round(pnl, 2), datetime.now(timezone.utc).isoformat()))
