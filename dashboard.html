@@ -765,7 +765,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </div>
             <div class="tw"><table>
               <thead><tr>
-                <th>Symbol</th><th>Side</th><th>Score</th><th>RSI</th><th>HTF</th><th>KZ</th>
+                <th>Symbol</th><th>Signal</th><th>Side</th><th>Score</th><th>Price</th><th>Entry</th><th>TP1</th><th>TP2</th><th>SL</th><th>RSI</th>
               </tr></thead>
               <tbody id="d-tq-tb"></tbody>
             </table></div>
@@ -2027,64 +2027,59 @@ function renderDash(){
     }
   }
 
-  // Recent signals table
-  const allSigs=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0))
+  // Open trades map → cross-ref for entry/tp/sl
+  const openMap={}
+  ;(D.open_trades||[]).forEach(t=>{ openMap[t.symbol]=t })
+
+  // Recent signals — sort by timestamp latest first
+  const allSigs=[...scan].sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0))
   const topSigs=allSigs.filter(r=>r.status==='SIGNAL'||r.status==='WATCH').slice(0,8)
   const sigTb=document.getElementById('d-sig-tb')
+
+  const sigRowHtml=(r)=>{
+    const lv=LIVE[r.symbol]
+    const px=lv?pxFmt(lv.price):pxFmt(r.price)
+    const base=r.symbol?.replace('/USDT','')||'?'
+    const fut=isFutures(r.symbol)
+    const url=tvUrl(r.symbol)
+    const ot=openMap[r.symbol]  // open trade for this symbol if exists
+    const ep=ot?.entry_price||0, tp1=ot?.tp_price||0, tp2=ot?.tp2_price||0, sl=ot?.sl_price||0
+    const tsStr=r.ts?new Date(r.ts).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'}):'—'
+    return`<tr>
+      <td class="txt">
+        <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
+          ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
+          ${fut?'<span style="font-size:8px;background:#f7931a22;color:#f7931a;border-radius:3px;padding:1px 3px;margin-left:3px">PERP</span>':'<span style="font-size:8px;background:rgba(255,255,255,.06);color:var(--t2);border-radius:3px;padding:1px 3px;margin-left:3px">SPOT</span>'}
+        </a>
+        <div style="font-size:9px;color:var(--t2);margin-top:1px">${tsStr}</div>
+      </td>
+      <td>${sBadge(r.status)}</td>
+      <td>${sideBadge(r.side)}</td>
+      <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/31</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/31*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
+      </div></td>
+      <td style="font-family:var(--mono)">${px}</td>
+      <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${ep?pxFmt(ep):'—'}</td>
+      <td class="up" style="font-family:var(--mono);font-size:10.5px">${tp1?pxFmt(tp1):'—'}</td>
+      <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${tp2?pxFmt(tp2):'—'}</td>
+      <td class="dn" style="font-family:var(--mono);font-size:10.5px">${sl?pxFmt(sl):'—'}</td>
+      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+    </tr>`
+  }
+
   if(sigTb){
     if(topSigs.length===0){sigTb.innerHTML='<tr><td colspan="10"><div class="empty">รอผล scan...</div></td></tr>'}
-    else sigTb.innerHTML=topSigs.map(r=>{
-      const lv=LIVE[r.symbol]
-      const px=lv?pxFmt(lv.price):pxFmt(r.price)
-      const base=r.symbol?.replace('/USDT','')||'?'
-      const fut=isFutures(r.symbol)
-      const url=tvUrl(r.symbol)
-      const ep=r.entry_price||0, tp1=r.tp_price||0, tp2=r.tp2_price||0, sl=r.sl_price||0
-      return`<tr>
-        <td class="txt">
-          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
-            ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
-            ${fut?'<span style="font-size:8px;background:#f7931a22;color:#f7931a;border-radius:3px;padding:1px 3px;margin-left:3px">PERP</span>':'<span style="font-size:8px;background:rgba(255,255,255,.06);color:var(--t2);border-radius:3px;padding:1px 3px;margin-left:3px">SPOT</span>'}
-          </a>
-        </td>
-        <td>${sBadge(r.status)}</td>
-        <td>${sideBadge(r.side)}</td>
-        <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/31</span>
-          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/31*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
-        </div></td>
-        <td>${px}</td>
-        <td style="font-family:var(--mono);font-size:10.5px">${ep?pxFmt(ep):'—'}</td>
-        <td class="up" style="font-family:var(--mono);font-size:10.5px">${tp1?pxFmt(tp1):'—'}</td>
-        <td class="up" style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)!important">${tp2?pxFmt(tp2):'—'}</td>
-        <td class="dn" style="font-family:var(--mono);font-size:10.5px">${sl?pxFmt(sl):'—'}</td>
-        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
-      </tr>`
-    }).join('')
+    else sigTb.innerHTML=topSigs.map(sigRowHtml).join('')
   }
 
   // Top quality signals
   const tqTb=document.getElementById('d-tq-tb')
-  const topQ=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0)).slice(0,6)
+  // Top Quality — same columns as Recent Signals, sorted by score desc
+  const topQ=[...scan].filter(r=>r.status==='SIGNAL'||r.status==='WATCH').sort((a,b)=>(b.best_score||0)-(a.best_score||0)).slice(0,8)
   setText('d-tq-cnt',topQ.length+' top')
   if(tqTb){
-    if(topQ.length===0){tqTb.innerHTML='<tr><td colspan="6"><div class="empty">—</div></td></tr>'}
-    else tqTb.innerHTML=topQ.map(r=>{
-      const base=r.symbol?.replace('/USDT','')||'?'
-      const fut=isFutures(r.symbol)
-      const url=tvUrl(r.symbol)
-      return`<tr>
-        <td class="txt">
-          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
-            ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
-          </a>
-        </td>
-        <td>${sideBadge(r.side)}</td>
-        <td><span style="font-family:var(--mono);color:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}">⚡ ${r.best_score}</span></td>
-        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
-        <td>${r.htf_bull?'<span class="up">▲BULL</span>':'<span class="dn">▼BEAR</span>'}</td>
-        <td>${r.in_kz?'<span class="up">⚡YES</span>':'<span class="t2">—</span>'}</td>
-      </tr>`
-    }).join('')
+    if(topQ.length===0){tqTb.innerHTML='<tr><td colspan="10"><div class="empty">—</div></td></tr>'}
+    else tqTb.innerHTML=topQ.map(sigRowHtml).join('')
   }
 
   // Strategy (simplified — by score range)
@@ -2539,16 +2534,21 @@ function renderSignals(){
     </div>`).join('')
   }
 
+  // Open trades map for cross-ref (signals page)
+  const openMapSig={}
+  ;(D.open_trades||[]).forEach(t=>{ openMapSig[t.symbol]=t })
+
   // Full table — ALL coins, show what's missing for WATCH/IDLE
   const sorted=[...scan].sort((a,b)=>(b.best_score||0)-(a.best_score||0))
   const tb=document.getElementById('sig-tb')
   if(tb){
-    if(sorted.length===0){tb.innerHTML='<tr><td colspan="10"><div class="empty">รอผล scan ครั้งแรก — GitHub Actions รันทุก 15 นาที</div></td></tr>'}
+    if(sorted.length===0){tb.innerHTML='<tr><td colspan="13"><div class="empty">รอผล scan ครั้งแรก — GitHub Actions รันทุก 15 นาที</div></td></tr>'}
     else tb.innerHTML=sorted.map((r,i)=>{
       const lv=LIVE[r.symbol]
       const px=lv?pxFmt(lv.price):pxFmt(r.price)
       const chg=lv?lv.change:null
       const sc=r.best_score||0
+      const ot=openMapSig[r.symbol]
       const bc=sc>=8?'var(--green)':sc>=5?'var(--yellow)':'var(--t2)'
       const base=r.symbol?.replace('/USDT','')||'?'
       const url=tvUrl(r.symbol)
@@ -2587,10 +2587,10 @@ function renderSignals(){
           </div>
         </td>
         <td style="font-size:11px;font-family:var(--mono)">${px}${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:9px">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''}</td>
-        <td style="font-family:var(--mono);font-size:10.5px">${r.entry_price?pxFmt(r.entry_price):'—'}</td>
-        <td class="up" style="font-family:var(--mono);font-size:10.5px">${r.tp_price?pxFmt(r.tp_price):'—'}</td>
-        <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${r.tp2_price?pxFmt(r.tp2_price):'—'}</td>
-        <td class="dn" style="font-family:var(--mono);font-size:10.5px">${r.sl_price?pxFmt(r.sl_price):'—'}</td>
+        <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${ot?.entry_price?pxFmt(ot.entry_price):'—'}</td>
+        <td class="up" style="font-family:var(--mono);font-size:10.5px">${ot?.tp_price?pxFmt(ot.tp_price):'—'}</td>
+        <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${ot?.tp2_price?pxFmt(ot.tp2_price):'—'}</td>
+        <td class="dn" style="font-family:var(--mono);font-size:10.5px">${ot?.sl_price?pxFmt(ot.sl_price):'—'}</td>
         <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}" style="font-size:11px">${r.rsi||'—'}</td>
         <td style="font-size:11px">${r.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'}</td>
         <td>${r.in_kz?'<span class="up" style="font-size:11px">⚡</span>':'<span class="t2">—</span>'}</td>
