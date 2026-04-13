@@ -1813,14 +1813,18 @@ function renderDash(){
         const pnlCls=pnl>=0?'up':'dn', sign=pnl>=0?'+':''
         const lv=LIVE[t.symbol]
         const curPx=lv?lv.price:(t.current_price||t.entry_price)
-        const sl=t.sl_price, tp1=t.tp_price
-        let prog=50
-        if(sl&&tp1&&curPx){
-          const rng=isLong?(tp1-sl):(sl-tp1)
+        const sl=t.sl_price, tp1=t.tp_price, tp2=t.tp2_price||0
+        let prog=50, tp1Pos=100
+        const totalRng=tp2>0?(isLong?(tp2-sl):(sl-tp2)):(tp1>0?(isLong?(tp1-sl):(sl-tp1)):0)
+        if(sl&&tp1&&curPx&&totalRng>0){
           const mv=isLong?(curPx-sl):(sl-curPx)
-          prog=Math.max(0,Math.min(100,mv/rng*100))
+          prog=Math.max(0,Math.min(100,mv/totalRng*100))
+          if(tp2>0){
+            const tp1Rng=isLong?(tp1-sl):(sl-tp1)
+            tp1Pos=Math.max(0,Math.min(99,tp1Rng/totalRng*100))
+          }
         }
-        const barCol=prog>65?'var(--green)':prog>35?'var(--yellow)':'var(--red)'
+        const barCol=prog>tp1Pos+5?'var(--green)':prog>tp1Pos/2?'var(--yellow)':'var(--red)'
         const ep=t.entry_price||0
         const notional=t.notional||0
         // leverage ใน DB เก่าเก็บเป็น fraction — ถ้า < 1 ให้ใช้ 5 (leverage จริง)
@@ -1855,13 +1859,14 @@ function renderDash(){
             <span>Now <b style="color:var(--text);font-family:var(--mono)">${pxFmt(curPx)}</b></span>
             <span>${timeAgo(t.open_time)}</span>
           </div>
-          <div style="height:4px;background:var(--s4);border-radius:2px;overflow:hidden;margin-bottom:3px">
+          <div style="position:relative;height:4px;background:var(--s4);border-radius:2px;margin-bottom:3px">
             <div style="width:${prog}%;height:100%;background:${barCol};border-radius:2px;transition:width .4s"></div>
+            ${tp2>0?`<div style="position:absolute;left:${tp1Pos}%;top:-2px;width:2px;height:8px;background:var(--yellow);border-radius:1px;opacity:.85"></div>`:''}
           </div>
           <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t2)">
             <span class="dn">SL ${pxFmt(sl)}</span>
-            ${t.tp1_hit?'<span class="up">BE Lock ✓</span>':'<span></span>'}
-            <span class="up">TP1 ${pxFmt(tp1)}</span>
+            <span class="up" style="color:var(--yellow)">TP1 ${pxFmt(tp1)}</span>
+            <span class="up">${tp2>0?'TP2 '+pxFmt(tp2):(t.tp1_hit?'BE Lock ✓':'')}</span>
           </div>
         </div>`
       }).join('')
@@ -2201,14 +2206,18 @@ function renderSignals(){
       const toSLpct =isLong?pctTo(curPx,sl) :pctTo(sl,curPx)
       const toTP1pct=isLong?pctTo(curPx,tp1):pctTo(tp1,curPx)
       const fmtPct=v=>v===null?'—':`${v>=0?'+':''}${v.toFixed(2)}%`
-      // Progress bar
-      let prog=50
-      if(sl&&tp1&&curPx){
-        const range=isLong?(tp1-sl):(sl-tp1)
+      // Progress bar SL → TP2 (TP1 = marker)
+      let prog=50, tp1Pos=100
+      const totalRng=tp2>0?(isLong?(tp2-sl):(sl-tp2)):(tp1>0?(isLong?(tp1-sl):(sl-tp1)):0)
+      if(sl&&tp1&&curPx&&totalRng>0){
         const moved=isLong?(curPx-sl):(sl-curPx)
-        prog=Math.max(0,Math.min(100,moved/range*100))
+        prog=Math.max(0,Math.min(100,moved/totalRng*100))
+        if(tp2>0){
+          const tp1Rng=isLong?(tp1-sl):(sl-tp1)
+          tp1Pos=Math.max(0,Math.min(99,tp1Rng/totalRng*100))
+        }
       }
-      const barCol=prog>65?'var(--green)':prog>35?'var(--yellow)':'var(--red)'
+      const barCol=prog>tp1Pos+5?'var(--green)':prog>tp1Pos/2?'var(--yellow)':'var(--red)'
       return`<div class="pos-card ${isLong?'lng':'sht'}">
 
         <!-- Header: symbol + lev + PnL -->
@@ -2273,10 +2282,17 @@ function renderSignals(){
           </div>
         </div>
 
-        <!-- Progress bar -->
+        <!-- Progress bar SL → TP1 marker → TP2 -->
         <div class="pc-bar-wrap">
-          <div class="pc-bar-lbl"><span class="dn">SL</span><span class="t2">${prog.toFixed(0)}%</span><span class="up">TP1</span></div>
-          <div class="pc-bar-track"><div class="pc-bar-fill" style="width:${prog}%;background:${barCol}"></div></div>
+          <div class="pc-bar-lbl">
+            <span class="dn">SL</span>
+            <span style="color:var(--yellow);font-size:9px">TP1 ${tp1Pos.toFixed(0)}%</span>
+            <span class="up" style="color:${tp2>0?'var(--green)':'var(--t2)'}">${tp2>0?'TP2':'TP1'}</span>
+          </div>
+          <div class="pc-bar-track" style="position:relative">
+            <div class="pc-bar-fill" style="width:${prog}%;background:${barCol}"></div>
+            ${tp2>0?`<div style="position:absolute;left:${tp1Pos}%;top:0;width:2px;height:100%;background:var(--yellow);opacity:.9"></div>`:''}
+          </div>
         </div>
 
         <div class="pc-foot">
