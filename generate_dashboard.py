@@ -1,4 +1,6 @@
 import sys, os, sqlite3, json, warnings, time
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 from datetime import datetime, timezone
 warnings.filterwarnings("ignore")
 
@@ -328,15 +330,44 @@ def calc_dynamic_weights(specialist_wr):
 
 
 def load_backtest_data():
-    """อ่าน backtest_live.csv → สร้าง summary สำหรับ Backtest page"""
-    BT_PATH = "backtest_live.csv"
-    if not os.path.exists(BT_PATH):
+    """อ่าน backtest_live.csv (หรือ v5 fallback) → สร้าง summary สำหรับ Backtest page"""
+    import pandas as pd
+
+    candidates = [
+        ("backtest_live.csv", "live"),
+        ("backtest_v5_B.csv", "v5"),
+        ("backtest_v5_A.csv", "v5"),
+    ]
+    df = None
+    source = None
+    loaded_file = None
+    for fname, fmt in candidates:
+        if os.path.exists(fname):
+            try:
+                tmp = pd.read_csv(fname)
+                if len(tmp) > 0:
+                    df = tmp
+                    source = fmt
+                    loaded_file = fname
+                    break
+            except Exception:
+                continue
+
+    if df is None or df.empty:
         return {"available": False}
+
+    # Normalize v5 columns → live format
+    if source == "v5":
+        rename_map = {}
+        if "kz"    in df.columns: rename_map["kz"]    = "in_kz"
+        if "entry" in df.columns: rename_map["entry"] = "entry_ts"
+        if "exit"  in df.columns: rename_map["exit"]  = "exit_ts"
+        if rename_map:
+            df = df.rename(columns=rename_map)
+        if "exit_px" not in df.columns: df["exit_px"] = 0
+        if "regime"  not in df.columns: df["regime"]  = "UNKNOWN"
+
     try:
-        import pandas as pd
-        df = pd.read_csv(BT_PATH)
-        if df.empty:
-            return {"available": False}
 
         def _metrics(d):
             if len(d) < 2:
@@ -416,7 +447,7 @@ def load_backtest_data():
         # equity curve (cumulative PnL)
         equity_bt = [0] + [round(v, 2) for v in df["pnl"].cumsum().tolist()]
 
-        mtime = os.path.getmtime(BT_PATH)
+        mtime = os.path.getmtime(loaded_file)
         generated = datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat()
 
         return {
@@ -646,7 +677,7 @@ def main():
         "backtest":         load_backtest_data(),
     }
 
-    with open(OUT_PATH, "w") as f:
+    with open(OUT_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2, default=str)
 
     conn.close()
