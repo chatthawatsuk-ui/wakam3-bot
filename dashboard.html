@@ -1822,10 +1822,12 @@ function renderDash(){
         }
         const barCol=prog>65?'var(--green)':prog>35?'var(--yellow)':'var(--red)'
         const ep=t.entry_price||0
-        const notional=t.notional||0, lev=t.leverage||5
+        const notional=t.notional||0
+        // leverage ใน DB เก่าเก็บเป็น fraction — ถ้า < 1 ให้ใช้ 5 (leverage จริง)
+        const lev = (t.leverage && t.leverage >= 1) ? Math.round(t.leverage) : 5
         const rawMargin=t.margin_usd||0
         // margin_usd ใน DB เก่าเก็บ portfolio balance — ถ้า margin > notional ให้คำนวณจาก notional/lev
-        const margin = (rawMargin>0 && rawMargin<notional) ? rawMargin : (lev>0 ? notional/lev : notional/5)
+        const margin = (rawMargin>0 && rawMargin<notional) ? rawMargin : notional/lev
         const upnlLive = ep&&notional ? (isLong ? notional*(curPx-ep)/ep : notional*(ep-curPx)/ep) : pnl
         const upnlCls=upnlLive>=0?'up':'dn', upnlSign=upnlLive>=0?'+':''
         return`<div style="padding:10px 13px;border-bottom:1px solid var(--border);position:relative;overflow:hidden">
