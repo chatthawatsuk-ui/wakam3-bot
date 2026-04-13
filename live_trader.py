@@ -114,6 +114,14 @@ def scan():
 
             # ── ส่ง df ให้ Signal Scanner ─────────────────────
             sig, result = SCANNER.scan_symbol(sym, d1h, d4h, mtype)
+
+            # merge TP/SL levels into scan result so dashboard can show them
+            if sig:
+                result["entry_price"] = sig["price"]
+                result["sl_price"]    = sig["sl"]
+                result["tp_price"]    = sig["tp1"]
+                result["tp2_price"]   = sig["tp2"]
+
             scan_results.append(result)
 
             if sig:

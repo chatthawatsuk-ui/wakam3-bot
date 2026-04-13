@@ -803,29 +803,6 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </table></div>
           </div>
 
-          <!-- Crypto Bubbles -->
-          <div class="card">
-            <div class="card-h">
-              <div class="card-title"><span class="icon">🫧</span> CRYPTO BUBBLES</div>
-              <a href="https://cryptobubbles.net/" target="_blank" class="btn-sm" style="text-decoration:none">Open ↗</a>
-            </div>
-            <div style="position:relative;width:100%;height:420px;overflow:hidden;border-radius:0 0 10px 10px">
-              <iframe src="https://cryptobubbles.net/" style="width:100%;height:100%;border:none;display:block"
-                loading="lazy" title="Crypto Bubbles"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups">
-              </iframe>
-              <div id="bubble-fallback" style="display:none;position:absolute;inset:0;
-                background:var(--s3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
-                <div style="font-size:32px">🫧</div>
-                <div style="font-size:13px;color:var(--t2)">Crypto Bubbles ไม่รองรับ iframe</div>
-                <a href="https://cryptobubbles.net/" target="_blank"
-                  style="background:var(--blue);color:#fff;padding:8px 18px;border-radius:6px;
-                  text-decoration:none;font-size:12px;font-weight:600">
-                  เปิดใน Tab ใหม่ ↗
-                </a>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- RIGHT COL -->
@@ -2042,8 +2019,13 @@ function renderDash(){
     const base=r.symbol?.replace('/USDT','')||'?'
     const fut=isFutures(r.symbol)
     const url=tvUrl(r.symbol)
-    const ot=openMap[r.symbol]  // open trade for this symbol if exists
-    const ep=ot?.entry_price||0, tp1=ot?.tp_price||0, tp2=ot?.tp2_price||0, sl=ot?.sl_price||0
+    const isSig=r.status==='SIGNAL'
+    // Entry/TP/SL: from scan result (added by live_trader), fallback to open trade
+    const ot=openMap[r.symbol]
+    const ep  = r.entry_price  || ot?.entry_price  || 0
+    const tp1 = r.tp_price     || ot?.tp_price     || 0
+    const tp2 = r.tp2_price    || ot?.tp2_price    || 0
+    const sl  = r.sl_price     || ot?.sl_price     || 0
     const tsStr=r.ts?new Date(r.ts).toLocaleTimeString('th',{hour:'2-digit',minute:'2-digit'}):'—'
     return`<tr>
       <td class="txt">
@@ -2059,10 +2041,10 @@ function renderDash(){
         <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/31*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
       </div></td>
       <td style="font-family:var(--mono)">${px}</td>
-      <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${ep?pxFmt(ep):'—'}</td>
-      <td class="up" style="font-family:var(--mono);font-size:10.5px">${tp1?pxFmt(tp1):'—'}</td>
-      <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${tp2?pxFmt(tp2):'—'}</td>
-      <td class="dn" style="font-family:var(--mono);font-size:10.5px">${sl?pxFmt(sl):'—'}</td>
+      <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${isSig&&ep?pxFmt(ep):'—'}</td>
+      <td class="up" style="font-family:var(--mono);font-size:10.5px">${isSig&&tp1?pxFmt(tp1):'—'}</td>
+      <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${isSig&&tp2?pxFmt(tp2):'—'}</td>
+      <td class="dn" style="font-family:var(--mono);font-size:10.5px">${isSig&&sl?pxFmt(sl):'—'}</td>
       <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
     </tr>`
   }
@@ -2587,10 +2569,10 @@ function renderSignals(){
           </div>
         </td>
         <td style="font-size:11px;font-family:var(--mono)">${px}${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:9px">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''}</td>
-        <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${ot?.entry_price?pxFmt(ot.entry_price):'—'}</td>
-        <td class="up" style="font-family:var(--mono);font-size:10.5px">${ot?.tp_price?pxFmt(ot.tp_price):'—'}</td>
-        <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${ot?.tp2_price?pxFmt(ot.tp2_price):'—'}</td>
-        <td class="dn" style="font-family:var(--mono);font-size:10.5px">${ot?.sl_price?pxFmt(ot.sl_price):'—'}</td>
+        <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${r.status==='SIGNAL'&&(r.entry_price||ot?.entry_price)?pxFmt(r.entry_price||ot.entry_price):'—'}</td>
+        <td class="up" style="font-family:var(--mono);font-size:10.5px">${r.status==='SIGNAL'&&(r.tp_price||ot?.tp_price)?pxFmt(r.tp_price||ot.tp_price):'—'}</td>
+        <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${r.status==='SIGNAL'&&(r.tp2_price||ot?.tp2_price)?pxFmt(r.tp2_price||ot.tp2_price):'—'}</td>
+        <td class="dn" style="font-family:var(--mono);font-size:10.5px">${r.status==='SIGNAL'&&(r.sl_price||ot?.sl_price)?pxFmt(r.sl_price||ot.sl_price):'—'}</td>
         <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}" style="font-size:11px">${r.rsi||'—'}</td>
         <td style="font-size:11px">${r.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'}</td>
         <td>${r.in_kz?'<span class="up" style="font-size:11px">⚡</span>':'<span class="t2">—</span>'}</td>
