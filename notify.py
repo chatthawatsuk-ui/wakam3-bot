@@ -69,6 +69,63 @@ def signal_msg(sig):
     )
 
 
+def weekly_report_msg(proposal, backtest_summary=None):
+    """สรุป Weekly Report + Backtest ส่ง Telegram"""
+    today = proposal.get("generated", "")
+    lines = [
+        "================================",
+        f"📋 <b>WEEKLY REPORT — {today}</b>",
+        "⚠️ Proposal Only (ต้องคอนเฟิมก่อนปรับ)",
+        "================================",
+    ]
+
+    # Backtest summary
+    if backtest_summary:
+        s = backtest_summary
+        pnl_sign = "+" if (s.get("total_pnl") or 0) >= 0 else ""
+        wr_icon  = "🟢" if (s.get("wr") or 0) >= 50 else "🔴"
+        pnl_icon = "🟢" if (s.get("total_pnl") or 0) >= 0 else "🔴"
+        lines += [
+            "",
+            "📊 <b>Backtest (Walk-Forward)</b>",
+            f"🔵 Trades   : {s.get('n', 0)}",
+            f"{wr_icon} Win Rate  : {s.get('wr', 0)}%",
+            f"{pnl_icon} Total PnL : {pnl_sign}${s.get('total_pnl', 0)}",
+            f"📈 Sharpe   : {s.get('sharpe', 0)}",
+            f"📉 Max DD   : {s.get('dd', 0)}%",
+        ]
+
+    # Level 4
+    l4      = proposal.get("level4", {})
+    props   = l4.get("proposals", {})
+    changes = {k: v for k, v in props.items()
+               if isinstance(v, dict) and v.get("proposed") != v.get("current")}
+    lines += ["", "🔬 <b>Level 4 — Condition Analysis</b>"]
+    if changes:
+        lines.append(f"📌 เสนอปรับ {len(changes)} conditions:")
+        for cond, v in list(changes.items())[:5]:
+            arrow = "↑" if v["proposed"] > v["current"] else "↓"
+            lines.append(f"  {arrow} {cond}: {v['current']} → {v['proposed']}")
+        if len(changes) > 5:
+            lines.append(f"  ... และอีก {len(changes)-5} conditions")
+    else:
+        lines.append("  ✅ ไม่มีการเปลี่ยนแปลงแนะนำ")
+
+    # Level 5
+    l5          = proposal.get("level5", {})
+    regime_data = l5.get("regime_performance", {})
+    lines += ["", "🌐 <b>Level 5 — Market Regime</b>"]
+    if regime_data and "error" not in regime_data:
+        for regime, d in regime_data.items():
+            wr = d.get("win_rate", 0)
+            lines.append(f"  {regime}: {d.get('count',0)} trades, WR {wr:.0%}")
+    else:
+        lines.append("  ⚠️ ข้อมูลไม่พอ (รอ 10+ trades)")
+
+    lines += ["", "================================", "💾 ดูรายละเอียด → proposals/"]
+    return "\n".join(lines)
+
+
 def order_limit_msg(r):
     is_long  = r.get("side", "") == "LONG"
     dir_icon = "🟢" if is_long else "🔴"

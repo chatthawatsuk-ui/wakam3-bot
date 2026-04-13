@@ -1,6 +1,8 @@
-name: Backtest — Walk-Forward (Manual)
+name: Backtest — Weekly (Sun 23:00 TH) + Manual
 
 on:
+  schedule:
+    - cron: '0 16 * * 0'    # อาทิตย์ 16:00 UTC = 23:00 Thai time
   workflow_dispatch:
     inputs:
       symbols:
@@ -37,22 +39,31 @@ jobs:
 
       - name: Run Backtest
         run: |
-          if [ -z "${{ github.event.inputs.symbols }}" ]; then
-            echo "Running FAST mode (5 symbols, ${{ github.event.inputs.candles }} candles)"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Scheduled run — full 10 symbols, 500 candles"
+            python backtest_live.py --candles 500
+          elif [ -z "${{ github.event.inputs.symbols }}" ]; then
+            echo "Manual fast mode (5 symbols, ${{ github.event.inputs.candles }} candles)"
             python backtest_live.py --fast --candles ${{ github.event.inputs.candles }}
           else
-            echo "Running with symbols: ${{ github.event.inputs.symbols }}"
+            echo "Manual with symbols: ${{ github.event.inputs.symbols }}"
             python backtest_live.py --symbols ${{ github.event.inputs.symbols }} --candles ${{ github.event.inputs.candles }}
           fi
 
       - name: Update Dashboard Data
         run: python generate_dashboard.py
 
+      - name: Weekly Report + Telegram Notification
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python weekly_report.py
+
       - name: Commit backtest results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f backtest_live.csv dashboard_data.json 2>/dev/null || true
+          git add -f backtest_live.csv dashboard_data.json proposals/ 2>/dev/null || true
           git diff --staged --stat
           if git diff --staged --quiet; then
             echo "Nothing to commit"

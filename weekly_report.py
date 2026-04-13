@@ -356,7 +356,47 @@ def generate_weekly_report():
     print("⚠️  กรุณา Review และ Confirm ก่อนนำไปใช้")
     print("   หลัง Confirm → สร้าง proposals/confirmed_proposal.json")
     print("=" * 60)
+
+    # ── ส่ง Telegram ──────────────────────────────────────────────────────────
+    _send_telegram(proposal)
+
     return proposal
+
+
+def _send_telegram(proposal, backtest_summary=None):
+    """ส่ง Weekly Report สรุปไป Telegram"""
+    try:
+        import notify as N
+        # โหลด backtest summary ถ้าไม่ได้ส่งมา
+        if backtest_summary is None and os.path.exists("backtest_live.csv"):
+            try:
+                import pandas as pd
+                df = pd.read_csv("backtest_live.csv")
+                if not df.empty:
+                    wins = (df["outcome"] == "WIN").sum()
+                    total = len(df)
+                    pnl = df["pnl"].sum()
+                    avg = df["pnl"].mean()
+                    std = df["pnl"].std()
+                    eq  = df["pnl"].cumsum()
+                    pk  = eq.cummax()
+                    dd  = ((eq - pk) / pk.abs().replace(0, 1) * 100).min()
+                    sharpe = (avg / std) * (252 ** 0.5) if std > 0 else 0
+                    backtest_summary = {
+                        "n":         total,
+                        "wr":        round(wins / total * 100, 1) if total > 0 else 0,
+                        "total_pnl": round(float(pnl), 2),
+                        "sharpe":    round(float(sharpe), 2),
+                        "dd":        round(float(dd), 1),
+                    }
+            except Exception as e:
+                print(f"  [WARN] backtest summary: {e}")
+
+        msg = N.weekly_report_msg(proposal, backtest_summary)
+        ok  = N.send(msg)
+        print(f"  Telegram Weekly Report: {'✅ ส่งแล้ว' if ok else '❌ ส่งไม่ได้'}")
+    except Exception as e:
+        print(f"  [WARN] Telegram send: {e}")
 
 
 if __name__ == "__main__":
