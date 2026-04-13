@@ -27,38 +27,29 @@ exchange = ccxt.okx({"enableRateLimit": True})
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
     """
-    Fixed Fractional Risk — risk 1% of Available balance per trade
-      risk_usd    = balance × RISK_PCT  (e.g. $1054 × 1% = $10.54)
-      sl_dist     = |entry - sl| / entry
-      qty         = risk_usd / (entry_px × sl_dist)
-      notional    = qty × entry_px  = risk_usd / sl_dist
-      leverage    = notional / balance  (capped at MAX_LEVERAGE)
+    Position Sizing — เข้า 1% ของ Available balance เป็น notional
+      notional    = balance × RISK_PCT  (e.g. $1054 × 1% = $10.54)
+      qty         = notional / entry_px
+      leverage    = 1x  (ไม่ใช้ leverage — เข้าเงินสดล้วน)
+      actual_risk = notional × sl_dist%  (ขาดทุนสูงสุดถ้าโดน SL)
 
-    ถ้า leverage เกิน MAX_LEVERAGE → ลด notional ลง (ไม่เพิ่ม risk)
     Return: (qty, notional_usd, leverage, margin_usd, actual_risk_usd)
     """
     sl_dist = abs(entry_px - sl_px) / entry_px
-    sl_dist = max(sl_dist, 0.001)                    # ป้องกัน div/0
+    sl_dist = max(sl_dist, 0.001)
 
-    risk_usd = balance * RISK_PCT                    # 1% of available
-    notional = risk_usd / sl_dist                    # position size
-    leverage = notional / balance                    # leverage จริง
-
-    # cap leverage ไม่เกิน MAX_LEVERAGE
-    if leverage > MAX_LEVERAGE:
-        leverage = float(MAX_LEVERAGE)
-        notional = balance * leverage
-        risk_usd = notional * sl_dist               # risk จริงหลัง cap
-
+    notional   = balance * RISK_PCT      # เข้า 1% ของยอดเงิน
     qty        = notional / entry_px
-    margin_usd = notional / leverage                 # margin ที่ใช้จริง
+    leverage   = 1.0                     # ไม่ใช้ leverage
+    margin_usd = notional                # margin = notional (no lev)
+    actual_risk = notional * sl_dist     # risk จริงถ้าโดน SL
 
     return (
         qty,
-        round(notional,    2),
-        round(leverage,    2),
-        round(margin_usd,  2),
-        round(risk_usd,    2),
+        round(notional,     2),
+        round(leverage,     2),
+        round(margin_usd,   2),
+        round(actual_risk,  2),
     )
 
 
