@@ -584,10 +584,12 @@ def main():
             "close_time":  r["closed_at"],
         })
 
-    total     = len(closed)
-    wins      = sum(1 for t in closed if t["outcome"] == "WIN")
+    # นับเฉพาะ WIN/LOSS (ไม่รวม VOID) สำหรับ stats หลัก
+    real_closed = [t for t in closed if t["outcome"] in ("WIN", "LOSS")]
+    total     = len(real_closed)
+    wins      = sum(1 for t in real_closed if t["outcome"] == "WIN")
     wr        = wins / total * 100 if total > 0 else 0
-    total_pnl = sum(t["pnl"] or 0 for t in closed)
+    total_pnl = sum(t["pnl"] or 0 for t in closed)  # PnL รวมทุก trades
 
     equity  = [PORT_SIZE]
     running = PORT_SIZE
