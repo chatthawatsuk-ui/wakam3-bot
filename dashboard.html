@@ -448,7 +448,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
     <span>Paper Lab</span>
   </button>
-  <button class="nav-btn dim" onclick="nav('backtest')" id="nb-backtest">
+  <button class="nav-btn" onclick="nav('backtest')" id="nb-backtest">
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
     <span>Backtest</span>
   </button>
@@ -1019,13 +1019,115 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
     </div>
 
-    <!-- ══ BACKTEST (stub) ══ -->
+    <!-- ══ BACKTEST ══ -->
     <div id="pg-backtest" class="page">
-      <div class="coming-soon">
-        <div class="coming-soon-ico">🔄</div>
-        <div class="coming-soon-t">Backtest Engine</div>
-        <div class="coming-soon-s">Strategy backtesting — coming soon</div>
+
+      <!-- no data state -->
+      <div id="bt-nodata" style="display:none">
+        <div class="coming-soon">
+          <div class="coming-soon-ico">🔄</div>
+          <div class="coming-soon-t">ยังไม่มีข้อมูล Backtest</div>
+          <div class="coming-soon-s">รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_live.py --fast</code> แล้ว re-generate dashboard</div>
+        </div>
       </div>
+
+      <!-- main content -->
+      <div id="bt-main" style="display:none">
+
+        <!-- header -->
+        <div class="sec-header" style="margin-bottom:12px">
+          <div>
+            <div class="sec-title">📊 Backtest Results <span style="font-size:10px;color:var(--t2);font-weight:400" id="bt-gen-time"></span></div>
+            <div class="sec-sub">Walk-Forward · Live Signal Scanner Logic · Fixed Risk $10/trade</div>
+          </div>
+          <div id="bt-verdict" style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:4px"></div>
+        </div>
+
+        <!-- summary stats -->
+        <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px" id="bt-stats"></div>
+
+        <!-- tabs -->
+        <div class="tabs">
+          <button class="tab active" onclick="btTab('summary')" id="btt-summary">Summary</button>
+          <button class="tab" onclick="btTab('symbols')" id="btt-symbols">By Symbol</button>
+          <button class="tab" onclick="btTab('trades')" id="btt-trades">Trade Log</button>
+        </div>
+
+        <!-- SUMMARY TAB -->
+        <div id="bt-tab-summary">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+
+            <!-- exit types -->
+            <div class="card">
+              <div class="card-h"><span class="card-title">Exit Type Breakdown</span></div>
+              <div class="tw"><table>
+                <thead><tr><th>Exit</th><th>Trades</th><th>WR %</th><th>Avg PnL</th></tr></thead>
+                <tbody id="bt-exit-tb"></tbody>
+              </table></div>
+            </div>
+
+            <!-- score band -->
+            <div class="card">
+              <div class="card-h"><span class="card-title">Score Band Analysis</span></div>
+              <div class="tw"><table>
+                <thead><tr><th>Band</th><th>Trades</th><th>WR %</th><th>Avg PnL</th></tr></thead>
+                <tbody id="bt-score-tb"></tbody>
+              </table></div>
+            </div>
+
+            <!-- regime -->
+            <div class="card">
+              <div class="card-h"><span class="card-title">Market Regime</span></div>
+              <div class="tw"><table>
+                <thead><tr><th>Regime</th><th>Trades</th><th>WR %</th><th>Avg PnL</th></tr></thead>
+                <tbody id="bt-regime-tb"></tbody>
+              </table></div>
+            </div>
+
+          </div>
+
+          <!-- equity curve -->
+          <div class="card" style="margin-top:10px">
+            <div class="card-h">
+              <span class="card-title">Equity Curve (Cumulative PnL · $10 risk/trade)</span>
+            </div>
+            <div style="padding:12px 13px">
+              <canvas id="bt-eq-canvas" style="display:block;width:100%;height:120px"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- BY SYMBOL TAB -->
+        <div id="bt-tab-symbols" style="display:none">
+          <div class="card">
+            <div class="tw"><table>
+              <thead><tr>
+                <th>Symbol</th><th>Trades</th><th>WR %</th><th>TP1 Hit%</th>
+                <th>Avg PnL</th><th>Total PnL</th><th>Sharpe</th><th>Max DD</th><th>KZ WR%</th>
+              </tr></thead>
+              <tbody id="bt-sym-tb"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+        <!-- TRADE LOG TAB -->
+        <div id="bt-tab-trades" style="display:none">
+          <div class="card">
+            <div class="card-h">
+              <span class="card-title">Recent Trades <span class="card-meta" id="bt-trade-cnt"></span></span>
+            </div>
+            <div class="tw"><table>
+              <thead><tr>
+                <th>#</th><th>Symbol</th><th>Side</th><th>Score</th>
+                <th>Entry</th><th>Exit</th><th>Exit Type</th>
+                <th>TP1?</th><th>Outcome</th><th>PnL</th><th>Regime</th>
+              </tr></thead>
+              <tbody id="bt-trade-tb"></tbody>
+            </table></div>
+          </div>
+        </div>
+
+      </div><!-- /bt-main -->
     </div>
 
     <!-- ══ AGENT TEAM ══ -->
@@ -1214,6 +1316,7 @@ function nav(page){
   if(page==='agents') renderAgents()
   if(page==='health') renderHealth()
   if(page==='btc') renderBTCLive()
+  if(page==='backtest') renderBacktest()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2454,6 +2557,194 @@ function renderHealth(){
 function renderBTCLive(){
   renderLive()
   renderBTCFG()
+}
+
+// ═══════════════════════════════════════════════════════════
+// BACKTEST PAGE
+// ═══════════════════════════════════════════════════════════
+let btCurrentTab = 'summary'
+
+function btTab(tab){
+  btCurrentTab = tab
+  ;['summary','symbols','trades'].forEach(t=>{
+    document.getElementById('btt-'+t)?.classList.toggle('active', t===tab)
+    const el = document.getElementById('bt-tab-'+t)
+    if(el) el.style.display = t===tab ? 'block' : 'none'
+  })
+  if(tab==='trades') renderBTTrades()
+}
+
+function renderBacktest(){
+  const bt = D.backtest || {}
+  const nodata = document.getElementById('bt-nodata')
+  const main   = document.getElementById('bt-main')
+  if(!bt.available){ nodata.style.display='block'; main.style.display='none'; return }
+  nodata.style.display='none'; main.style.display='block'
+
+  const s = bt.summary || {}
+  const genEl = document.getElementById('bt-gen-time')
+  if(genEl && bt.generated) genEl.textContent = '· ' + timeAgo(bt.generated)
+
+  // verdict badge
+  const vEl = document.getElementById('bt-verdict')
+  if(vEl){
+    const wr = s.wr||0, sh = s.sharpe||0, dd = Math.abs(s.dd||0)
+    let verdict, color
+    if(wr>=55 && sh>=1.2 && dd<=20){ verdict='✅ STRONG PASS'; color='var(--green)' }
+    else if(wr>=48 && sh>=0.8 && dd<=30){ verdict='✅ PASS'; color='var(--green)' }
+    else if(wr>=42 && sh>=0.4){ verdict='⚠️ MARGINAL'; color='var(--yellow)' }
+    else { verdict='❌ FAIL'; color='var(--red)' }
+    vEl.textContent = verdict
+    vEl.style.background = color==='var(--green)'?'rgba(0,201,123,.15)':color==='var(--yellow)'?'rgba(240,180,41,.15)':'rgba(232,60,90,.15)'
+    vEl.style.color = color
+    vEl.style.border = `1px solid ${color}`
+  }
+
+  // summary stat cards
+  const statsEl = document.getElementById('bt-stats')
+  if(statsEl){
+    const pnlC = (s.total_pnl||0)>=0?'up':'dn'
+    const ddC  = Math.abs(s.dd||0)<=20?'up':Math.abs(s.dd||0)<=30?'yl':'dn'
+    const shC  = (s.sharpe||0)>=1?'up':(s.sharpe||0)>=0.5?'yl':'dn'
+    statsEl.innerHTML=[
+      ['TRADES',    s.n||0,             '',   ''],
+      ['WIN RATE',  (s.wr||0)+'%',      '',   s.wr>=55?'up':s.wr>=48?'yl':'dn'],
+      ['TOTAL PnL', '$'+(s.total_pnl||0).toFixed(2), '', pnlC],
+      ['AVG PnL',   '$'+(s.avg_pnl||0).toFixed(2),   '', (s.avg_pnl||0)>=0?'up':'dn'],
+      ['SHARPE',    s.sharpe||0,         '', shC],
+      ['MAX DD',    (s.dd||0)+'%',       '', ddC],
+    ].map(([lbl,val,sub,cls])=>`
+      <div class="stat-card">
+        <div class="stat-lbl">${lbl}</div>
+        <div class="stat-val ${cls}" style="font-size:16px">${val}</div>
+        ${sub?`<div class="stat-sub">${sub}</div>`:''}
+      </div>`).join('')
+  }
+
+  // exit type table
+  const exitTb = document.getElementById('bt-exit-tb')
+  if(exitTb) exitTb.innerHTML=(bt.by_exit||[]).map(r=>`<tr>
+    <td class="txt" style="font-weight:600">${r.exit_type}</td>
+    <td>${r.n}</td>
+    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
+    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
+  </tr>`).join('')
+
+  // score band table
+  const scoreTb = document.getElementById('bt-score-tb')
+  if(scoreTb) scoreTb.innerHTML=(bt.by_score||[]).map(r=>`<tr>
+    <td class="txt" style="font-weight:600">${r.band}</td>
+    <td>${r.n}</td>
+    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
+    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
+  </tr>`).join('')
+
+  // regime table
+  const regimeTb = document.getElementById('bt-regime-tb')
+  if(regimeTb) regimeTb.innerHTML=(bt.by_regime||[]).map(r=>`<tr>
+    <td class="txt" style="font-weight:600">${r.regime}</td>
+    <td>${r.n}</td>
+    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
+    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
+  </tr>`).join('')
+
+  // equity curve
+  drawBTEquity(bt.equity||[])
+
+  // by symbol table
+  const symTb = document.getElementById('bt-sym-tb')
+  if(symTb) symTb.innerHTML=(bt.by_symbol||[]).map(r=>`<tr>
+    <td class="txt" style="font-weight:700;font-family:var(--mono)">${(r.sym||'').replace('/USDT','')}</td>
+    <td>${r.n}</td>
+    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
+    <td class="t2">${r.tp1r||0}%</td>
+    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
+    <td class="${r.total_pnl>=0?'up':'dn'}" style="font-weight:600">${r.total_pnl>=0?'+':''}$${r.total_pnl}</td>
+    <td class="${r.sharpe>=1?'up':r.sharpe>=0.5?'yl':'dn'}">${r.sharpe||0}</td>
+    <td class="${Math.abs(r.dd||0)<=20?'up':Math.abs(r.dd||0)<=30?'yl':'dn'}">${r.dd||0}%</td>
+    <td class="t2">${r.kz_wr!=null?r.kz_wr+'%':'—'}</td>
+  </tr>`).join('')
+}
+
+function renderBTTrades(){
+  const trades = (D.backtest||{}).trades || []
+  const tb = document.getElementById('bt-trade-tb')
+  const cntEl = document.getElementById('bt-trade-cnt')
+  if(cntEl) cntEl.textContent = `(${trades.length} trades)`
+  if(!tb) return
+  if(!trades.length){ tb.innerHTML='<tr><td colspan="11"><div class="empty">ยังไม่มี trades</div></td></tr>'; return }
+  tb.innerHTML = trades.map((t,i)=>{
+    const base = (t.sym||'').replace('/USDT','')
+    const isWin = t.outcome==='WIN'
+    const pnlC = (t.pnl||0)>=0?'up':'dn'
+    const et = t.exit_type||''
+    const etC = et==='TP2'?'b-win':et.startsWith('SL')?'b-los':'b-stale'
+    return`<tr>
+      <td class="t2">${trades.length-i}</td>
+      <td style="font-weight:700;font-family:var(--mono)">${base}</td>
+      <td>${sideBadge(t.side)}</td>
+      <td><span style="color:var(--yellow);font-weight:600">${t.score||0}</span></td>
+      <td>${numFmt(t.ep)}</td>
+      <td>${numFmt(t.exit_px)}</td>
+      <td><span class="bdg ${etC}">${et}</span></td>
+      <td>${t.tp1_hit?'<span class="up">✓</span>':'<span class="t2">—</span>'}</td>
+      <td><span class="bdg ${isWin?'b-win':'b-los'}">${t.outcome}</span></td>
+      <td class="${pnlC}" style="font-weight:600">${(t.pnl||0)>=0?'+':''}$${(t.pnl||0).toFixed(2)}</td>
+      <td class="t2" style="font-size:10px">${t.regime||'—'}</td>
+    </tr>`
+  }).join('')
+}
+
+function drawBTEquity(eq){
+  const canvas = document.getElementById('bt-eq-canvas')
+  if(!canvas || !eq.length) return
+  const dpr = window.devicePixelRatio||1
+  const W = canvas.offsetWidth||700, H = 120
+  canvas.width = W*dpr; canvas.height = H*dpr
+  const ctx = canvas.getContext('2d')
+  ctx.scale(dpr,dpr)
+  ctx.clearRect(0,0,W,H)
+
+  const pad = {t:8,b:20,l:40,r:10}
+  const cw = W-pad.l-pad.r, ch = H-pad.t-pad.b
+  const min = Math.min(...eq), max = Math.max(...eq)
+  const range = max-min||1
+  const sx = i => pad.l + i/(eq.length-1)*cw
+  const sy = v => pad.t + (1-(v-min)/range)*ch
+
+  // zero line
+  const z = sy(0)
+  ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.setLineDash([4,4])
+  ctx.beginPath(); ctx.moveTo(pad.l,z); ctx.lineTo(W-pad.r,z); ctx.stroke()
+  ctx.setLineDash([])
+
+  // fill
+  ctx.beginPath()
+  ctx.moveTo(sx(0),sy(eq[0]))
+  eq.forEach((_,i)=>{ if(i>0) ctx.lineTo(sx(i),sy(eq[i])) })
+  ctx.lineTo(sx(eq.length-1),H-pad.b)
+  ctx.lineTo(sx(0),H-pad.b)
+  ctx.closePath()
+  const lastVal = eq[eq.length-1]
+  const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b)
+  const col = lastVal>=0?'0,201,123':'232,60,90'
+  grad.addColorStop(0,`rgba(${col},.25)`)
+  grad.addColorStop(1,`rgba(${col},.02)`)
+  ctx.fillStyle=grad; ctx.fill()
+
+  // line
+  ctx.beginPath()
+  ctx.moveTo(sx(0),sy(eq[0]))
+  eq.forEach((_,i)=>{ if(i>0) ctx.lineTo(sx(i),sy(eq[i])) })
+  ctx.strokeStyle=lastVal>=0?'var(--green)':'var(--red)'
+  ctx.lineWidth=1.5; ctx.stroke()
+
+  // labels
+  ctx.fillStyle='rgba(74,102,133,.9)'; ctx.font=`10px DM Mono,monospace`
+  ctx.textAlign='right'
+  ctx.fillText('$'+max.toFixed(0), pad.l-4, pad.t+4)
+  ctx.fillText('$'+min.toFixed(0), pad.l-4, H-pad.b)
+  ctx.fillText('$'+lastVal.toFixed(2), W-pad.r, sy(lastVal)-4)
 }
 
 // ═══════════════════════════════════════════════════════════

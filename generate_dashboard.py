@@ -327,6 +327,115 @@ def calc_dynamic_weights(specialist_wr):
     return weights
 
 
+def load_backtest_data():
+    """อ่าน backtest_live.csv → สร้าง summary สำหรับ Backtest page"""
+    BT_PATH = "backtest_live.csv"
+    if not os.path.exists(BT_PATH):
+        return {"available": False}
+    try:
+        import pandas as pd
+        df = pd.read_csv(BT_PATH)
+        if df.empty:
+            return {"available": False}
+
+        def _metrics(d):
+            if len(d) < 2:
+                return None
+            wins  = (d["outcome"] == "WIN")
+            wr    = round(wins.mean() * 100, 1)
+            tp1r  = round(d["tp1_hit"].mean() * 100, 1) if "tp1_hit" in d else 0
+            total = round(d["pnl"].sum(), 2)
+            avg   = round(d["pnl"].mean(), 2)
+            eq    = d["pnl"].cumsum()
+            pk    = eq.cummax()
+            dd    = round(((eq - pk) / pk.abs().replace(0, 1) * 100).min(), 1)
+            std   = d["pnl"].std()
+            sharpe = round((avg / std) * (252 ** 0.5), 2) if std > 0 else 0
+            kz = d["in_kz"].astype(str).str.lower().isin(["true","1"])
+            kz_wr = round(wins[kz].mean() * 100, 1) if kz.any() else None
+            return {"n": len(d), "wr": wr, "tp1r": tp1r,
+                    "total_pnl": total, "avg_pnl": avg,
+                    "dd": dd, "sharpe": sharpe, "kz_wr": kz_wr}
+
+        summary = _metrics(df)
+
+        # by symbol
+        by_sym = []
+        for sym, g in df.groupby("sym"):
+            m = _metrics(g)
+            if m:
+                m["sym"] = sym
+                by_sym.append(m)
+        by_sym.sort(key=lambda x: x["total_pnl"], reverse=True)
+
+        # by exit type
+        by_exit = []
+        for et, g in df.groupby("exit_type"):
+            wins_e = (g["outcome"] == "WIN").sum()
+            by_exit.append({
+                "exit_type": et,
+                "n":         len(g),
+                "wins":      int(wins_e),
+                "wr":        round(wins_e / len(g) * 100, 1),
+                "avg_pnl":   round(g["pnl"].mean(), 2),
+            })
+
+        # by score band
+        df2 = df.copy()
+        df2["band"] = pd.cut(df2["score"], bins=[0,10,15,20,25,31],
+                             labels=["≤10","11-15","16-20","21-25","≥26"])
+        by_score = []
+        for band, g in df2.groupby("band", observed=True):
+            wins_b = (g["outcome"] == "WIN").sum()
+            by_score.append({
+                "band":    str(band),
+                "n":       len(g),
+                "wr":      round(wins_b / len(g) * 100, 1),
+                "avg_pnl": round(g["pnl"].mean(), 2),
+            })
+
+        # by regime
+        by_regime = []
+        for reg, g in df.groupby("regime"):
+            wins_r = (g["outcome"] == "WIN").sum()
+            by_regime.append({
+                "regime":  reg,
+                "n":       len(g),
+                "wr":      round(wins_r / len(g) * 100, 1),
+                "avg_pnl": round(g["pnl"].mean(), 2),
+            })
+
+        # recent trades (last 100)
+        recent = df.tail(100).copy()
+        recent = recent.fillna("")
+        trades_list = recent[["sym","side","score","ep","sl","tp1","tp2",
+                               "entry_ts","exit_ts","exit_px","exit_type",
+                               "tp1_hit","outcome","pnl","in_kz","regime",
+                               "rsi"]].to_dict("records")
+
+        # equity curve (cumulative PnL)
+        equity_bt = [0] + [round(v, 2) for v in df["pnl"].cumsum().tolist()]
+
+        mtime = os.path.getmtime(BT_PATH)
+        generated = datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat()
+
+        return {
+            "available":  True,
+            "generated":  generated,
+            "total_rows": len(df),
+            "summary":    summary,
+            "by_symbol":  by_sym,
+            "by_exit":    by_exit,
+            "by_score":   by_score,
+            "by_regime":  by_regime,
+            "trades":     trades_list,
+            "equity":     equity_bt,
+        }
+    except Exception as e:
+        print(f"  [WARN] load_backtest_data: {e}")
+        return {"available": False, "error": str(e)}
+
+
 def main():
     last_scan = datetime.now(timezone.utc).isoformat()
 
@@ -534,6 +643,7 @@ def main():
         "generated":        last_scan,
         "specialist_wr":    specialist_wr,
         "dyn_weights":      dyn_weights,
+        "backtest":         load_backtest_data(),
     }
 
     with open(OUT_PATH, "w") as f:
