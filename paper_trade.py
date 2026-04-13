@@ -177,6 +177,9 @@ def open_trade(conn, sig):
     print(f"  ✅ เปิด #{trade_id} {sig['symbol']} {sig['side']} "
           f"@ {sig['price']} | qty={qty:.4f} notional=${notional:.0f} "
           f"lev={leverage:.1f}x risk=${risk:.2f}")
+
+    # แจ้ง Telegram: Order Limit Hit
+    _append_order_limit_hit(sig)
     return trade_id
 
 
@@ -349,6 +352,29 @@ def _append_closed_result(sym, side, entry_px, exit_px, outcome, pnl,
         "leverage": round(leverage  or 0, 2),
         "notional": round(notional  or 0, 2),
         "reason":   reason,
+        "ts":       datetime.now(timezone.utc).isoformat(),
+    })
+    with open(CLOSED_PATH, "w") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+
+
+def _append_order_limit_hit(sig):
+    """แจ้ง Telegram: Order Limit Hit — เมื่อ trade เปิดสำเร็จ"""
+    results = []
+    if os.path.exists(CLOSED_PATH):
+        try:
+            with open(CLOSED_PATH) as f:
+                results = json.load(f)
+        except Exception:
+            results = []
+    results.append({
+        "type":     "ORDER_LIMIT_HIT",
+        "symbol":   sig["symbol"],
+        "side":     sig["side"],
+        "entry_px": sig["price"],
+        "tp1_px":   sig["tp1"],
+        "tp2_px":   sig["tp2"],
+        "sl_px":    sig["sl"],
         "ts":       datetime.now(timezone.utc).isoformat(),
     })
     with open(CLOSED_PATH, "w") as f:

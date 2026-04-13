@@ -29,25 +29,64 @@ def send(message):
 
 
 # ── MESSAGE TEMPLATES ─────────────────────────────────────────────────────────
+def _fmt(px):
+    """smart format ราคา — ป้องกัน PEPE/SHIB แสดง 0.0"""
+    if px <= 0:
+        return "0"
+    if px < 0.0001:
+        return f"{px:.10f}".rstrip('0')
+    if px < 0.001:
+        return f"{px:.8f}".rstrip('0')
+    if px < 0.1:
+        return f"{px:.6f}".rstrip('0')
+    if px < 10:
+        return f"{px:.4f}"
+    return f"{px:,.2f}"
+
+
 def signal_msg(sig):
-    side_icon = "🟢 LONG" if sig["side"] == "LONG" else "🔴 SHORT"
-    kz_icon   = " ⚡ Kill Zone" if sig.get("in_kz") else ""
+    is_long   = sig["side"] == "LONG"
+    dir_icon  = "🟢" if is_long else "🔴"
+    kz_tag    = " ⚡KZ" if sig.get("in_kz") else ""
     regime    = sig.get("regime", "")
-    regime_str = f"\nRegime : {regime}" if regime else ""
+    regime_str = f"\n📊 Regime : {regime}" if regime else ""
+    sym_clean = sig['symbol'].replace("/USDT", "/USDT.P")
     return (
-        f"🤖 <b>AI TRADE SIGNAL</b>{kz_icon}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"Symbol : <b>{sig['symbol']}</b>\n"
-        f"Side   : {side_icon}\n"
-        f"Score  : {sig['score']}/31  "
-        f"[🎯{sig.get('score_trend',0)} 🏦{sig.get('score_smc',0)} 📈{sig.get('score_osc',0)}]\n"
-        f"Price  : {sig['price']:,.4f}\n"
-        f"SL     : {sig['sl']:,.4f}  (-{sig['sl_pct']}%)\n"
-        f"TP1    : {sig['tp1']:,.4f}  (+RR1.2)\n"
-        f"TP2    : {sig['tp2']:,.4f}  (+RR2.0)\n"
-        f"RSI    : {sig['rsi']}{regime_str}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"================================\n"
+        f"🚀 <b>Signal : {sym_clean} - RR1.2{kz_tag}</b>\n"
+        f"↕️ Direction : {sig['side']} {dir_icon}\n"
+        f"--------------------------------\n"
+        f"🔵 Entry : {_fmt(sig['price'])}\n"
+        f"🟢 TP1   : {_fmt(sig['tp1'])}  (RR1.2)\n"
+        f"🟢 TP2   : {_fmt(sig['tp2'])}  (RR2.0)\n"
+        f"🔴 SL    : {_fmt(sig['sl'])}  (-{sig['sl_pct']}%)\n"
+        f"🎫 Risk per trade : 1-5%\n"
+        f"📊 Score : {sig['score']}/31"
+        f"  [🎯{sig.get('score_trend',0)} 🏦{sig.get('score_smc',0)} 📈{sig.get('score_osc',0)}]"
+        f"  RSI:{sig['rsi']}{regime_str}\n"
+        f"================================\n"
         f"⚠️ Paper Trade เท่านั้น"
+    )
+
+
+def order_limit_msg(r):
+    is_long  = r.get("side", "") == "LONG"
+    dir_icon = "🟢" if is_long else "🔴"
+    sym_clean = r['symbol'].replace("/USDT", "/USDT.P")
+    ep  = r.get("entry_px", 0)
+    tp1 = r.get("tp1_px",   0)
+    tp2 = r.get("tp2_px",   0)
+    sl  = r.get("sl_px",    0)
+    return (
+        f"================================\n"
+        f"🔵 <b>Update : {sym_clean} - Order Limit Hit ✅</b>\n"
+        f"↕️ Direction : {r.get('side','')} {dir_icon}\n"
+        f"--------------------------------\n"
+        f"🔵 Entry : {_fmt(ep)}\n"
+        f"🟢 TP1   : {_fmt(tp1)}  (RR1.2)\n"
+        f"🟢 TP2   : {_fmt(tp2)}  (RR2.0)\n"
+        f"🔴 SL    : {_fmt(sl)}\n"
+        f"================================"
     )
 
 
@@ -101,16 +140,17 @@ def _load_notified():
 
 
 def _save_notified(data):
-    # เก็บแค่ 24 ชั่วโมงย้อนหลัง
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    # เก็บแค่ 6 ชั่วโมงย้อนหลัง — ถ้า signal เดิม fire อีกรอบหลัง 6h จะส่งใหม่ได้
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
     data   = {k: v for k, v in data.items() if v >= cutoff}
     with open(NOTIFIED_PATH, "w") as f:
         json.dump(data, f)
 
 
 def _signal_key(sig):
-    # key = symbol_side_ts — unique ต่อ signal
-    return f"{sig['symbol']}_{sig['side']}_{sig.get('ts','')}"
+    # key = symbol_side เท่านั้น — ป้องกันส่งซ้ำทุก 15 นาที
+    # ts ถูกตัดออก เพราะมันเปลี่ยนทุก scan ทำให้ dedup ไม่ทำงาน
+    return f"{sig['symbol']}_{sig['side']}"
 
 
 def is_already_notified(sig):
@@ -138,6 +178,11 @@ def notify_closed_trades():
                 ok  = send(msg)
                 status = "✅" if ok else "❌"
                 print(f"  {status} TP1 {r['symbol']} {r.get('side','')}")
+            elif r.get("type") == "ORDER_LIMIT_HIT":
+                msg = order_limit_msg(r)
+                ok  = send(msg)
+                status = "✅" if ok else "❌"
+                print(f"  {status} Order Limit Hit {r['symbol']} {r.get('side','')}")
             else:
                 msg = close_msg(r)
                 ok  = send(msg)
