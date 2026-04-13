@@ -529,8 +529,11 @@ def main():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
-    bal = conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()
-    balance = float(bal["balance"]) if bal else PORT_SIZE
+    # คำนวณ balance จาก SUM(pnl_usd) โดยตรง (ป้องกัน portfolio table ล้าสมัย)
+    total_pnl_row = conn.execute(
+        "SELECT COALESCE(SUM(pnl_usd), 0) FROM trades WHERE status='CLOSED'"
+    ).fetchone()
+    balance = PORT_SIZE + float(total_pnl_row[0])
 
     closed_rows = conn.execute("""
         SELECT id, symbol, side, entry_px, exit_px, outcome, pnl_usd,
