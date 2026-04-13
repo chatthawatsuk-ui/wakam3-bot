@@ -471,6 +471,18 @@ def main():
     # ── ดึงราคา OKX ──────────────────────────────────────────────────────────
     live_prices, market_tickers, tickers_norm = fetch_okx_prices()
 
+    # ถ้า OKX fetch ไม่ได้ (เช่น รันบน Windows) → ใช้ live_prices เดิมจากไฟล์
+    if not live_prices and os.path.exists(OUT_PATH):
+        try:
+            with open(OUT_PATH, encoding="utf-8") as f:
+                _old = json.load(f)
+            _old_prices = _old.get("live_prices", {})
+            if _old_prices:
+                live_prices = _old_prices
+                print(f"  live_prices: OKX unavailable — kept {len(live_prices)} cached prices from previous run")
+        except Exception:
+            pass
+
     # ── คำนวณ BTC F&G และ Altcoin Season (ใช้ tickers_norm ที่ดึงมาแล้ว) ──
     _indices = calc_market_indices(tickers_norm)
 
