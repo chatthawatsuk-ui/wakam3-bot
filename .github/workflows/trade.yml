@@ -48,8 +48,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python notify.py
 
-      - name: Weekly Report — ทุกวันจันทร์เท่านั้น (PROPOSAL ONLY)
-        if: github.event.schedule == '0 23 * * 0' || github.event_name == 'workflow_dispatch'
+      - name: Weekly Report — อาทิตย์ 23:00 UTC (= จันทร์ 06:00 Thai) เท่านั้น
+        if: github.event.schedule == '0 23 * * 0'
         run: python weekly_report.py
 
       - name: Commit updated data back to repo
@@ -62,6 +62,7 @@ jobs:
           git add -f --verbose latest_signals.json 2>/dev/null && echo "latest_signals.json OK" || echo "latest_signals.json SKIP"
           git add -f --verbose paper_trades.db     2>/dev/null && echo "paper_trades.db OK"     || echo "paper_trades.db SKIP"
           git add -f --verbose proposals/          2>/dev/null && echo "proposals/ OK"           || echo "proposals/ SKIP"
+          git add -f --verbose proposals/last_telegram_sent.json 2>/dev/null && echo "last_telegram_sent.json OK" || echo "last_telegram_sent.json SKIP"
           git add -f --verbose notified_signals.json 2>/dev/null && echo "notified_signals.json OK" || echo "notified_signals.json SKIP"
           echo "=== git status ==="
           git status

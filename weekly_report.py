@@ -364,7 +364,21 @@ def generate_weekly_report():
 
 
 def _send_telegram(proposal, backtest_summary=None):
-    """ส่ง Weekly Report สรุปไป Telegram"""
+    """ส่ง Weekly Report สรุปไป Telegram — ส่งได้แค่ครั้งเดียวต่อสัปดาห์"""
+    # ── Dedup: ตรวจว่าส่งไปแล้วในรอบ 6 วันที่ผ่านมาหรือยัง ──────────────────
+    SENT_FLAG = os.path.join(PROPOSALS_DIR, "last_telegram_sent.json")
+    try:
+        if os.path.exists(SENT_FLAG):
+            with open(SENT_FLAG) as f:
+                flag = json.load(f)
+            last_sent = datetime.fromisoformat(flag.get("sent_at", "2000-01-01T00:00:00+00:00"))
+            hours_ago = (datetime.now(timezone.utc) - last_sent).total_seconds() / 3600
+            if hours_ago < 144:   # 144 ชั่วโมง = 6 วัน
+                print(f"  [SKIP] Weekly Report ส่งไปแล้ว {hours_ago:.0f}h ที่แล้ว (< 144h) — ข้ามการส่ง Telegram")
+                return
+    except Exception:
+        pass
+
     try:
         import notify as N
         # โหลด backtest summary ถ้าไม่ได้ส่งมา
@@ -395,6 +409,10 @@ def _send_telegram(proposal, backtest_summary=None):
         msg = N.weekly_report_msg(proposal, backtest_summary)
         ok  = N.send(msg)
         print(f"  Telegram Weekly Report: {'✅ ส่งแล้ว' if ok else '❌ ส่งไม่ได้'}")
+        # บันทึกเวลาส่งล่าสุด → ป้องกันส่งซ้ำในรอบ 6 วัน
+        if ok:
+            with open(SENT_FLAG, "w") as f:
+                json.dump({"sent_at": datetime.now(timezone.utc).isoformat()}, f)
     except Exception as e:
         print(f"  [WARN] Telegram send: {e}")
 
