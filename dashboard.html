@@ -1821,17 +1821,28 @@ function renderDash(){
           prog=Math.max(0,Math.min(100,mv/rng*100))
         }
         const barCol=prog>65?'var(--green)':prog>35?'var(--yellow)':'var(--red)'
+        const notional=t.notional||0, margin=t.margin_usd||0, lev=t.leverage||5
+        const upnlLive = ep&&notional ? (isLong ? notional*(curPx-ep)/ep : notional*(ep-curPx)/ep) : pnl
+        const upnlCls=upnlLive>=0?'up':'dn', upnlSign=upnlLive>=0?'+':''
         return`<div style="padding:10px 13px;border-bottom:1px solid var(--border);position:relative;overflow:hidden">
           <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${isLong?'var(--green)':'var(--red)'}"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
             <div style="display:flex;align-items:center;gap:6px">
               ${sideBadge(t.side)}
               <span style="font-size:13px;font-weight:700;font-family:var(--mono)">${symDisp(t.symbol)}</span>
+              <span style="font-size:9px;background:rgba(247,147,26,.18);color:#f7931a;border-radius:3px;padding:1px 4px;font-weight:700">${lev}x</span>
             </div>
             <div style="text-align:right">
-              <div class="${pnlCls}" style="font-size:14px;font-weight:700;font-family:var(--mono)">${sign}$${pnl.toFixed(2)}</div>
-              <div class="${pnlCls}" style="font-size:10px">${sign}${pct.toFixed(2)}%</div>
+              <div class="${upnlCls}" style="font-size:14px;font-weight:700;font-family:var(--mono)">${upnlSign}$${Math.abs(upnlLive).toFixed(2)}</div>
+              <div style="font-size:9px;color:var(--t2)">PnL (USDT)</div>
             </div>
+          </div>
+          <div style="display:flex;gap:8px;font-size:10px;margin-bottom:5px;padding:3px 0;border-top:1px solid var(--s4);border-bottom:1px solid var(--s4)">
+            <span style="color:var(--t2)">Size <span style="color:var(--text);font-family:var(--mono)">$${numFmt(notional)}</span></span>
+            <span style="color:var(--t2)">│</span>
+            <span style="color:var(--t2)">Margin <span style="color:var(--text);font-family:var(--mono)">$${margin.toFixed(2)}</span></span>
+            <span style="color:var(--t2)">│</span>
+            <span style="color:var(--t2)">Lev <span style="color:#f7931a;font-family:var(--mono);font-weight:700">${lev}x</span></span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:5px">
             <span>Entry <span style="color:var(--text);font-family:var(--mono)">${pxFmt(t.entry_price)}</span></span>
@@ -2170,19 +2181,21 @@ function renderSignals(){
   if(posCard) posCard.style.display=pos.length?'':'none'
   if(posList && pos.length){
     posList.innerHTML='<div class="pos-cards">'+pos.map(p=>{
-      const pnl=p.pnl||0, pct=p.pnl_pct||0
-      const pnlCls=pnl>=0?'up':'dn'
-      const sign=pnl>=0?'+':''
       const isLong=p.side==='LONG'
       const lv=LIVE[p.symbol]
       const curPx=lv?lv.price:(p.current_price||p.entry_price)
-      const sl=p.sl_price, tp1=p.tp_price, tp2=p.tp2_price, ep=p.entry_price
-      // % distance labels
+      const ep=p.entry_price, sl=p.sl_price, tp1=p.tp_price, tp2=p.tp2_price
+      const notional=p.notional||0, margin=p.risk_usd||0, lev=p.leverage||5
+      // PnL real-time
+      const upnl = ep&&notional ? (isLong?(curPx-ep)/ep:(ep-curPx)/ep)*notional : (p.pnl||0)
+      const upct  = notional>0 ? upnl/notional*100 : (p.pnl_pct||0)
+      const pnlCls=upnl>=0?'up':'dn', sign=upnl>=0?'+':''
+      // % to levels
       const pctTo=(from,to)=>from&&to?((to-from)/Math.abs(from)*100):null
-      const toSLpct=isLong?pctTo(curPx,sl):pctTo(sl,curPx)    // negative = bad
-      const toTP1pct=isLong?pctTo(curPx,tp1):pctTo(tp1,curPx) // positive = good
-      const fmtPct=v=>v===null?'':` (${v>=0?'+':''}${v.toFixed(1)}%)`
-      // Progress bar: 0=SL, 100=TP1, price is somewhere between
+      const toSLpct =isLong?pctTo(curPx,sl) :pctTo(sl,curPx)
+      const toTP1pct=isLong?pctTo(curPx,tp1):pctTo(tp1,curPx)
+      const fmtPct=v=>v===null?'—':`${v>=0?'+':''}${v.toFixed(2)}%`
+      // Progress bar
       let prog=50
       if(sl&&tp1&&curPx){
         const range=isLong?(tp1-sl):(sl-tp1)
@@ -2190,50 +2203,73 @@ function renderSignals(){
         prog=Math.max(0,Math.min(100,moved/range*100))
       }
       const barCol=prog>65?'var(--green)':prog>35?'var(--yellow)':'var(--red)'
-      const base=p.symbol?.replace('/USDT','')||'?'
       return`<div class="pos-card ${isLong?'lng':'sht'}">
+
+        <!-- Header: symbol + lev + PnL -->
         <div class="pc-head">
-          <div style="display:flex;align-items:center;gap:7px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             ${sideBadge(p.side)}
-            <span class="pc-sym">${symDisp(p.symbol)}</span>
+            <span class="pc-sym">${symDisp(p.symbol)} Perp</span>
+            <span style="font-size:10px;font-weight:700;background:var(--s4);color:var(--t2);
+              border:1px solid var(--border);border-radius:3px;padding:1px 5px">${lev.toFixed(0)}x</span>
           </div>
           <div class="pc-pnl">
-            <div class="pc-pnl-val ${pnlCls}">${sign}$${pnl.toFixed(2)}</div>
-            <div class="pc-pnl-pct ${pnlCls}">${sign}${pct.toFixed(2)}%</div>
+            <div style="font-size:9px;color:var(--t2);text-align:right;margin-bottom:2px">PnL (USDT)</div>
+            <div class="pc-pnl-val ${pnlCls}">${sign}$${Math.abs(upnl).toFixed(2)}</div>
+            <div class="pc-pnl-pct ${pnlCls}">${sign}${upct.toFixed(2)}%</div>
           </div>
         </div>
 
+        <!-- Size / Margin / Leverage row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 13px 10px">
+          <div style="background:var(--s4);border-radius:4px;padding:6px 8px">
+            <div style="font-size:9px;color:var(--t2);margin-bottom:2px">Size (USDT)</div>
+            <div style="font-size:12px;font-weight:600;font-family:var(--mono)">$${notional.toFixed(2)}</div>
+          </div>
+          <div style="background:var(--s4);border-radius:4px;padding:6px 8px">
+            <div style="font-size:9px;color:var(--t2);margin-bottom:2px">Margin (USDT)</div>
+            <div style="font-size:12px;font-weight:600;font-family:var(--mono)">$${margin.toFixed(2)}</div>
+          </div>
+          <div style="background:var(--s4);border-radius:4px;padding:6px 8px">
+            <div style="font-size:9px;color:var(--t2);margin-bottom:2px">Leverage</div>
+            <div style="font-size:12px;font-weight:700;color:${isLong?'var(--green)':'var(--red)'}">${lev.toFixed(0)}x</div>
+          </div>
+        </div>
+
+        <!-- Entry / Mark price -->
         <div class="pc-prices">
           <div>
-            <div class="pc-price-lbl">Entry</div>
+            <div class="pc-price-lbl">Entry price</div>
             <div class="pc-price-val t2">${pxFmt(ep)}</div>
           </div>
           <div>
-            <div class="pc-price-lbl">ราคาปัจจุบัน</div>
+            <div class="pc-price-lbl">Mark price</div>
             <div class="pc-price-val">${pxFmt(curPx)}</div>
           </div>
         </div>
 
+        <!-- SL / TP1 / TP2 -->
         <div class="pc-levels">
           <div class="pc-lv">
             <div class="pc-lv-lbl">SL</div>
             <div class="pc-lv-val dn">${pxFmt(sl)}</div>
-            <div class="pc-lv-pct dn">${fmtPct(toSLpct)}</div>
+            <div class="pc-lv-pct dn" style="font-size:9px">${fmtPct(toSLpct)}</div>
           </div>
           <div class="pc-lv">
             <div class="pc-lv-lbl">TP1${p.tp1_hit?' ✓':''}</div>
             <div class="pc-lv-val up">${pxFmt(tp1)}</div>
-            <div class="pc-lv-pct up">${fmtPct(toTP1pct)}</div>
+            <div class="pc-lv-pct up" style="font-size:9px">${fmtPct(toTP1pct)}</div>
           </div>
           <div class="pc-lv">
             <div class="pc-lv-lbl">TP2</div>
             <div class="pc-lv-val yl">${pxFmt(tp2)}</div>
-            <div class="pc-lv-pct t2"></div>
+            <div class="pc-lv-pct t2" style="font-size:9px">—</div>
           </div>
         </div>
 
+        <!-- Progress bar -->
         <div class="pc-bar-wrap">
-          <div class="pc-bar-lbl"><span class="dn">SL</span><span class="t2">${prog.toFixed(0)}% to TP1</span><span class="up">TP1</span></div>
+          <div class="pc-bar-lbl"><span class="dn">SL</span><span class="t2">${prog.toFixed(0)}%</span><span class="up">TP1</span></div>
           <div class="pc-bar-track"><div class="pc-bar-fill" style="width:${prog}%;background:${barCol}"></div></div>
         </div>
 
