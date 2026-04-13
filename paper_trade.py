@@ -27,32 +27,21 @@ exchange = ccxt.okx({"enableRateLimit": True})
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
     """
-    A: Dynamic risk — 1% ของ balance คงเหลือ (compound, ไม่ fixed $10)
-    B: Risk-based sizing — คำนวณ position size จาก SL distance + leverage cap 5x
-
-    สูตร:
-      risk_usd = balance × 1%          ← A: dynamic
-      notional = risk_usd / sl_dist%   ← B: position ที่จะ lose ≤ risk_usd ที่ SL
-      leverage = notional / balance     ← leverage จริง
-      leverage = min(leverage, 5x)      ← cap ไม่เกิน 5x
-      qty      = notional / entry_px    ← จำนวน unit จริง
+    Fixed 5x Leverage — notional = balance × 5x เสมอ
+      qty         = notional / entry_px
+      margin_usd  = balance  (ใช้ทั้ง balance เป็น margin)
+      actual_risk = notional × sl_dist%  (risk จริงขึ้นกับ SL ห่างแค่ไหน)
 
     Return: (qty, notional_usd, leverage, margin_usd, actual_risk_usd)
     """
-    risk_usd    = balance * RISK_PCT
+    leverage    = float(MAX_LEVERAGE)               # fixed 5x
+    notional    = balance * leverage                # เสมอ balance × 5
     sl_dist_pct = abs(entry_px - sl_px) / entry_px
-    sl_dist_pct = max(sl_dist_pct, 0.001)          # ป้องกัน div/0
-
-    notional = risk_usd / sl_dist_pct              # notional ก่อน cap
-    leverage = notional / balance
-
-    if leverage > MAX_LEVERAGE:                     # cap ที่ 5x
-        leverage = MAX_LEVERAGE
-        notional = balance * MAX_LEVERAGE
+    sl_dist_pct = max(sl_dist_pct, 0.001)
 
     qty         = notional / entry_px
-    margin_usd  = notional / leverage
-    actual_risk = notional * sl_dist_pct           # risk จริงหลัง cap
+    margin_usd  = balance
+    actual_risk = notional * sl_dist_pct           # risk ที่ SL จริง
 
     return (
         qty,
