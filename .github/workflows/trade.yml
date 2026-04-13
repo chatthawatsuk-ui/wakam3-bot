@@ -3,11 +3,14 @@ name: AI Trade — Scan Every Hour
 on:
   schedule:
     - cron: '*/15 * * * *'        # ทุก 15 นาที — scan signals
-    - cron: '0 6 * * 1'           # ทุกวันจันทร์ 06:00 UTC — weekly report
+    - cron: '0 23 * * 0'          # อาทิตย์ 23:00 UTC = จันทร์ 06:00 Thai — weekly report
   workflow_dispatch:
 
 permissions:
   contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   scan:
@@ -46,7 +49,7 @@ jobs:
         run: python notify.py
 
       - name: Weekly Report — ทุกวันจันทร์เท่านั้น (PROPOSAL ONLY)
-        if: github.event.schedule == '0 6 * * 1' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '0 23 * * 0' || github.event_name == 'workflow_dispatch'
         run: python weekly_report.py
 
       - name: Commit updated data back to repo
