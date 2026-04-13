@@ -2979,12 +2979,16 @@ function renderBacktest(){
 
   // exit type table
   const exitTb = document.getElementById('bt-exit-tb')
-  if(exitTb) exitTb.innerHTML=(bt.by_exit||[]).map(r=>`<tr>
-    <td class="txt" style="font-weight:600">${r.exit_type}</td>
+  if(exitTb) exitTb.innerHTML=(bt.by_exit||[]).map(r=>{
+    const isTimeout = r.exit_type==='TIMEOUT'
+    const wrTxt = isTimeout ? '<span style="color:var(--t2)">—</span>' : `<span class="${r.wr>=50?'up':'dn'}">${r.wr}%</span>`
+    const pnlTxt = isTimeout ? '<span style="color:var(--t2)">$0 (breakeven)</span>' : `<span class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</span>`
+    return `<tr>
+    <td class="txt" style="font-weight:600">${r.exit_type}${isTimeout?'<span style="font-size:9px;color:var(--t2);margin-left:4px">VOID</span>':''}</td>
     <td>${r.n}</td>
-    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
-    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
-  </tr>`).join('')
+    <td>${wrTxt}</td>
+    <td>${pnlTxt}</td>
+  </tr>`}).join('')
 
   // score band table
   const scoreTb = document.getElementById('bt-score-tb')
