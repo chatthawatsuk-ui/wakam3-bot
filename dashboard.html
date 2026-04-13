@@ -2942,11 +2942,14 @@ function renderBacktest(){
   const vEl = document.getElementById('bt-verdict')
   if(vEl){
     const wr = s.wr||0, sh = s.sharpe||0, dd = Math.abs(s.dd||0)
+    const pnl = s.total_pnl||0
     let verdict, color
-    if(wr>=55 && sh>=1.2 && dd<=20){ verdict='✅ STRONG PASS'; color='var(--green)' }
-    else if(wr>=48 && sh>=0.8 && dd<=30){ verdict='✅ PASS'; color='var(--green)' }
-    else if(wr>=42 && sh>=0.4){ verdict='⚠️ MARGINAL'; color='var(--yellow)' }
-    else { verdict='❌ FAIL'; color='var(--red)' }
+    // Verdict ใช้ PnL + Sharpe เป็นหลัก (WR ต่ำได้ถ้า Sharpe ดี เช่น ระบบ asymmetric TIMEOUT)
+    if(pnl>0 && sh>=2.0 && dd<=30){ verdict='✅ STRONG PASS'; color='var(--green)' }
+    else if(pnl>0 && sh>=1.0 && dd<=40){ verdict='✅ PASS'; color='var(--green)' }
+    else if(pnl>0 && sh>=0.3){ verdict='⚠️ MARGINAL'; color='var(--yellow)' }
+    else if(pnl<=0 && sh<0){ verdict='❌ FAIL'; color='var(--red)' }
+    else { verdict='⚠️ MARGINAL'; color='var(--yellow)' }
     vEl.textContent = verdict
     vEl.style.background = color==='var(--green)'?'rgba(0,201,123,.15)':color==='var(--yellow)'?'rgba(240,180,41,.15)':'rgba(232,60,90,.15)'
     vEl.style.color = color
