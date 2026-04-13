@@ -19,6 +19,8 @@ Usage:
   py backtest_live.py --symbols BTC/USDT ETH/USDT --candles 700
 """
 import sys, os, warnings, time, argparse
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 from datetime import datetime, timezone
 import pandas as pd
 warnings.filterwarnings("ignore")
@@ -53,6 +55,10 @@ exchange = ccxt.okx({
     "enableRateLimit": True,
     "options": {"defaultType": "swap"},
 })
+
+print("Loading OKX markets...", end=" ", flush=True)
+exchange.load_markets()
+print(f"{len(exchange.markets)} pairs")
 
 
 # ── FETCH ─────────────────────────────────────────────────────────────────────

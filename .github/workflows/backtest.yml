@@ -1,0 +1,63 @@
+name: Backtest — Walk-Forward (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Symbols (เว้นว่างสำหรับ fast mode 5 symbols)'
+        required: false
+        default: ''
+      candles:
+        description: 'จำนวน 1H candles (default 300)'
+        required: false
+        default: '300'
+
+permissions:
+  contents: write
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Backtest
+        run: |
+          if [ -z "${{ github.event.inputs.symbols }}" ]; then
+            echo "Running FAST mode (5 symbols, ${{ github.event.inputs.candles }} candles)"
+            python backtest_live.py --fast --candles ${{ github.event.inputs.candles }}
+          else
+            echo "Running with symbols: ${{ github.event.inputs.symbols }}"
+            python backtest_live.py --symbols ${{ github.event.inputs.symbols }} --candles ${{ github.event.inputs.candles }}
+          fi
+
+      - name: Update Dashboard Data
+        run: python generate_dashboard.py
+
+      - name: Commit backtest results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f backtest_live.csv dashboard_data.json 2>/dev/null || true
+          git diff --staged --stat
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "backtest: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git pull --rebase --autostash origin main
+            git push origin main
+          fi
