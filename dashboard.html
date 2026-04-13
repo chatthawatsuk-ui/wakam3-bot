@@ -811,6 +811,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
                 </div>
               </div>
             </div>
+            <div style="padding:4px 13px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border);display:flex;justify-content:space-between">
+              <span>📊 <b style="color:var(--text)">Crypto Market</b> overall sentiment</span>
+              <span>src: alternative.me</span>
+            </div>
           </div>
 
           <!-- Macro Data -->
@@ -969,7 +973,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
         <!-- BTC Fear & Greed Card -->
         <div class="card">
-          <div class="card-h"><div class="card-title">₿ BTC FEAR &amp; GREED</div></div>
+          <div class="card-h">
+            <div class="card-title">₿ BTC FEAR &amp; GREED</div>
+            <div style="font-size:9px;color:var(--t2)">BTC Only · Custom</div>
+          </div>
           <div style="padding:20px;text-align:center">
             <canvas id="btc-fg-canvas" width="160" height="90" style="display:block;margin:0 auto"></canvas>
             <div id="btc-fg-val" style="font-size:42px;font-weight:800;font-family:var(--mono);margin-top:6px">—</div>
@@ -978,7 +985,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div><span class="t2">RSI(14)</span> <b id="btc-fg-rsi">—</b></div>
               <div><span class="t2">vs MA30</span> <b id="btc-fg-ma">—</b></div>
             </div>
-            <div style="margin-top:12px;font-size:9px;color:var(--t2)">คำนวณจาก BTC Daily: RSI + Momentum + Volatility</div>
+          </div>
+          <div style="padding:4px 13px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border);display:flex;justify-content:space-between">
+            <span>📊 <b style="color:var(--text)">BTC เท่านั้น</b> — คำนวณจาก RSI + Momentum + Volatility</span>
           </div>
         </div>
       </div>
@@ -989,7 +998,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- Row 1: Fear & Greed + Altcoin Season + BTC -->
       <div style="display:grid;grid-template-columns:200px 200px 1fr;gap:10px;margin-bottom:10px">
         <div class="card">
-          <div class="card-h"><div class="card-title">FEAR &amp; GREED</div></div>
+          <div class="card-h">
+            <div class="card-title">😱 FEAR &amp; GREED</div>
+            <div style="font-size:9px;color:var(--t2)">Crypto Market</div>
+          </div>
           <div class="fg-wrap" style="flex-direction:column;padding:16px">
             <canvas id="fg-canvas2" width="140" height="80" style="display:block;margin:0 auto"></canvas>
             <div style="text-align:center;margin-top:8px">
@@ -1000,6 +1012,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <span>Yesterday: <b id="fg-yst2">—</b></span>
               <span style="margin-left:8px">Week: <b id="fg-week2">—</b></span>
             </div>
+          </div>
+          <div style="padding:4px 10px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border);text-align:center">
+            📊 <b style="color:var(--text)">Overall Crypto Market</b> · src: alternative.me
           </div>
         </div>
         <!-- Altcoin Season Card -->
