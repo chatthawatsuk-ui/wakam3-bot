@@ -27,22 +27,23 @@ exchange = ccxt.okx({"enableRateLimit": True})
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
     """
-    Position Sizing — เข้า 1% ของ Available balance เป็น notional
-      notional    = balance × RISK_PCT  (e.g. $1054 × 1% = $10.54)
+    Position Sizing — margin 1% ของ Available × 5x leverage
+      margin_usd  = balance × RISK_PCT  (e.g. $1054 × 1% = $10.54)
+      leverage    = MAX_LEVERAGE = 5x
+      notional    = margin × leverage   (e.g. $10.54 × 5 = $52.73)
       qty         = notional / entry_px
-      leverage    = 1x  (ไม่ใช้ leverage — เข้าเงินสดล้วน)
-      actual_risk = notional × sl_dist%  (ขาดทุนสูงสุดถ้าโดน SL)
+      actual_risk = notional × sl_dist%  (ขาดทุนถ้าโดน SL — จุด SL กำหนดโดย agent)
 
     Return: (qty, notional_usd, leverage, margin_usd, actual_risk_usd)
     """
     sl_dist = abs(entry_px - sl_px) / entry_px
     sl_dist = max(sl_dist, 0.001)
 
-    notional   = balance * RISK_PCT      # เข้า 1% ของยอดเงิน
-    qty        = notional / entry_px
-    leverage   = 1.0                     # ไม่ใช้ leverage
-    margin_usd = notional                # margin = notional (no lev)
-    actual_risk = notional * sl_dist     # risk จริงถ้าโดน SL
+    margin_usd  = balance * RISK_PCT          # 1% ของยอดเงิน
+    leverage    = float(MAX_LEVERAGE)         # 5x
+    notional    = margin_usd * leverage       # margin × 5
+    qty         = notional / entry_px
+    actual_risk = notional * sl_dist          # risk จริงถ้าโดน SL
 
     return (
         qty,
