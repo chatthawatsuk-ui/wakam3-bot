@@ -759,8 +759,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <!-- Watchlist -->
           <div class="card">
             <div class="card-h">
-              <div class="card-title"><span class="icon">★</span> WATCHLIST</div>
-              <div class="card-meta">10 coins</div>
+              <div class="card-title"><span class="icon">⭐</span> WATCHLIST</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span class="card-meta" id="d-wl-cnt">—</span>
+                <button class="btn-sm" onclick="nav('watchlist')" style="font-size:9px;padding:3px 7px">ดูทั้งหมด</button>
+              </div>
             </div>
             <div id="d-wl-list"><div class="empty">Loading...</div></div>
           </div>
@@ -1979,25 +1982,52 @@ function renderWatchlistPage(){
   }).join('')
 }
 
-// WATCHLIST (dashboard sidebar mini)
+// WATCHLIST (dashboard sidebar mini) — ใช้ข้อมูลเดียวกับหน้า Watchlist
 // ═══════════════════════════════════════════════════════════
 function renderWatchlist(){
   const el=document.getElementById('d-wl-list')
   if(!el) return
-  if(Object.keys(LIVE).length===0){el.innerHTML='<div class="empty">Loading...</div>';return}
-  el.innerHTML=SYMS.map(sym=>{
-    const lv=LIVE[sym]
-    if(!lv) return''
-    const base=sym.replace('/USDT','')
-    const fut=isFutures(sym)
-    const chgTxt=(lv.change>=0?'+':'')+lv.change.toFixed(2)+'%'
+
+  // รวมเหรียญจาก scan_results + WL_CUSTOM (เหมือนหน้า Watchlist)
+  const scanMap={}
+  ;(D.scan_results||[]).forEach(r=>scanMap[r.symbol]=r)
+  const sysCoin=(D.scan_results||[]).map(r=>r.symbol)
+  const allSyms=[...new Set([...sysCoin,...WL_CUSTOM])]
+
+  // อัพเดท counter
+  setText('d-wl-cnt', allSyms.length+' coins')
+
+  if(allSyms.length===0){el.innerHTML='<div class="empty">Loading...</div>';return}
+
+  // เรียงลำดับ: Signal → Watch → Idle → Custom-only, แล้วตาม score
+  const ord={SIGNAL:0,WATCH:1,IDLE:2}
+  const sorted=[...allSyms].sort((a,b)=>{
+    const sa=scanMap[a],sb=scanMap[b]
+    const oa=sa?(ord[sa.status]??3):3, ob=sb?(ord[sb.status]??3):3
+    if(oa!==ob) return oa-ob
+    return (sb?.best_score||0)-(sa?.best_score||0)
+  })
+
+  el.innerHTML=sorted.map(sym=>{
+    const lv=LIVE[sym], sc=scanMap[sym]
+    const isCustom=WL_CUSTOM.includes(sym)
+    const isSig=sc?.status==='SIGNAL'
+    const px=lv?pxFmt(lv.price):sc?pxFmt(sc.price):'—'
+    const chg=lv?lv.change:null
+    const score=sc?.best_score||0
+    const bc=score>=8?'var(--green)':score>=5?'var(--yellow)':'var(--t2)'
     const url=tvUrl(sym)
-    return`<a class="wl-row" href="${url}" target="_blank" style="text-decoration:none;color:inherit;display:flex;align-items:center;gap:8px;padding:7px 13px;border-bottom:1px solid var(--border);transition:.12s;" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
-      <span class="wl-sym">${base}${fut?'<span style="font-size:8px;color:#f7931a">.P</span>':'<span style="font-size:8px;color:var(--t2)">·S</span>'}</span>
-      <span style="font-size:9px;color:var(--t2);opacity:.6">↗</span>
-      <span class="wl-px" style="flex:1;text-align:right">${pxFmt(lv.price)}</span>
-      <span class="wl-chg ${lv.change>=0?'up':'dn'}">${chgTxt}</span>
-      <span class="wl-vol">$${shortNum(lv.vol)}</span>
+    return`<a href="${url}" target="_blank" style="text-decoration:none;color:inherit;
+        display:flex;align-items:center;gap:8px;padding:7px 13px;
+        border-bottom:1px solid var(--border);transition:.12s;
+        ${isSig?'background:rgba(0,201,123,.03)':''}"
+      onmouseover="this.style.background='rgba(255,255,255,.03)'"
+      onmouseout="this.style.background='${isSig?'rgba(0,201,123,.03)':''}'" >
+      <span class="wl-sym">${symDisp(sym)}${isCustom?'<span style="color:var(--yellow);font-size:9px;margin-left:3px">★</span>':''}</span>
+      ${sc?`<span style="font-size:9px;color:${bc};font-weight:700;min-width:28px">${score}</span>`:'<span style="min-width:28px"></span>'}
+      ${sc?sBadge(sc.status):''}
+      <span class="wl-px">${px}</span>
+      <span class="wl-chg ${chg===null?'t2':chg>=0?'up':'dn'}">${chg===null?'—':(chg>=0?'+':'')+chg.toFixed(2)+'%'}</span>
     </a>`
   }).join('')
 }
