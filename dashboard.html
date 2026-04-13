@@ -413,6 +413,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .btc-stat-lbl{font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:4px}
 .btc-stat-val{font-size:14px;font-weight:600;font-family:var(--mono)}
 
+/* ─── TRADINGVIEW INTERVAL BUTTONS ───────── */
+.tv-int-btn{
+  padding:3px 8px;font-size:10px;font-family:var(--font);font-weight:500;
+  border:1px solid var(--border);border-radius:3px;cursor:pointer;
+  background:none;color:var(--t2);transition:.12s;
+}
+.tv-int-btn:hover{color:var(--text);border-color:var(--border2)}
+.tv-int-btn.active{background:var(--green);color:#000;border-color:var(--green);font-weight:700}
+
 /* ─── COMING SOON ─────────────────────────── */
 .coming-soon{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -950,7 +959,31 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
     <!-- ══ BTC LIVE ══ -->
     <div id="pg-btc" class="page">
-      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px;max-width:900px;margin:0 auto">
+
+      <!-- TradingView Chart (full width) -->
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-h" style="padding:8px 13px">
+          <div class="card-title"><span class="icon">📈</span> BTC/USDT — TradingView Chart</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <!-- Interval buttons -->
+            <div style="display:flex;gap:4px" id="tv-interval-btns">
+              <button onclick="setTVInterval('15')"  class="tv-int-btn" id="tvi-15">15m</button>
+              <button onclick="setTVInterval('60')"  class="tv-int-btn active" id="tvi-60">1H</button>
+              <button onclick="setTVInterval('240')" class="tv-int-btn" id="tvi-240">4H</button>
+              <button onclick="setTVInterval('D')"   class="tv-int-btn" id="tvi-D">1D</button>
+            </div>
+            <span style="font-size:9px;color:var(--t2)">OKX Perp · Volume included</span>
+          </div>
+        </div>
+        <div id="tv-chart-container" style="height:500px;width:100%">
+          <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--t2);font-size:12px">
+            <span>Loading chart...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats row + FG -->
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px">
         <!-- BTC Price Card -->
         <div class="card">
           <div class="card-h">
@@ -986,7 +1019,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div><span class="t2">vs MA30</span> <b id="btc-fg-ma">—</b></div>
             </div>
           </div>
-          <div style="padding:4px 13px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border);display:flex;justify-content:space-between">
+          <div style="padding:4px 13px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border)">
             <span>📊 <b style="color:var(--text)">BTC เท่านั้น</b> — คำนวณจาก RSI + Momentum + Volatility</span>
           </div>
         </div>
@@ -3120,11 +3153,88 @@ function renderHealth(){
 }
 
 // ═══════════════════════════════════════════════════════════
-// BTC LIVE PAGE
+// BTC LIVE PAGE + TRADINGVIEW CHART
 // ═══════════════════════════════════════════════════════════
+let tvInterval = '60'
+let tvWidgetLoaded = false
+
+function setTVInterval(iv){
+  tvInterval = iv
+  // update active button
+  document.querySelectorAll('.tv-int-btn').forEach(b=>b.classList.remove('active'))
+  const btn = document.getElementById('tvi-'+iv)
+  if(btn) btn.classList.add('active')
+  // reload chart with new interval
+  loadTVChart(iv)
+}
+
+function loadTVChart(interval){
+  const container = document.getElementById('tv-chart-container')
+  if(!container) return
+  // clear old widget
+  container.innerHTML = ''
+  const divId = 'tv_btc_chart'
+  const div = document.createElement('div')
+  div.id = divId
+  div.style.height = '100%'
+  container.appendChild(div)
+
+  const script = document.createElement('script')
+  script.src = 'https://s3.tradingview.com/tv.js'
+  script.onload = ()=>{
+    if(typeof TradingView === 'undefined') return
+    new TradingView.widget({
+      container_id: divId,
+      width: '100%',
+      height: 500,
+      symbol: 'OKX:BTCUSDT.P',
+      interval: interval || tvInterval,
+      timezone: 'Asia/Bangkok',
+      theme: 'dark',
+      style: '1',           // candlestick
+      locale: 'en',
+      toolbar_bg: '#0d1220',
+      backgroundColor: '#080c14',
+      gridColor: 'rgba(30,45,69,0.4)',
+      enable_publishing: false,
+      withdateranges: true,
+      hide_side_toolbar: false,
+      allow_symbol_override: true,
+      save_image: false,
+      studies: [
+        'Volume@tv-basicstudies',
+        'MAExp@tv-basicstudies'
+      ],
+      overrides: {
+        'paneProperties.background': '#080c14',
+        'paneProperties.backgroundType': 'solid',
+        'scalesProperties.textColor': '#4a6685',
+        'mainSeriesProperties.candleStyle.upColor': '#00c97b',
+        'mainSeriesProperties.candleStyle.downColor': '#e83c5a',
+        'mainSeriesProperties.candleStyle.wickUpColor': '#00c97b',
+        'mainSeriesProperties.candleStyle.wickDownColor': '#e83c5a',
+        'mainSeriesProperties.candleStyle.borderUpColor': '#00c97b',
+        'mainSeriesProperties.candleStyle.borderDownColor': '#e83c5a',
+      }
+    })
+    tvWidgetLoaded = true
+  }
+  // avoid loading script multiple times
+  if(!document.querySelector('script[src*="tradingview"]')){
+    document.head.appendChild(script)
+  } else if(typeof TradingView !== 'undefined'){
+    script.onload()
+  }
+}
+
 function renderBTCLive(){
   renderLive()
   renderBTCFG()
+  // load chart only once (or if container is empty)
+  const container = document.getElementById('tv-chart-container')
+  if(container && !tvWidgetLoaded){
+    loadTVChart(tvInterval)
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
