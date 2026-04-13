@@ -335,8 +335,6 @@ def load_backtest_data():
 
     candidates = [
         ("backtest_live.csv", "live"),
-        ("backtest_v5_B.csv", "v5"),
-        ("backtest_v5_A.csv", "v5"),
     ]
     df = None
     source = None
