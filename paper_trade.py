@@ -186,11 +186,11 @@ def open_trade(conn, sig):
 # ── ENFORCE MAX POSITIONS — ปิด positions ส่วนเกิน ────────────────────────────
 def enforce_max_positions(conn):
     """
-    ถ้า open positions > MAX_OPEN → void ตัวที่ score ต่ำสุดออก
-    รัน 1 ครั้งตอน startup เพื่อ cleanup trades เก่าก่อน code ใหม่
+    ถ้า open positions > MAX_OPEN → ปิดตัวที่ score ต่ำสุดที่ราคาตลาดปัจจุบัน
+    คิด PnL จริง — outcome = WIN/LOSS/VOID ตามผลจริง
     """
     opens = conn.execute("""
-        SELECT id, symbol, side, score
+        SELECT id, symbol, side, score, entry_px, qty
         FROM trades WHERE status='OPEN'
         ORDER BY score DESC, id ASC
     """).fetchall()
@@ -199,17 +199,22 @@ def enforce_max_positions(conn):
     if excess <= 0:
         return 0
 
-    # void ตัวที่ score ต่ำที่สุด (ท้ายสุดของ list)
-    to_void = opens[-excess:]
-    now = datetime.now(timezone.utc).isoformat()
-    for t in to_void:
-        tid, sym, side, score = t
-        conn.execute("""
-            UPDATE trades SET status='CLOSED', outcome='VOID',
-            pnl_usd=0, exit_px=entry_px, closed_at=? WHERE id=?
-        """, (now, tid))
-        print(f"  [VOID] #{tid} {sym} {side} score={score} (เกิน MAX_OPEN={MAX_OPEN})")
-    conn.commit()
+    # ปิดตัวที่ score ต่ำที่สุด (ท้ายสุดของ list)
+    to_close = opens[-excess:]
+    for t in to_close:
+        tid, sym, side, score, ep, qty = t
+        px = get_price(sym)
+        if px and px > 0 and qty and qty > 0 and ep and ep > 0:
+            diff = (px - ep) if side == "LONG" else (ep - px)
+            pnl  = qty * diff
+            outcome = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
+        else:
+            px      = ep   # ไม่ได้ราคา ใช้ entry แทน
+            pnl     = 0
+            outcome = "VOID"
+        _close(conn, tid, px, outcome, pnl,
+               reason=f"MaxPos forced close (score={score})")
+        print(f"  [CLOSE] #{tid} {sym} {side} score={score} → {outcome} ${pnl:.2f} (เกิน MAX_OPEN={MAX_OPEN})")
     return excess
 
 
