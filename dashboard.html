@@ -597,9 +597,19 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="card">
             <div class="card-h">
               <div class="card-title"><span class="icon">📈</span> REAL POSITIONS</div>
-              <div class="card-meta">0 open</div>
+              <div class="card-meta" style="display:flex;align-items:center;gap:6px">
+                <span style="width:7px;height:7px;border-radius:50%;background:#555;display:inline-block"></span>
+                <span>Real: OFF</span>
+              </div>
             </div>
-            <div class="empty"><div class="empty-ico">🔒</div>No real trades — auto trade is off</div>
+            <div style="padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:8px">
+              <div style="width:38px;height:38px;border-radius:50%;background:var(--s3);border:1px solid var(--border);
+                display:flex;align-items:center;justify-content:center;font-size:18px">🔒</div>
+              <div style="font-size:12px;font-weight:600;color:var(--t2)">Auto Trade Disabled</div>
+              <div style="font-size:10px;color:var(--t2);text-align:center;max-width:180px;line-height:1.5">
+                เปิด Real Mode เพื่อเชื่อมต่อ OKX API และเทรดจริง
+              </div>
+            </div>
           </div>
 
           <!-- Paper Positions mini -->
@@ -1674,13 +1684,44 @@ function renderDash(){
     if(open.length===0){posEl.innerHTML='<div class="empty">No open positions</div>'}
     else{
       posEl.innerHTML=open.slice(0,8).map(t=>{
-        const pnlPct=t.pnl_pct||0
-        const fut=isFutures(t.symbol)
-        return`<div class="pos-row">
-          <span class="pos-sym">${t.symbol?.replace('/USDT','')}${fut?'<span style="font-size:8px;color:#f7931a">.P</span>':''}</span>
-          <span class="${t.side==='LONG'?'pos-side-l':'pos-side-s'}">${t.side==='LONG'?'L':'S'}</span>
-          <span class="t2" style="font-size:10px;flex:1">${pxFmt(t.entry_price)}</span>
-          <span class="pos-pnl pos-ml ${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</span>
+        const pnl=t.pnl||0, pct=t.pnl_pct||0
+        const isLong=t.side==='LONG'
+        const pnlCls=pnl>=0?'up':'dn', sign=pnl>=0?'+':''
+        const lv=LIVE[t.symbol]
+        const curPx=lv?lv.price:(t.current_price||t.entry_price)
+        const sl=t.sl_price, tp1=t.tp_price
+        let prog=50
+        if(sl&&tp1&&curPx){
+          const rng=isLong?(tp1-sl):(sl-tp1)
+          const mv=isLong?(curPx-sl):(sl-curPx)
+          prog=Math.max(0,Math.min(100,mv/rng*100))
+        }
+        const barCol=prog>65?'var(--green)':prog>35?'var(--yellow)':'var(--red)'
+        return`<div style="padding:10px 13px;border-bottom:1px solid var(--border);position:relative;overflow:hidden">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${isLong?'var(--green)':'var(--red)'}"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:6px">
+              ${sideBadge(t.side)}
+              <span style="font-size:13px;font-weight:700;font-family:var(--mono)">${symDisp(t.symbol)}</span>
+            </div>
+            <div style="text-align:right">
+              <div class="${pnlCls}" style="font-size:14px;font-weight:700;font-family:var(--mono)">${sign}$${pnl.toFixed(2)}</div>
+              <div class="${pnlCls}" style="font-size:10px">${sign}${pct.toFixed(2)}%</div>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:5px">
+            <span>Entry <span style="color:var(--text);font-family:var(--mono)">${pxFmt(t.entry_price)}</span></span>
+            <span>Now <b style="color:var(--text);font-family:var(--mono)">${pxFmt(curPx)}</b></span>
+            <span>${timeAgo(t.open_time)}</span>
+          </div>
+          <div style="height:4px;background:var(--s4);border-radius:2px;overflow:hidden;margin-bottom:3px">
+            <div style="width:${prog}%;height:100%;background:${barCol};border-radius:2px;transition:width .4s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t2)">
+            <span class="dn">SL ${pxFmt(sl)}</span>
+            ${t.tp1_hit?'<span class="up">BE Lock ✓</span>':'<span></span>'}
+            <span class="up">TP1 ${pxFmt(tp1)}</span>
+          </div>
         </div>`
       }).join('')
     }
