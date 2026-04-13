@@ -88,6 +88,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--f
 .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);
   box-shadow:0 0 8px var(--green);animation:blink 2s infinite;flex-shrink:0}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
 
 /* ─── PAGES ───────────────────────────────── */
 .pages{flex:1;overflow:hidden;position:relative}
@@ -576,24 +577,49 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="card-meta" id="d-scan-ago">—</div>
             </div>
             <div class="card-body" style="padding:14px">
-              <div style="font-size:28px;font-weight:700;font-family:var(--mono)" id="d-bal">$1,000.00</div>
-              <div style="font-size:11px;color:var(--t2);margin-top:3px" id="d-bal-pct">+0.0% from start</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
-                <div style="background:var(--s3);border-radius:4px;padding:10px">
-                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">TOTAL P&L</div>
-                  <div style="font-size:14px;font-weight:600;font-family:var(--mono)" id="d-pnl">+$0.00</div>
+
+              <!-- Equity (real-time) -->
+              <div style="background:linear-gradient(135deg,rgba(0,201,123,.08),rgba(0,201,123,.02));border:1px solid rgba(0,201,123,.2);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+                <div style="font-size:9px;color:var(--t2);letter-spacing:.12em;margin-bottom:4px;display:flex;align-items:center;gap:5px">
+                  EQUITY
+                  <span style="width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite" id="eq-dot"></span>
+                  <span style="font-size:9px;color:var(--t2)" id="eq-live-lbl">real-time</span>
                 </div>
-                <div style="background:var(--s3);border-radius:4px;padding:10px">
-                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">WIN RATE</div>
-                  <div style="font-size:14px;font-weight:600" id="d-wr">—</div>
+                <div style="font-size:28px;font-weight:700;font-family:var(--mono);color:var(--fg)" id="d-equity">$1,000.00</div>
+                <div style="font-size:11px;margin-top:2px" id="d-equity-pct" style="color:var(--t2)">+0.0% from start</div>
+              </div>
+
+              <!-- Available + Unrealized row -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+                <div style="background:var(--s3);border-radius:6px;padding:10px">
+                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">AVAILABLE</div>
+                  <div style="font-size:13px;font-weight:600;font-family:var(--mono)" id="d-bal">$1,000.00</div>
+                  <div style="font-size:9px;color:var(--t2);margin-top:1px">closed trades</div>
                 </div>
-                <div style="background:var(--s3);border-radius:4px;padding:10px">
-                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">OPEN</div>
-                  <div style="font-size:14px;font-weight:600;font-family:var(--mono)" id="d-open">0</div>
+                <div style="background:var(--s3);border-radius:6px;padding:10px">
+                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">UNREALIZED</div>
+                  <div style="font-size:13px;font-weight:600;font-family:var(--mono)" id="d-unrealized">$0.00</div>
+                  <div style="font-size:9px;color:var(--t2);margin-top:1px" id="d-unrealized-sub">0 open</div>
                 </div>
-                <div style="background:var(--s3);border-radius:4px;padding:10px">
-                  <div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:3px">CLOSED</div>
-                  <div style="font-size:14px;font-weight:600;font-family:var(--mono)" id="d-closed">0</div>
+              </div>
+
+              <!-- Stats row -->
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                  <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">REALIZED P&L</div>
+                  <div style="font-size:12px;font-weight:600;font-family:var(--mono)" id="d-pnl">+$0.00</div>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                  <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">WIN RATE</div>
+                  <div style="font-size:12px;font-weight:600" id="d-wr">—</div>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                  <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">OPEN</div>
+                  <div style="font-size:12px;font-weight:600;font-family:var(--mono)" id="d-open">0</div>
+                </div>
+                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                  <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">CLOSED</div>
+                  <div style="font-size:12px;font-weight:600;font-family:var(--mono)" id="d-closed">0</div>
                 </div>
               </div>
             </div>
@@ -1578,6 +1604,8 @@ function renderLive(){
   renderHeatmap('hm-scan',D.scan_results||[])
   renderBTCFG()
   renderAltSeason()
+  // อัปเดต equity real-time ทุกครั้งที่ live price เปลี่ยน
+  if(currentPage==='dash') renderEquity()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1704,14 +1732,64 @@ function render(){
 // ═══════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════
+// คำนวณ unrealized PnL จาก open positions ด้วย LIVE price
+function calcUnrealized(){
+  const opens = D.open_trades || []
+  let total = 0
+  for(const t of opens){
+    const lv = LIVE[t.symbol]
+    const px = lv ? lv.price : (t.current_price || t.entry_price)
+    const ep = t.entry_price || 0
+    const notional = t.notional || 0
+    if(!ep || !notional) { total += (t.pnl||0); continue }
+    const upnl = t.side==='LONG'
+      ? notional * (px - ep) / ep
+      : notional * (ep - px) / ep
+    total += upnl
+  }
+  return total
+}
+
+function renderEquity(){
+  const available = D.balance || 1000
+  const unrealized = calcUnrealized()
+  const equity = available + unrealized
+  const opens = D.open_trades || []
+
+  // Equity block
+  const eqEl = document.getElementById('d-equity')
+  if(eqEl){ eqEl.textContent = '$'+numFmt(equity) }
+  const eqPctEl = document.getElementById('d-equity-pct')
+  if(eqPctEl){
+    const pct = ((equity/1000)-1)*100
+    eqPctEl.textContent = (pct>=0?'+':'')+pct.toFixed(2)+'% from start'
+    eqPctEl.style.color = pct>=0?'var(--green)':'var(--red)'
+  }
+  // pulse dot: green if live, gray if no live prices
+  const dot = document.getElementById('eq-dot')
+  const lbl = document.getElementById('eq-live-lbl')
+  const hasLive = Object.keys(LIVE).length > 0
+  if(dot) dot.style.background = hasLive ? 'var(--green)' : '#555'
+  if(lbl) lbl.textContent = hasLive ? 'real-time' : 'cached'
+
+  // Available
+  setText('d-bal','$'+numFmt(available))
+
+  // Unrealized
+  const urEl = document.getElementById('d-unrealized')
+  if(urEl){
+    urEl.textContent = (unrealized>=0?'+':'')+' $'+Math.abs(unrealized).toFixed(2)
+    urEl.className = unrealized>=0?'up':'dn'
+  }
+  const urSubEl = document.getElementById('d-unrealized-sub')
+  if(urSubEl) urSubEl.textContent = opens.length+' open position'+(opens.length!==1?'s':'')
+}
+
 function renderDash(){
   const scan=D.scan_results||[],sigs=D.signals||[],open=D.open_trades||[],closed=D.closed_trades||[]
   const bal=D.balance||1000,pnl=D.pnl||0
-  const wins=closed.filter(t=>t.outcome==='WIN').length
-  const pct=((bal/1000)-1)*100
 
-  setText('d-bal','$'+bal.toFixed(2))
-  setText('d-bal-pct',(pct>=0?'+':'')+pct.toFixed(1)+'% from start')
+  renderEquity()
   const pnlEl=document.getElementById('d-pnl')
   if(pnlEl){pnlEl.textContent=(pnl>=0?'+':'')+' $'+Math.abs(pnl).toFixed(2);pnlEl.className=pnl>=0?'up':'dn'}
   setText('d-wr',D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—')
