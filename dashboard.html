@@ -423,13 +423,67 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .coming-soon-s{font-size:11px;opacity:.4}
 
 /* ─── RESPONSIVE ──────────────────────────── */
-@media(max-width:900px){
+
+/* Fix stat number overflow on narrow cells */
+.stat-num-val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+  font-size:12px;font-weight:600;font-family:var(--mono)}
+
+/* Watchlist tighter on small containers */
+.wl-chg{font-size:11px;font-weight:600;min-width:48px;text-align:right}
+
+/* ── Mobile bottom nav ─── */
+.mob-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;
+  height:56px;background:var(--s1);border-top:1px solid var(--border);
+  align-items:center;justify-content:space-around;
+}
+.mob-nav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px 14px;background:none;border:none;
+  color:var(--t2);cursor:pointer;font-size:9px;font-family:var(--font);
+  letter-spacing:.05em;transition:.12s;
+}
+.mob-nav-btn.active{color:var(--green)}
+.mob-nav-btn svg{width:20px;height:20px;flex-shrink:0}
+
+/* ── iPad / Tablet (600 – 1023px) ─── */
+@media(max-width:1023px){
   .sidebar{width:48px;padding:8px 0}
   .s-logo-text,.s-logo-sub,.nav-sec{display:none}
   .s-logo{padding:10px;justify-content:center}
   .nav-btn{padding:10px;justify-content:center}
   .nav-btn span{display:none}
-  .dash-grid{grid-template-columns:1fr}
+  .dash-grid{grid-template-columns:1fr 1fr !important}
+}
+@media(max-width:767px){
+  .dash-grid{grid-template-columns:1fr !important}
+}
+
+/* ── Mobile (< 600px) ─── */
+@media(max-width:599px){
+  :root{--sidebar-w:0px}
+  html,body{overflow:hidden}
+  .sidebar{display:none}
+  .mob-nav{display:flex}
+  .app{padding-bottom:56px}
+  .page{padding:10px 10px 72px}
+  .topbar{gap:0;padding:0 8px}
+  .tb-seg{padding:0 8px}
+  .tb-lbl{font-size:8px}
+  .tb-val{font-size:11px}
+  /* dashboard grid single col */
+  .dash-grid{grid-template-columns:1fr !important}
+  /* stats row: 2x2 */
+  .stats-4col{grid-template-columns:1fr 1fr !important}
+  /* pos-cards: single col */
+  .pos-cards{grid-template-columns:1fr !important}
+  /* watchlist: hide change on tiny screens */
+  @media(max-width:399px){.wl-chg{display:none}}
+  /* table scroll */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* card padding tighter */
+  .card-h{padding:8px 10px}
+  .card-body{padding:10px}
 }
 </style>
 </head>
@@ -604,22 +658,22 @@ tr:hover td{background:rgba(255,255,255,.02)}
               </div>
 
               <!-- Stats row -->
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
-                <div style="background:var(--s3);border-radius:4px;padding:8px">
+              <div class="stats-4col" style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+                <div style="background:var(--s3);border-radius:4px;padding:8px;min-width:0">
                   <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">REALIZED P&L</div>
-                  <div style="font-size:12px;font-weight:600;font-family:var(--mono)" id="d-pnl">+$0.00</div>
+                  <div class="stat-num-val" id="d-pnl">+$0.00</div>
                 </div>
-                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                <div style="background:var(--s3);border-radius:4px;padding:8px;min-width:0">
                   <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">WIN RATE</div>
-                  <div style="font-size:12px;font-weight:600" id="d-wr">—</div>
+                  <div class="stat-num-val" id="d-wr">—</div>
                 </div>
-                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                <div style="background:var(--s3);border-radius:4px;padding:8px;min-width:0">
                   <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">OPEN</div>
-                  <div style="font-size:12px;font-weight:600;font-family:var(--mono)" id="d-open">0</div>
+                  <div class="stat-num-val" id="d-open">0</div>
                 </div>
-                <div style="background:var(--s3);border-radius:4px;padding:8px">
+                <div style="background:var(--s3);border-radius:4px;padding:8px;min-width:0">
                   <div style="font-size:8px;color:var(--t2);letter-spacing:.08em;margin-bottom:2px">CLOSED</div>
-                  <div style="font-size:12px;font-weight:600;font-family:var(--mono)" id="d-closed">0</div>
+                  <div class="stat-num-val" id="d-closed">0</div>
                 </div>
               </div>
             </div>
@@ -1431,6 +1485,10 @@ function nav(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
   const pg=document.getElementById('pg-'+page)
   if(pg) pg.classList.add('active')
+  // sync mobile bottom nav
+  document.querySelectorAll('.mob-nav-btn').forEach(b=>b.classList.remove('active'))
+  const mnb=document.getElementById('mn-'+page)
+  if(mnb) mnb.classList.add('active')
   currentPage=page
   if(page==='markets') renderMarkets()
   if(page==='scan') renderScanner()
@@ -3248,5 +3306,30 @@ function drawBTEquity(eq){
 // ═══════════════════════════════════════════════════════════
 window.addEventListener('load',init)
 </script>
+
+<!-- ═══════════ MOBILE BOTTOM NAV ═══════════ -->
+<nav class="mob-nav">
+  <button class="mob-nav-btn active" id="mn-dash" onclick="nav('dash')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dash
+  </button>
+  <button class="mob-nav-btn" id="mn-sig" onclick="nav('sig')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Signals
+  </button>
+  <button class="mob-nav-btn" id="mn-pos" onclick="nav('pos')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Positions
+  </button>
+  <button class="mob-nav-btn" id="mn-watchlist" onclick="nav('watchlist')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    Watchlist
+  </button>
+  <button class="mob-nav-btn" id="mn-backtest" onclick="nav('backtest')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Backtest
+  </button>
+</nav>
+
 </body>
 </html>
