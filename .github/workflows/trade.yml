@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '*/15 * * * *'        # ทุก 15 นาที — scan signals
     - cron: '0 23 * * 0'          # อาทิตย์ 23:00 UTC = จันทร์ 06:00 Thai — weekly report
+    - cron: '0 0 1 * *'           # ทุกวันที่ 1 ของเดือน 00:00 UTC — 3-year backtest
   workflow_dispatch:
 
 permissions:
@@ -52,6 +53,11 @@ jobs:
         if: github.event.schedule == '0 23 * * 0'
         run: python weekly_report.py
 
+      - name: Multi-TF Backtest (15m/30m/1H/2H/4H/1D) — ทุกวันที่ 1 ของเดือนเท่านั้น
+        if: github.event.schedule == '0 0 1 * *' || github.event_name == 'workflow_dispatch'
+        timeout-minutes: 120
+        run: python backtest_mtf.py --fast
+
       - name: Commit updated data back to repo
         run: |
           git config user.name "github-actions[bot]"
@@ -59,6 +65,9 @@ jobs:
           echo "=== adding files ==="
           git add -f --verbose dashboard_data.json        && echo "dashboard_data.json OK"  || echo "dashboard_data.json FAIL"
           git add -f --verbose scan_results.json          && echo "scan_results.json OK"    || echo "scan_results.json FAIL (not found?)"
+          git add -f --verbose backtest_mtf.csv         2>/dev/null && echo "backtest_mtf.csv OK"         || echo "backtest_mtf.csv SKIP"
+          git add -f --verbose backtest_mtf_summary.csv 2>/dev/null && echo "backtest_mtf_summary.csv OK" || echo "backtest_mtf_summary.csv SKIP"
+          git add -f --verbose backtest_3y.csv          2>/dev/null && echo "backtest_3y.csv OK"          || echo "backtest_3y.csv SKIP"
           git add -f --verbose latest_signals.json 2>/dev/null && echo "latest_signals.json OK" || echo "latest_signals.json SKIP"
           git add -f --verbose paper_trades.db     2>/dev/null && echo "paper_trades.db OK"     || echo "paper_trades.db SKIP"
           git add -f --verbose proposals/          2>/dev/null && echo "proposals/ OK"           || echo "proposals/ SKIP"

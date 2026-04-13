@@ -1278,7 +1278,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="coming-soon">
           <div class="coming-soon-ico">🔄</div>
           <div class="coming-soon-t">ยังไม่มีข้อมูล Backtest</div>
-          <div class="coming-soon-s">รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_live.py --fast</code> แล้ว re-generate dashboard</div>
+          <div class="coming-soon-s">รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_3y.py --years 3</code> แล้ว <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py generate_dashboard.py</code></div>
         </div>
       </div>
 
@@ -1288,8 +1288,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <!-- header -->
         <div class="sec-header" style="margin-bottom:12px">
           <div>
-            <div class="sec-title">📊 Backtest Results <span style="font-size:10px;color:var(--t2);font-weight:400" id="bt-gen-time"></span></div>
-            <div class="sec-sub">Paper Trading Results · Live 3-Agent System · Dynamic Sizing</div>
+            <div class="sec-title" style="display:flex;align-items:center;gap:8px">
+              📊 Backtest Results
+              <span id="bt-source-badge" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em"></span>
+              <span style="font-size:10px;color:var(--t2);font-weight:400" id="bt-gen-time"></span>
+            </div>
+            <div class="sec-sub" id="bt-date-range">Walk-Forward Backtest · Live 3-Agent System · Dynamic Sizing</div>
           </div>
           <div id="bt-verdict" style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:4px"></div>
         </div>
@@ -1300,7 +1304,9 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <!-- tabs -->
         <div class="tabs">
           <button class="tab active" onclick="btTab('summary')" id="btt-summary">Summary</button>
+          <button class="tab" onclick="btTab('tf')" id="btt-tf">By TF</button>
           <button class="tab" onclick="btTab('symbols')" id="btt-symbols">By Symbol</button>
+          <button class="tab" onclick="btTab('yearly')" id="btt-yearly">By Year</button>
           <button class="tab" onclick="btTab('trades')" id="btt-trades">Trade Log</button>
         </div>
 
@@ -1348,6 +1354,30 @@ tr:hover td{background:rgba(255,255,255,.02)}
           </div>
         </div>
 
+        <!-- BY TF TAB -->
+        <div id="bt-tab-tf" style="display:none">
+
+          <!-- TF summary table -->
+          <div class="card">
+            <div class="card-h">
+              <span class="card-title">Performance by Timeframe</span>
+              <span class="card-meta" id="bt-tf-best-label"></span>
+            </div>
+            <div class="tw"><table>
+              <thead><tr>
+                <th>TF</th><th>Trades</th><th>WR %</th>
+                <th>Total PnL</th><th>Avg PnL</th>
+                <th>Sharpe</th><th>Max DD</th><th>Profit Factor</th><th>Verdict</th>
+              </tr></thead>
+              <tbody id="bt-tf-tb"></tbody>
+            </table></div>
+          </div>
+
+          <!-- Equity curves per TF -->
+          <div id="bt-tf-charts" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"></div>
+
+        </div>
+
         <!-- BY SYMBOL TAB -->
         <div id="bt-tab-symbols" style="display:none">
           <div class="card">
@@ -1359,6 +1389,26 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <tbody id="bt-sym-tb"></tbody>
             </table></div>
           </div>
+        </div>
+
+        <!-- BY YEAR TAB -->
+        <div id="bt-tab-yearly" style="display:none">
+          <div class="card">
+            <div class="card-h">
+              <span class="card-title">Yearly Breakdown</span>
+              <span class="card-meta">Walk-Forward · All Symbols</span>
+            </div>
+            <div class="tw"><table>
+              <thead><tr>
+                <th>Year</th><th>Trades</th><th>WR %</th>
+                <th>Total PnL</th><th>Avg PnL</th><th>Sharpe</th><th>Max DD</th>
+              </tr></thead>
+              <tbody id="bt-year-tb"></tbody>
+            </table></div>
+          </div>
+
+          <!-- per-year equity mini charts -->
+          <div id="bt-year-charts" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px"></div>
         </div>
 
         <!-- TRADE LOG TAB -->
@@ -3280,12 +3330,14 @@ let btCurrentTab = 'summary'
 
 function btTab(tab){
   btCurrentTab = tab
-  ;['summary','symbols','trades'].forEach(t=>{
+  ;['summary','tf','symbols','yearly','trades'].forEach(t=>{
     document.getElementById('btt-'+t)?.classList.toggle('active', t===tab)
     const el = document.getElementById('bt-tab-'+t)
     if(el) el.style.display = t===tab ? 'block' : 'none'
   })
   if(tab==='trades') renderBTTrades()
+  if(tab==='yearly') renderBTYearly()
+  if(tab==='tf')     renderBTTF()
 }
 
 function renderBacktest(){
@@ -3298,6 +3350,24 @@ function renderBacktest(){
   const s = bt.summary || {}
   const genEl = document.getElementById('bt-gen-time')
   if(genEl && bt.generated) genEl.textContent = '· ' + timeAgo(bt.generated)
+
+  // source badge
+  const srcBadge = document.getElementById('bt-source-badge')
+  if(srcBadge){
+    const src = bt.source || 'live'
+    const is3y = src === '3y'
+    const isMTF = src === 'mtf'
+    srcBadge.textContent = isMTF ? 'MULTI-TF' : is3y ? '3-YEAR' : src === 'v5' ? 'V5 LEGACY' : 'LIVE'
+    srcBadge.style.cssText = (isMTF || is3y)
+      ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
+      : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
+  }
+
+  // date range
+  const drEl = document.getElementById('bt-date-range')
+  if(drEl && bt.date_from && bt.date_to){
+    drEl.textContent = `Walk-Forward ${bt.date_from} → ${bt.date_to} · 3-Agent System · Dynamic Sizing`
+  }
 
   // verdict badge
   const vEl = document.getElementById('bt-verdict')
@@ -3414,6 +3484,210 @@ function renderBTTrades(){
       <td class="t2" style="font-size:10px">${t.regime||'—'}</td>
     </tr>`
   }).join('')
+}
+
+function renderBTTF(){
+  const bt   = D.backtest || {}
+  const tfs  = bt.by_tf || []
+  const tb   = document.getElementById('bt-tf-tb')
+  const bestEl = document.getElementById('bt-tf-best-label')
+  const chartsEl = document.getElementById('bt-tf-charts')
+
+  // TF tab only shows when source=mtf; otherwise show note
+  if(tb){
+    if(!tfs.length){
+      tb.innerHTML = `<tr><td colspan="9"><div class="empty" style="padding:20px;text-align:center;color:var(--t2)">
+        รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_mtf.py</code>
+        เพื่อดูผลแยก TF 15m / 30m / 1H / 2H / 4H / 1D
+      </div></td></tr>`
+    } else {
+      // find best TF by sharpe
+      const best = tfs.reduce((a,b)=>(b.sharpe||0)>(a.sharpe||0)?b:a, tfs[0])
+      if(bestEl) bestEl.textContent = `Best: ${best.tf.toUpperCase()} (Sharpe ${best.sharpe})`
+
+      const verdictHtml = (r) => {
+        const p = r.total_pnl||0, sh = r.sharpe||0, dd = Math.abs(r.dd||0)
+        if(p>0 && sh>=1.5 && dd<=30) return '<span class="bdg b-win">STRONG ✅</span>'
+        if(p>0 && sh>=0.8)           return '<span class="bdg b-win">PASS ✅</span>'
+        if(p>0)                      return '<span class="bdg b-stale">MARGINAL ⚠️</span>'
+        return '<span class="bdg b-los">FAIL ❌</span>'
+      }
+
+      tb.innerHTML = tfs.map(r => {
+        const pnlC  = (r.total_pnl||0)>=0?'up':'dn'
+        const apnlC = (r.avg_pnl||0)>=0?'up':'dn'
+        const ddC   = Math.abs(r.dd||0)<=20?'up':Math.abs(r.dd||0)<=30?'yl':'dn'
+        const shC   = (r.sharpe||0)>=1?'up':(r.sharpe||0)>=0.5?'yl':'dn'
+        const isBest = r.tf === best.tf
+        return `<tr style="${isBest?'background:rgba(99,102,241,.07)':''}">
+          <td style="font-weight:700;font-family:var(--mono)">${r.tf.toUpperCase()}${isBest?' ★':''}</td>
+          <td>${r.n||0}</td>
+          <td class="${(r.wr||0)>=50?'up':'dn'}">${r.wr||0}%</td>
+          <td class="${pnlC}" style="font-weight:600">${(r.total_pnl||0)>=0?'+':''}$${(r.total_pnl||0).toFixed(2)}</td>
+          <td class="${apnlC}">${(r.avg_pnl||0)>=0?'+':''}$${(r.avg_pnl||0).toFixed(2)}</td>
+          <td class="${shC}">${(r.sharpe||0).toFixed(2)}</td>
+          <td class="${ddC}">${r.dd||0}%</td>
+          <td class="${(r.profit_factor||0)>=1.5?'up':(r.profit_factor||0)>=1?'yl':'dn'}">${r.profit_factor||0}</td>
+          <td>${verdictHtml(r)}</td>
+        </tr>`
+      }).join('')
+    }
+  }
+
+  // mini equity charts per TF
+  if(chartsEl){
+    if(!tfs.length){
+      chartsEl.innerHTML = ''
+      return
+    }
+    chartsEl.innerHTML = tfs.map(r => {
+      const eq   = r.equity || []
+      const last = eq.length ? eq[eq.length-1] : 0
+      const pnlC = last >= 0 ? 'var(--green)' : 'var(--red)'
+      return `<div class="card" style="padding:10px 13px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--t2);margin-bottom:6px">
+          ${r.tf.toUpperCase()}
+          &nbsp;<span style="color:${pnlC};font-weight:600">${last>=0?'+':''}$${last.toFixed?last.toFixed(2):last}</span>
+          &nbsp;<span style="color:var(--t2)">${r.n||0} trades · ${r.wr||0}% WR · Sharpe ${r.sharpe||0}</span>
+        </div>
+        <canvas id="bt-tfeq-${r.tf}" style="display:block;width:100%;height:70px"></canvas>
+      </div>`
+    }).join('')
+
+    // draw each mini equity curve
+    tfs.forEach(r => {
+      const eq = r.equity || []
+      if(!eq.length) return
+      const canvas = document.getElementById('bt-tfeq-'+r.tf)
+      if(!canvas) return
+      const dpr = window.devicePixelRatio||1
+      const W = canvas.offsetWidth||220, H = 70
+      canvas.width = W*dpr; canvas.height = H*dpr
+      const ctx = canvas.getContext('2d')
+      ctx.scale(dpr,dpr)
+      ctx.clearRect(0,0,W,H)
+      const pad = {t:4,b:4}
+      const ch = H-pad.t-pad.b
+      const mn = Math.min(...eq), mx = Math.max(...eq)
+      const rng = mx-mn||1
+      const sx = i => i/(eq.length-1)*W
+      const sy = v => pad.t + (1-(v-mn)/rng)*ch
+      const last = eq[eq.length-1]
+      const col = last>=0?'34,197,94':'244,63,94'
+      // zero line
+      if(mn < 0 && mx > 0){
+        const z = sy(0)
+        ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.setLineDash([3,3])
+        ctx.beginPath(); ctx.moveTo(0,z); ctx.lineTo(W,z); ctx.stroke()
+        ctx.setLineDash([])
+      }
+      // fill
+      ctx.beginPath()
+      ctx.moveTo(sx(0),sy(eq[0]))
+      eq.forEach((_,i)=>{ if(i>0) ctx.lineTo(sx(i),sy(eq[i])) })
+      ctx.lineTo(sx(eq.length-1),H)
+      ctx.lineTo(sx(0),H)
+      ctx.closePath()
+      const grad = ctx.createLinearGradient(0,pad.t,0,H)
+      grad.addColorStop(0,`rgba(${col},.2)`)
+      grad.addColorStop(1,`rgba(${col},.02)`)
+      ctx.fillStyle=grad; ctx.fill()
+      // line
+      ctx.beginPath()
+      ctx.moveTo(sx(0),sy(eq[0]))
+      eq.forEach((_,i)=>{ if(i>0) ctx.lineTo(sx(i),sy(eq[i])) })
+      ctx.strokeStyle=last>=0?'var(--green)':'var(--red)'
+      ctx.lineWidth=1.5; ctx.stroke()
+      // final value label
+      ctx.fillStyle='rgba(180,180,200,.8)'; ctx.font=`9px Geist Mono,monospace`
+      ctx.textAlign='right'
+      ctx.fillText(`$${last.toFixed?last.toFixed(0):last}`, W-2, sy(last)-3)
+    })
+  }
+}
+
+function renderBTYearly(){
+  const bt = D.backtest || {}
+  const years = bt.by_year || []
+  const tb = document.getElementById('bt-year-tb')
+  const chartsEl = document.getElementById('bt-year-charts')
+
+  if(tb){
+    if(!years.length){
+      tb.innerHTML = '<tr><td colspan="7"><div class="empty">ไม่มีข้อมูล yearly breakdown</div></td></tr>'
+    } else {
+      tb.innerHTML = years.map(r => {
+        const pnlC  = (r.total_pnl||0)>=0?'up':'dn'
+        const apnlC = (r.avg_pnl||0)>=0?'up':'dn'
+        const ddC   = Math.abs(r.dd||0)<=20?'up':Math.abs(r.dd||0)<=30?'yl':'dn'
+        const shC   = (r.sharpe||0)>=1?'up':(r.sharpe||0)>=0.5?'yl':'dn'
+        return `<tr>
+          <td style="font-weight:700;font-family:var(--mono)">${r.year}</td>
+          <td>${r.n||0}</td>
+          <td class="${(r.wr||0)>=50?'up':'dn'}">${r.wr||0}%</td>
+          <td class="${pnlC}" style="font-weight:600">${(r.total_pnl||0)>=0?'+':''}$${(r.total_pnl||0).toFixed(2)}</td>
+          <td class="${apnlC}">${(r.avg_pnl||0)>=0?'+':''}$${(r.avg_pnl||0).toFixed(2)}</td>
+          <td class="${shC}">${(r.sharpe||0).toFixed(2)}</td>
+          <td class="${ddC}">${r.dd||0}%</td>
+        </tr>`
+      }).join('')
+    }
+  }
+
+  // mini equity cards per year
+  if(chartsEl){
+    chartsEl.innerHTML = years.map(r => {
+      const eq = r.equity || []
+      const last = eq.length ? eq[eq.length-1] : 0
+      const pnlC = last >= 0 ? 'var(--green)' : 'var(--red)'
+      return `<div class="card" style="padding:10px 13px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--t2);margin-bottom:6px">
+          ${r.year} &nbsp;<span style="color:${pnlC};font-weight:600">${last>=0?'+':''}$${last.toFixed?last.toFixed(2):last}</span>
+          &nbsp;<span style="color:var(--t2)">${r.n||0} trades · ${r.wr||0}% WR</span>
+        </div>
+        <canvas id="bt-yeq-${r.year}" style="display:block;width:100%;height:60px"></canvas>
+      </div>`
+    }).join('')
+
+    // draw mini charts
+    years.forEach(r => {
+      const eq = r.equity || []
+      if(!eq.length) return
+      const canvas = document.getElementById('bt-yeq-'+r.year)
+      if(!canvas) return
+      const dpr = window.devicePixelRatio||1
+      const W = canvas.offsetWidth||220, H = 60
+      canvas.width = W*dpr; canvas.height = H*dpr
+      const ctx = canvas.getContext('2d')
+      ctx.scale(dpr,dpr)
+      ctx.clearRect(0,0,W,H)
+      const pad = {t:4,b:4,l:0,r:0}
+      const cw = W, ch = H-pad.t-pad.b
+      const mn = Math.min(...eq), mx = Math.max(...eq)
+      const rng = mx-mn||1
+      const sx = i => i/(eq.length-1)*cw
+      const sy = v => pad.t + (1-(v-mn)/rng)*ch
+      const last = eq[eq.length-1]
+      const col = last>=0?'34,197,94':'244,63,94'
+      // fill
+      ctx.beginPath()
+      ctx.moveTo(sx(0),sy(eq[0]))
+      eq.forEach((_,i)=>{ if(i>0) ctx.lineTo(sx(i),sy(eq[i])) })
+      ctx.lineTo(sx(eq.length-1),H)
+      ctx.lineTo(sx(0),H)
+      ctx.closePath()
+      const grad = ctx.createLinearGradient(0,pad.t,0,H)
+      grad.addColorStop(0,`rgba(${col},.22)`)
+      grad.addColorStop(1,`rgba(${col},.02)`)
+      ctx.fillStyle=grad; ctx.fill()
+      // line
+      ctx.beginPath()
+      ctx.moveTo(sx(0),sy(eq[0]))
+      eq.forEach((_,i)=>{ if(i>0) ctx.lineTo(sx(i),sy(eq[i])) })
+      ctx.strokeStyle=last>=0?'var(--green)':'var(--red)'
+      ctx.lineWidth=1.5; ctx.stroke()
+    })
+  }
 }
 
 function drawBTEquity(eq){

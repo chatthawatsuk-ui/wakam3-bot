@@ -330,11 +330,17 @@ def calc_dynamic_weights(specialist_wr):
 
 
 def load_backtest_data():
-    """อ่าน backtest_live.csv (หรือ v5 fallback) → สร้าง summary สำหรับ Backtest page"""
+    """อ่าน backtest CSV → สร้าง summary สำหรับ Backtest page
+    Priority: backtest_3y.csv > backtest_live.csv > v5 fallback
+    """
     import pandas as pd
 
     candidates = [
+        ("backtest_mtf.csv",  "mtf"),   # ← Multi-TF backtest (highest priority)
+        ("backtest_3y.csv",   "3y"),
         ("backtest_live.csv", "live"),
+        ("backtest_v5_B.csv", "v5"),
+        ("backtest_v5_A.csv", "v5"),
     ]
     df = None
     source = None
@@ -455,20 +461,119 @@ def load_backtest_data():
         # equity curve (cumulative PnL)
         equity_bt = [0] + [round(v, 2) for v in df["pnl"].cumsum().tolist()]
 
+        # yearly breakdown (for 3y source)
+        by_year = []
+        if "entry_ts" in df.columns:
+            try:
+                df["_yr"] = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dt.year
+                for yr, g in df.groupby("_yr"):
+                    if pd.isna(yr): continue
+                    wins_y = (g["outcome"] == "WIN").sum()
+                    n_y    = len(g)
+                    total_pnl_y = round(g["pnl"].sum(), 2)
+                    avg_pnl_y   = round(g["pnl"].mean(), 2) if n_y else 0
+                    # per-year equity curve
+                    eq_y = [0] + [round(v, 2) for v in g["pnl"].cumsum().tolist()]
+                    # per-year sharpe
+                    try:
+                        import numpy as _np
+                        std_y = g["pnl"].std()
+                        sharpe_y = round(g["pnl"].mean() / std_y * (_np.sqrt(n_y)), 2) if std_y and std_y > 0 else 0
+                    except Exception:
+                        sharpe_y = 0
+                    # per-year max drawdown
+                    try:
+                        cum_y = g["pnl"].cumsum()
+                        peak_y = cum_y.cummax()
+                        dd_y   = round(((cum_y - peak_y) / (peak_y.abs() + 1e-9)).min() * 100, 1)
+                    except Exception:
+                        dd_y = 0
+                    by_year.append({
+                        "year":      int(yr),
+                        "n":         n_y,
+                        "wr":        round(wins_y / n_y * 100, 1),
+                        "total_pnl": total_pnl_y,
+                        "avg_pnl":   avg_pnl_y,
+                        "sharpe":    sharpe_y,
+                        "dd":        dd_y,
+                        "equity":    eq_y,
+                    })
+                df.drop(columns=["_yr"], inplace=True)
+            except Exception:
+                pass
+
+        # by timeframe (only for backtest_mtf.csv)
+        by_tf = []
+        if source == "mtf" and "tf" in df.columns:
+            try:
+                TF_ORDER = ["15m", "30m", "1h", "2h", "4h", "1d"]
+                for tf_name, g in df.groupby("tf"):
+                    if len(g) < 3:
+                        continue
+                    wins_tf = (g["outcome"] == "WIN").sum()
+                    n_tf    = len(g)
+                    total_tf = round(g["pnl"].sum(), 2)
+                    avg_tf   = round(g["pnl"].mean(), 2)
+                    eq_tf    = [0] + [round(v, 2) for v in g["pnl"].cumsum().tolist()]
+                    std_tf   = g["pnl"].std()
+                    sharpe_tf = round((avg_tf / std_tf) * (252 ** 0.5), 2) if std_tf and std_tf > 0 else 0
+                    try:
+                        cum_tf = g["pnl"].cumsum()
+                        peak_tf = cum_tf.cummax()
+                        dd_tf = round(((cum_tf - peak_tf) / (peak_tf.abs() + 1e-9)).min() * 100, 1)
+                    except Exception:
+                        dd_tf = 0
+                    gross_win  = g[g["pnl"] > 0]["pnl"].sum()
+                    gross_loss = abs(g[g["pnl"] < 0]["pnl"].sum())
+                    pf_tf = round(gross_win / gross_loss, 2) if gross_loss > 0 else 9.99
+                    by_tf.append({
+                        "tf":          tf_name,
+                        "n":           n_tf,
+                        "wr":          round(wins_tf / n_tf * 100, 1),
+                        "total_pnl":   total_tf,
+                        "avg_pnl":     avg_tf,
+                        "sharpe":      sharpe_tf,
+                        "dd":          dd_tf,
+                        "profit_factor": pf_tf,
+                        "equity":      eq_tf,
+                    })
+                # sort by TF order
+                order_map = {tf: i for i, tf in enumerate(TF_ORDER)}
+                by_tf.sort(key=lambda r: order_map.get(r["tf"], 99))
+            except Exception:
+                pass
+
+        # date range
+        date_from = date_to = None
+        if "entry_ts" in df.columns:
+            try:
+                ts = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dropna()
+                if len(ts):
+                    date_from = ts.min().strftime("%Y-%m-%d")
+                    date_to   = ts.max().strftime("%Y-%m-%d")
+            except Exception:
+                pass
+
         mtime = os.path.getmtime(loaded_file)
         generated = datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat()
 
         return {
-            "available":  True,
-            "generated":  generated,
-            "total_rows": len(df),
-            "summary":    summary,
-            "by_symbol":  by_sym,
-            "by_exit":    by_exit,
-            "by_score":   by_score,
-            "by_regime":  by_regime,
-            "trades":     trades_list,
-            "equity":     equity_bt,
+            "available":   True,
+            "source":      source,        # "3y" | "live" | "v5"
+            "source_file": loaded_file,
+            "generated":   generated,
+            "date_from":   date_from,
+            "date_to":     date_to,
+            "total_rows":  len(df),
+            "summary":     summary,
+            "by_symbol":   by_sym,
+            "by_exit":     by_exit,
+            "by_score":    by_score,
+            "by_regime":   by_regime,
+            "by_year":     by_year,
+            "by_tf":       by_tf,
+            "trades":      trades_list,
+            "equity":      equity_bt,
         }
     except Exception as e:
         print(f"  [WARN] load_backtest_data: {e}")
