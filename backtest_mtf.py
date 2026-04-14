@@ -64,18 +64,18 @@ SCANNER.save_specialist_history = lambda *a, **kw: None
 #  years      : ดึงข้อมูลย้อนหลังกี่ปี
 
 TF_CONFIGS = {
-    # window_p ต้องมากกว่า SMA200 (200) + buffer → ใช้ >= 300 เสมอ
-    "15m": dict(primary="15m", htf="1h",  resample="15min",
-                window_p=2000, window_h=500,  warmup=800, timeout=192, step=8,  years=1),
-    "30m": dict(primary="30m", htf="2h",  resample="30min",
-                window_p=1000, window_h=250,  warmup=400, timeout=96,  step=4,  years=2),
-    "1h":  dict(primary="1h",  htf="4h",  resample="1h",
-                window_p=500,  window_h=125,  warmup=250, timeout=48,  step=4,  years=3),
-    "2h":  dict(primary="2h",  htf="8h",  resample="2h",
+    # window_p ต้องมากกว่า SMA99 (99) + buffer → ใช้ >= 200 เสมอ
+    "15m": dict(primary="15m", htf="1H",  resample="15min",
+                window_p=2000, window_h=500,  warmup=400, timeout=192, step=8,  years=1),
+    "30m": dict(primary="30m", htf="2H",  resample="30min",
+                window_p=1000, window_h=250,  warmup=200, timeout=96,  step=4,  years=2),
+    "1h":  dict(primary="1H",  htf="4H",  resample="1h",
+                window_p=500,  window_h=125,  warmup=200, timeout=48,  step=4,  years=3),
+    "2h":  dict(primary="2H",  htf="6H",  resample="2h",
                 window_p=300,  window_h=80,   warmup=200, timeout=24,  step=2,  years=3),
-    "4h":  dict(primary="4h",  htf="1d",  resample="4h",
+    "4h":  dict(primary="4H",  htf="1D",  resample="4h",
                 window_p=300,  window_h=80,   warmup=200, timeout=12,  step=1,  years=3),
-    "1d":  dict(primary="1d",  htf="1w",  resample="1d",
+    "1d":  dict(primary="1D",  htf="1W",  resample="1D",
                 window_p=300,  window_h=60,   warmup=200, timeout=6,   step=1,  years=3),
 }
 
@@ -157,7 +157,7 @@ def _make_htf_bias(primary_freq: str):
     """สร้าง _htf_bias ที่ resample ตาม primary TF"""
     EMA_FAST = TREND.EMA_FAST
     EMA_SLOW = TREND.EMA_SLOW
-    SMA_200  = TREND.SMA_200
+    SMA_99   = TREND.SMA_99
 
     def _patched(df_primary, df_htf):
         if df_htf is None or df_htf.empty:
@@ -166,11 +166,11 @@ def _make_htf_bias(primary_freq: str):
             df_primary["htf_sma"]  = True
             return df_primary
         df_htf = df_htf.copy()
-        df_htf["h12"]     = EMAIndicator(df_htf["close"], EMA_FAST).ema_indicator()
-        df_htf["h26"]     = EMAIndicator(df_htf["close"], EMA_SLOW).ema_indicator()
-        df_htf["h200"]    = SMAIndicator(df_htf["close"], SMA_200).sma_indicator()
-        df_htf["htf_bull"] = df_htf["h12"] > df_htf["h26"]
-        df_htf["htf_sma"]  = df_htf["close"] > df_htf["h200"]
+        df_htf["h7"]      = EMAIndicator(df_htf["close"], EMA_FAST).ema_indicator()
+        df_htf["h30"]     = EMAIndicator(df_htf["close"], EMA_SLOW).ema_indicator()
+        df_htf["h99"]     = SMAIndicator(df_htf["close"], SMA_99).sma_indicator()
+        df_htf["htf_bull"] = df_htf["h7"]  > df_htf["h30"]
+        df_htf["htf_sma"]  = df_htf["close"] > df_htf["h99"]
         try:
             htf_rs = df_htf[["htf_bull", "htf_sma"]].resample(primary_freq).ffill()
             df_primary = df_primary.join(htf_rs, how="left")
