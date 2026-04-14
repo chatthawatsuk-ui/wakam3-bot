@@ -739,14 +739,17 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="tb-seg">
       <div><div class="tb-lbl">P&amp;L</div><div class="tb-val" id="tb-pnl">+$0.00</div></div>
     </div>
+    <div class="tb-seg tb-hide-tab tb-hide-mob">
+      <div><div class="tb-lbl">SIGNAL</div><div class="tb-val up" id="tb-sigs">0</div></div>
+    </div>
+    <div class="tb-seg tb-hide-tab tb-hide-mob">
+      <div><div class="tb-lbl">WIN</div><div class="tb-val up" id="tb-win">—</div></div>
+    </div>
+    <div class="tb-seg tb-hide-tab tb-hide-mob">
+      <div><div class="tb-lbl">LOSE</div><div class="tb-val dn" id="tb-lose">—</div></div>
+    </div>
     <div class="tb-seg tb-hide-mob">
       <div><div class="tb-lbl">WIN RATE</div><div class="tb-val" id="tb-wr">—</div></div>
-    </div>
-    <div class="tb-seg tb-hide-tab tb-hide-mob">
-      <div><div class="tb-lbl">TRADES</div><div class="tb-val" id="tb-trades">0</div></div>
-    </div>
-    <div class="tb-seg tb-hide-tab tb-hide-mob">
-      <div><div class="tb-lbl">SIGNALS</div><div class="tb-val" id="tb-sigs">0</div></div>
     </div>
     <div class="tb-seg" style="margin-left:auto;border-right:none">
       <div class="live-dot"></div>
@@ -1415,7 +1418,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
 
         <!-- summary stats -->
-        <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px" id="bt-stats"></div>
+        <div class="stat-grid" style="grid-template-columns:repeat(8,1fr);margin-bottom:12px" id="bt-stats"></div>
 
         <!-- tabs -->
         <div class="tabs">
@@ -1868,8 +1871,11 @@ function updateTopBar(){
   setText('tb-bal','$'+bal.toFixed(2))
   const pnlEl=document.getElementById('tb-pnl')
   if(pnlEl){pnlEl.textContent=(pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);pnlEl.className='tb-val '+(pnl>=0?'up':'dn')}
+  const nw=Math.round(trades*(wr/100))
+  const nl=trades-nw
   setText('tb-wr',trades>0?wr.toFixed(1)+'%':'—')
-  setText('tb-trades',trades)
+  setText('tb-win',trades>0?nw:'—')
+  setText('tb-lose',trades>0?nl:'—')
   setText('tb-sigs',sigCnt)
   const nb=document.getElementById('nb-sig-cnt')
   if(nb) nb.textContent=sigCnt
@@ -3682,9 +3688,9 @@ function renderBacktest(){
       ['SHARPE',    s.sharpe||0,                 '', shC],
       ['MAX DD',    (s.dd||0)+'%',               '', ddC],
     ].map(([lbl,val,sub,cls])=>`
-      <div class="stat-card">
+      <div class="stat-card" style="padding:10px 10px">
         <div class="stat-lbl">${lbl}</div>
-        <div class="stat-val ${cls}" style="font-size:16px">${val}</div>
+        <div class="stat-val ${cls}" style="font-size:14px">${val}</div>
         ${sub?`<div class="stat-sub">${sub}</div>`:''}
       </div>`).join('')
   }
