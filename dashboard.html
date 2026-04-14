@@ -1389,7 +1389,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- sub-tab switcher -->
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <button class="tab active" id="btsub-3y"   onclick="btSubTab('3y')">📊 Backtest 3Y</button>
-        <button class="tab"        id="btsub-live" onclick="btSubTab('live')">📡 Live Performance (30d)</button>
+        <button class="tab"        id="btsub-live" onclick="btSubTab('live')">📡 Weekly Backtest (7d)</button>
       </div>
 
       <!-- no data state -->
@@ -1866,11 +1866,12 @@ function updateTopBar(){
   const scan=D.scan_results||[]
   const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
 
-  // WIN/LOSE/WINRATE มาจาก paper trades จริง (D.total_trades / D.win_rate)
-  const btTrades=D.total_trades||0
-  const btWr=D.win_rate||0
-  const btWin=Math.round(btTrades*btWr/100)
+  // WIN/LOSE/WINRATE มาจาก weekly backtest (live_perf.summary)
+  const lps=D.live_perf?.summary
+  const btTrades=lps?.n||0
+  const btWin=lps?.n_win!=null?lps.n_win:Math.round(btTrades*(lps?.wr||0)/100)
   const btLose=btTrades-btWin
+  const btWr=lps?.wr||0
 
   setText('tb-bal','$'+bal.toFixed(2))
   const pnlEl=document.getElementById('tb-pnl')
@@ -3639,7 +3640,7 @@ function renderBacktest(){
     const src = bt.source || 'live'
     const isMTF = src === 'mtf'
     const isLive = _btCurrentSub === 'live'
-    srcBadge.textContent = isLive ? 'LIVE 30D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
+    srcBadge.textContent = isLive ? 'WEEKLY 7D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
     srcBadge.style.cssText = isLive
       ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
       : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
@@ -3649,7 +3650,7 @@ function renderBacktest(){
   const drEl = document.getElementById('bt-date-range')
   if(drEl){
     const periodLabel = bt.period || `${bt.date_from} → ${bt.date_to}`
-    const sourceLabel = _btCurrentSub==='live' ? 'Paper Trades · Rolling 30d' : 'Walk-Forward · 3-Agent System'
+    const sourceLabel = _btCurrentSub==='live' ? 'Weekly Backtest · 7d' : 'Walk-Forward · 3-Agent System'
     drEl.textContent = `${periodLabel} · ${sourceLabel}`
   }
 

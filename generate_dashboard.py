@@ -895,47 +895,33 @@ def load_backtest_3y():
 
 def load_live_performance():
     """
-    📡 Live Performance — trades จริงจาก paper_trades.db (rolling 30 วัน)
-    ไม่ใช่ backtest simulation — เป็น Paper Trade ที่ระบบเปิด/ปิดจริง
+    📡 Weekly Backtest (7d) — ผล backtest 7 วันล่าสุด จาก backtest_live.csv
+    รันอัตโนมัติทุกอาทิตย์ | แสดง 5 TF: 15m/30m/1H/4H/1D
     """
     import pandas as pd
-    from datetime import timedelta
+    CSV_PATH = "backtest_live.csv"
 
-    CUTOFF = datetime.now(timezone.utc) - timedelta(days=LIVE_PERF_DAYS)
-
-    if not os.path.exists(DB_PATH):
+    if not os.path.exists(CSV_PATH):
         return {"available": False, "label": "live_perf",
-                "error": "ยังไม่มี paper_trades.db — ระบบยังไม่เคยเปิด trade"}
+                "error": "ยังไม่มี backtest_live.csv — รัน Weekly Backtest ก่อน"}
 
     try:
-        conn = sqlite3.connect(DB_PATH)
-        rows = conn.execute("""
-            SELECT symbol AS sym, side, entry_px AS ep, exit_px AS xp,
-                   outcome, pnl_usd AS pnl, tp1_hit, opened_at AS entry_ts,
-                   closed_at
-            FROM trades
-            WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
-            ORDER BY closed_at ASC
-        """, (CUTOFF.isoformat(),)).fetchall()
-        conn.close()
-
-        if not rows:
+        df = pd.read_csv(CSV_PATH)
+        if df.empty:
             return {"available": False, "label": "live_perf",
-                    "error": f"ไม่มี Paper Trade ที่ปิดแล้วใน {LIVE_PERF_DAYS} วันล่าสุด"}
+                    "error": "backtest_live.csv ว่างเปล่า"}
 
-        cols = ["sym", "side", "ep", "xp", "outcome", "pnl", "tp1_hit", "entry_ts", "closed_at"]
-        df = pd.DataFrame(rows, columns=cols)
-
-        df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
-        df["outcome"] = df["outcome"].fillna("LOSS")
-        df["tp1_hit"] = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
+        df["pnl"]     = pd.to_numeric(df.get("pnl", 0), errors="coerce").fillna(0)
+        df["outcome"] = df.get("outcome", "LOSS").fillna("LOSS")
+        if "tp1_hit" not in df.columns:
+            df["tp1_hit"] = 0
         if "in_kz" not in df.columns:
             df["in_kz"] = False
         if "tf" not in df.columns:
             df["tf"] = "–"
 
         summary   = _bt_metrics(df)
-        breakdown = _bt_breakdowns(df, source="paper_trades")
+        breakdown = _bt_breakdowns(df, source="live")
 
         date_from = date_to = None
         try:
@@ -946,16 +932,17 @@ def load_live_performance():
         except Exception:
             pass
 
+        mtime = os.path.getmtime(CSV_PATH)
         return {
-            "available":   True,
-            "label":       "live_perf",
-            "source":      "paper_trades",
-            "generated":   datetime.now(timezone.utc).isoformat(),
-            "date_from":   date_from,
-            "date_to":     date_to,
-            "period":      f"Paper Trades · Rolling {LIVE_PERF_DAYS}d",
-            "total_rows":  len(df),
-            "summary":     summary,
+            "available":  True,
+            "label":      "live_perf",
+            "source":     "weekly_backtest",
+            "generated":  datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat(),
+            "date_from":  date_from,
+            "date_to":    date_to,
+            "period":     "Weekly Backtest · 7d",
+            "total_rows": len(df),
+            "summary":    summary,
             **breakdown,
         }
     except Exception as e:
