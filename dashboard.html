@@ -3670,7 +3670,7 @@ function renderBacktest(){
     const ddC  = Math.abs(s.dd||0)<=20?'up':Math.abs(s.dd||0)<=30?'yl':'dn'
     const shC  = (s.sharpe||0)>=1?'up':(s.sharpe||0)>=0.5?'yl':'dn'
     statsEl.innerHTML=[
-      ['TRADES',    s.n||0, s.n_win!=null?`<span class="up">${s.n_win}W</span> <span style="color:var(--t2)">·</span> <span class="dn">${s.n_lose}L</span>`:'', ''],
+      ['TRADES',    s.n||0, (()=>{ const n=s.n||0; const nw=s.n_win!=null?s.n_win:Math.round(n*(s.wr||0)/100); const nl=n-nw; return n?`<span class="up">${nw}W</span> <span style="color:var(--t2)">·</span> <span class="dn">${nl}L</span>`:''; })(), ''],
       ['WIN RATE',  (s.wr||0)+'%',      '',   s.wr>=55?'up':s.wr>=48?'yl':'dn'],
       ['TOTAL PnL', '$'+(s.total_pnl||0).toFixed(2), '', pnlC],
       ['AVG PnL',   '$'+(s.avg_pnl||0).toFixed(2),   '', (s.avg_pnl||0)>=0?'up':'dn'],
