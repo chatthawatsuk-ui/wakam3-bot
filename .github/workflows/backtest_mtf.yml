@@ -4,15 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       tf:
-        description: 'TF ที่ต้องการ (เว้นว่าง = ทุก TF)'
+        description: 'TF ที่ต้องการ (เว้นว่าง = 15m/30m/1H/4H/1D)'
         required: false
         default: ''
       symbols:
-        description: 'Symbols (เว้นว่าง = 5 ตัวหลัก)'
-        required: false
-        default: ''
-      years:
-        description: 'ย้อนหลังกี่ปี (default ตาม TF: 15m=1yr, 30m=2yr, 1H+=3yr)'
+        description: 'Symbols (เว้นว่าง = 10 ตัวหลัก)'
         required: false
         default: ''
   # รันอัตโนมัติทุกวันที่ 1 ของเดือน
@@ -49,21 +45,14 @@ jobs:
       - name: Build backtest command
         id: build_cmd
         run: |
-          CMD="python backtest_mtf.py"
+          # 3Y = 1095 วัน, output ไปที่ backtest_mtf.csv (สำหรับ 3Y tab ใน dashboard)
+          CMD="python backtest_live.py --days 1095 --output backtest_mtf.csv"
 
-          # --tf
           if [ -n "${{ github.event.inputs.tf }}" ]; then
             CMD="$CMD --tf ${{ github.event.inputs.tf }}"
           fi
-
-          # --symbols
           if [ -n "${{ github.event.inputs.symbols }}" ]; then
             CMD="$CMD --symbols ${{ github.event.inputs.symbols }}"
-          fi
-
-          # --years
-          if [ -n "${{ github.event.inputs.years }}" ]; then
-            CMD="$CMD --years ${{ github.event.inputs.years }}"
           fi
 
           echo "cmd=$CMD" >> $GITHUB_OUTPUT

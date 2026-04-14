@@ -369,11 +369,14 @@ def main():
     parser.add_argument("--tf",      nargs="+",  help=f"เลือก TF เช่น 1H 4H (default: {DEFAULT_TFS})")
     parser.add_argument("--days",    type=float, default=None,
                         help="ย้อนหลังกี่วัน (default: 7)")
+    parser.add_argument("--output",  type=str,   default=None,
+                        help=f"ชื่อไฟล์ CSV output (default: {OUTPUT_CSV})")
     args = parser.parse_args()
 
-    symbols = args.symbols or DEFAULT_SYMBOLS
-    tfs     = args.tf or DEFAULT_TFS
-    days    = args.days or 7.0
+    symbols    = args.symbols or DEFAULT_SYMBOLS
+    tfs        = args.tf or DEFAULT_TFS
+    days       = args.days or 7.0
+    output_csv = args.output or OUTPUT_CSV
 
     print("=" * 70)
     print("  WAKAM3 — Multi-TF Walk-Forward Backtest (Time-based)")
@@ -450,8 +453,8 @@ def main():
         return
 
     combined = pd.concat(all_trades, ignore_index=True)
-    combined.to_csv(OUTPUT_CSV, index=False)
-    print(f"  บันทึก → {OUTPUT_CSV}  ({len(combined):,} trades)")
+    combined.to_csv(output_csv, index=False)
+    print(f"  บันทึก → {output_csv}  ({len(combined):,} trades)")
 
     # ── Per-TF metrics ──────────────────────────────────────────────────────
     tf_metrics: dict[str, dict | None] = {}
