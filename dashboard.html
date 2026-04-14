@@ -1866,12 +1866,11 @@ function updateTopBar(){
   const scan=D.scan_results||[]
   const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
 
-  // WIN/LOSE/WINRATE มาจาก weekly backtest (live_perf.summary)
-  const lps=D.live_perf?.summary
-  const btTrades=lps?.n||0
-  const btWin=lps?.n_win!=null?lps.n_win:Math.round(btTrades*(lps?.wr||0)/100)
+  // WIN/LOSE/WINRATE มาจาก paper_trades จริง — ตรงกับ Portfolio/P&L
+  const btTrades=D.total_trades||0
+  const btWr=D.win_rate||0
+  const btWin=Math.round(btTrades*btWr/100)
   const btLose=btTrades-btWin
-  const btWr=lps?.wr||0
 
   setText('tb-bal','$'+bal.toFixed(2))
   const pnlEl=document.getElementById('tb-pnl')
