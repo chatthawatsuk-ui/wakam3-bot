@@ -994,13 +994,13 @@ def load_live_performance():
     if "in_kz" not in df.columns:
         df["in_kz"] = False
 
-    # infer exit_type จาก outcome + pnl + tp1_hit
+    # infer exit_type ให้ตรงกับชื่อใน backtest CSV: SL / SL_BE / TP2 / TIMEOUT
     def _exit_type(row):
         if row["outcome"] == "WIN":
-            return "TP HIT" if row["tp1_hit"] else "TP2 HIT"
+            return "TP2"           # WIN = TP hit (TP1 → TP2 หรือ TP1 เดียว)
         elif row["outcome"] == "LOSS":
-            return "SL_BE" if row["pnl"] > 0 else "SL HIT"
-        return "VOID"
+            return "SL_BE" if row["pnl"] > 0 else "SL"   # pnl > 0 = SL ย้ายมาแดนบวก
+        return "TIMEOUT"           # VOID / อื่นๆ = time exit
     df["exit_type"] = df.apply(_exit_type, axis=1)
 
     try:
