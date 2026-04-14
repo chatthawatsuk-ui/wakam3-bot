@@ -88,7 +88,15 @@
       "Bash(grep -n \"tp1\\\\|tp2\\\\|sl_px\\\\|entry_px\\\\|atr\\\\|stop_loss\\\\|take_profit\\\\|risk_reward\\\\|rr_ratio\\\\|0\\\\\\\\.02\\\\|0\\\\\\\\.04\\\\|0\\\\\\\\.015\" \"C:/Users/chatt/OneDrive - STEEL FRAME BUILDING CO.,LTD/Desktop/ai-trade/paper_trade_live.py\")",
       "Bash(ls \"C:/Users/chatt/OneDrive - STEEL FRAME BUILDING CO.,LTD/Desktop/ai-trade/\"*.py)",
       "Bash(py backtest_mtf.py --tf 1h --symbols BTC/USDT --years 0.1)",
-      "Bash(gh api:*)"
+      "Bash(gh api:*)",
+      "Bash(wc -l *.py *.html *.json)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('dashboard_data.json'\\)\\); bt=d.get\\('backtest_3y'\\) or d.get\\('backtest',{}\\); print\\('verdict:', bt.get\\('verdict'\\)\\); print\\('generated:', bt.get\\('generated'\\)\\); print\\('n_trades:', bt.get\\('n_trades'\\)\\); print\\('wr:', bt.get\\('win_rate'\\)\\); print\\('sharpe:', bt.get\\('sharpe'\\)\\)\")",
+      "Bash(py -3 -c \"import json,sys,io; sys.stdout=io.TextIOWrapper\\(sys.stdout.buffer,encoding='utf-8'\\); d=json.load\\(open\\('dashboard_data.json',encoding='utf-8'\\)\\); bt=d.get\\('backtest_3y'\\) or d.get\\('backtest',{}\\); print\\('verdict:', bt.get\\('verdict'\\)\\); print\\('generated:', bt.get\\('generated'\\)\\); print\\('n_trades:', bt.get\\('n_trades'\\)\\); print\\('win_rate:', bt.get\\('win_rate'\\)\\); print\\('sharpe:', bt.get\\('sharpe'\\)\\); print\\('max_dd:', bt.get\\('max_dd'\\)\\); print\\('total_pnl:', bt.get\\('total_pnl'\\)\\)\")",
+      "Bash(py -3 -c \"import json,sys,io; sys.stdout=io.TextIOWrapper\\(sys.stdout.buffer,encoding='utf-8'\\); d=json.load\\(open\\('dashboard_data.json',encoding='utf-8'\\)\\); bt=d.get\\('backtest_3y'\\) or d.get\\('backtest',{}\\); print\\(list\\(bt.keys\\(\\)\\)[:20]\\)\")",
+      "Bash(gh auth:*)",
+      "Bash(where git:*)",
+      "Bash(sort -k5 -rn)",
+      "Bash(gh workflow:*)"
     ]
   }
 }
