@@ -15,15 +15,6 @@ on:
         description: 'ย้อนหลังกี่ปี (default ตาม TF: 15m=1yr, 30m=2yr, 1H+=3yr)'
         required: false
         default: ''
-      fast:
-        description: 'Fast mode: 1H/4H/1D เท่านั้น, 3 symbols (เร็วกว่า)'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'false'
-          - 'true'
-
   # รันอัตโนมัติทุกวันที่ 1 ของเดือน
   schedule:
     - cron: '0 0 1 * *'
@@ -59,11 +50,6 @@ jobs:
         id: build_cmd
         run: |
           CMD="python backtest_mtf.py"
-
-          # fast mode (schedule หรือ fast=true)
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ github.event.inputs.fast }}" = "true" ]; then
-            CMD="$CMD --fast"
-          fi
 
           # --tf
           if [ -n "${{ github.event.inputs.tf }}" ]; then

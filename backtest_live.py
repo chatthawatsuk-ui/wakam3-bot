@@ -53,8 +53,6 @@ DEFAULT_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
     "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT", "SUI/USDT",
 ]
-FAST_SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
-
 # primary OKX tf, htf OKX tf, นาทีต่อ candle, warmup candles
 TF_CONFIGS = {
     # primary/htf ต้องเป็น lowercase เสมอ (ccxt OKX format)
@@ -66,7 +64,6 @@ TF_CONFIGS = {
 }
 # 5 TFs เท่านั้น: 15m / 30m / 1H / 4H / 1D
 DEFAULT_TFS = ["15m", "30m", "1H", "4H", "1D"]
-FAST_TFS    = ["1H", "4H"]
 
 TIMEOUT_H  = 48    # ชั่วโมงก่อน timeout
 TP1_R      = 1.2
@@ -368,22 +365,15 @@ def print_tf_summary(tf_results: dict):
 # ══════════════════════════════════════════════════════════════════════════════
 def main():
     parser = argparse.ArgumentParser(description="WAKAM3 Multi-TF Walk-Forward Backtest")
-    parser.add_argument("--fast",    action="store_true",
-                        help=f"3 symbols, 60 days, {FAST_TFS} only")
     parser.add_argument("--symbols", nargs="+",  help="เลือก symbols เช่น BTC/USDT ETH/USDT")
     parser.add_argument("--tf",      nargs="+",  help=f"เลือก TF เช่น 1H 4H (default: {DEFAULT_TFS})")
     parser.add_argument("--days",    type=float, default=None,
-                        help="ย้อนหลังกี่วัน (default: fast=60, full=90)")
+                        help="ย้อนหลังกี่วัน (default: 7)")
     args = parser.parse_args()
 
-    if args.fast:
-        symbols = args.symbols or FAST_SYMBOLS
-        tfs     = args.tf or FAST_TFS
-        days    = args.days or 60.0
-    else:
-        symbols = args.symbols or DEFAULT_SYMBOLS
-        tfs     = args.tf or DEFAULT_TFS
-        days    = args.days or 90.0
+    symbols = args.symbols or DEFAULT_SYMBOLS
+    tfs     = args.tf or DEFAULT_TFS
+    days    = args.days or 7.0
 
     print("=" * 70)
     print("  WAKAM3 — Multi-TF Walk-Forward Backtest (Time-based)")

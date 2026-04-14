@@ -83,8 +83,6 @@ ALL_TF_ORDER = ["15m", "30m", "1h", "4h", "1d"]
 DEFAULT_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
 ]
-FAST_SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
-
 TP1_R       = 1.2
 TP2_R       = 2.0
 RISK_USD    = 10.0
@@ -442,21 +440,14 @@ def print_metrics(m: dict):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--tf",      nargs="+", default=None,
-                        help="TFs to run: 15m 30m 1h 2h 4h 1d")
+                        help="TFs to run: 15m 30m 1h 4h 1d")
     parser.add_argument("--symbols", nargs="+", default=None)
-    parser.add_argument("--fast",    action="store_true",
-                        help="Skip 15m/30m, use FAST_SYMBOLS only")
     parser.add_argument("--years",   type=float, default=None,
                         help="Override years for all TFs")
     args = parser.parse_args()
 
-    # ── TFs to run ────────────────────────────────────────────────────────────
-    if args.fast:
-        tfs     = ["1h", "4h", "1d"]
-        symbols = args.symbols or FAST_SYMBOLS
-    else:
-        tfs     = args.tf or ALL_TF_ORDER
-        symbols = args.symbols or DEFAULT_SYMBOLS
+    tfs     = args.tf or ALL_TF_ORDER
+    symbols = args.symbols or DEFAULT_SYMBOLS
 
     # Override years
     if args.years:
