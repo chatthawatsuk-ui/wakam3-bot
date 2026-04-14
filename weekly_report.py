@@ -512,34 +512,42 @@ def generate_weekly_report():
     except Exception:
         pass
 
-    # backtest summary for Claude context
+    # backtest summary — ดึงจาก paper_trades.db (7 วันล่าสุด)
     bt_summary = None
     try:
         import pandas as pd
-        for fname in ["backtest_live.csv", "backtest_mtf.csv"]:
-            if os.path.exists(fname):
-                df_bt = pd.read_csv(fname)
-                if not df_bt.empty and "outcome" in df_bt.columns:
-                    wins_bt = (df_bt["outcome"] == "WIN").sum()
-                    n_bt    = len(df_bt)
-                    pnl_bt  = df_bt["pnl"].sum() if "pnl" in df_bt.columns else 0
-                    avg_bt  = df_bt["pnl"].mean() if "pnl" in df_bt.columns else 0
-                    std_bt  = df_bt["pnl"].std()  if "pnl" in df_bt.columns else 1
-                    sharpe  = (avg_bt / std_bt) * (252 ** 0.5) if std_bt > 0 else 0
-                    dd_val  = 0.0
-                    if "pnl" in df_bt.columns:
-                        eq  = df_bt["pnl"].cumsum()
-                        pk  = eq.cummax()
-                        cap = max(float(pk.max()), n_bt * 10.0)
-                        dd_val = round(float(((eq - pk) / cap * 100).min()), 1)
-                    bt_summary = {
-                        "n":         n_bt,
-                        "wr":        round(wins_bt / n_bt * 100, 1) if n_bt > 0 else 0,
-                        "total_pnl": round(float(pnl_bt), 2),
-                        "sharpe":    round(float(sharpe), 2),
-                        "dd":        dd_val,
-                    }
-                    break
+        from datetime import timedelta
+        if os.path.exists(DB_PATH):
+            cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            con_bt = sqlite3.connect(DB_PATH)
+            rows_bt = con_bt.execute(
+                "SELECT pnl_usd, outcome FROM trades "
+                "WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?",
+                (cutoff,)
+            ).fetchall()
+            con_bt.close()
+            if rows_bt:
+                import numpy as np
+                pnls    = [r[0] or 0.0 for r in rows_bt]
+                outcomes = [r[1] for r in rows_bt]
+                n_bt    = len(pnls)
+                wins_bt = sum(1 for o in outcomes if o == "WIN")
+                pnl_arr = pd.Series(pnls, dtype=float)
+                pnl_bt  = pnl_arr.sum()
+                avg_bt  = pnl_arr.mean()
+                std_bt  = pnl_arr.std()
+                sharpe  = (avg_bt / std_bt) * (252 ** 0.5) if std_bt and std_bt > 0 else 0
+                eq  = pnl_arr.cumsum()
+                pk  = eq.cummax()
+                cap = max(float(pk.max()), n_bt * 10.0)
+                dd_val = round(float(((eq - pk) / cap * 100).min()), 1)
+                bt_summary = {
+                    "n":         n_bt,
+                    "wr":        round(wins_bt / n_bt * 100, 1) if n_bt > 0 else 0,
+                    "total_pnl": round(float(pnl_bt), 2),
+                    "sharpe":    round(float(sharpe), 2),
+                    "dd":        dd_val,
+                }
     except Exception:
         pass
 
@@ -609,31 +617,35 @@ def _send_telegram(proposal, backtest_summary=None):
 
     try:
         import notify as N
-        # โหลด backtest summary ถ้าไม่ได้ส่งมา
-        if backtest_summary is None and os.path.exists("backtest_live.csv"):
+        # fallback: โหลด paper trades summary ถ้าไม่ได้ส่งมา
+        if backtest_summary is None and os.path.exists(DB_PATH):
             try:
                 import pandas as pd
-                df = pd.read_csv("backtest_live.csv")
-                if not df.empty:
-                    wins = (df["outcome"] == "WIN").sum()
-                    total = len(df)
-                    pnl = df["pnl"].sum()
-                    avg = df["pnl"].mean()
-                    std = df["pnl"].std()
-                    eq  = df["pnl"].cumsum()
-                    pk  = eq.cummax()
-                    cap = max(float(pk.max()), total * 10.0)
-                    dd  = ((eq - pk) / cap * 100).min()
-                    sharpe = (avg / std) * (252 ** 0.5) if std > 0 else 0
+                from datetime import timedelta
+                cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+                con_fb = sqlite3.connect(DB_PATH)
+                rows_fb = con_fb.execute(
+                    "SELECT pnl_usd, outcome FROM trades "
+                    "WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?",
+                    (cutoff,)
+                ).fetchall()
+                con_fb.close()
+                if rows_fb:
+                    pnls   = pd.Series([r[0] or 0.0 for r in rows_fb], dtype=float)
+                    wins   = sum(1 for r in rows_fb if r[1] == "WIN")
+                    total  = len(rows_fb)
+                    avg    = pnls.mean(); std = pnls.std()
+                    eq     = pnls.cumsum(); pk = eq.cummax()
+                    cap    = max(float(pk.max()), total * 10.0)
                     backtest_summary = {
                         "n":         total,
                         "wr":        round(wins / total * 100, 1) if total > 0 else 0,
-                        "total_pnl": round(float(pnl), 2),
-                        "sharpe":    round(float(sharpe), 2),
-                        "dd":        round(float(dd), 1),
+                        "total_pnl": round(float(pnls.sum()), 2),
+                        "sharpe":    round((avg / std) * (252 ** 0.5), 2) if std and std > 0 else 0,
+                        "dd":        round(float(((eq - pk) / cap * 100).min()), 1),
                     }
             except Exception as e:
-                print(f"  [WARN] backtest summary: {e}")
+                print(f"  [WARN] paper summary fallback: {e}")
 
         msg = N.weekly_report_msg(proposal, backtest_summary)
         ok  = N.send(msg)

@@ -944,49 +944,85 @@ def load_backtest_3y():
 
 def load_live_performance():
     """
-    📡 Weekly Performance — อ่านจาก backtest_live.csv (output ของ backtest_live.py --days 7)
-    เหมือน 3Y backtest ทุกอย่าง แค่เปลี่ยน file + label
+    📡 Weekly Performance — paper trades จริงใน 7 วันล่าสุด จาก paper_trades.db
     """
     import pandas as pd
+    from datetime import timedelta
 
-    LIVE_CSV = "backtest_live.csv"
+    CUTOFF = datetime.now(timezone.utc) - timedelta(days=7)
 
-    if not os.path.exists(LIVE_CSV):
+    if not os.path.exists(DB_PATH):
         return {"available": False, "label": "live_perf",
-                "error": "ยังไม่มี backtest_live.csv — รอ Weekly Backtest workflow วิ่งก่อน"}
+                "error": "ยังไม่มี paper_trades.db — ระบบยังไม่เคยเปิด trade"}
 
     try:
-        df = pd.read_csv(LIVE_CSV)
+        conn = sqlite3.connect(DB_PATH)
+        cur  = conn.execute("PRAGMA table_info(trades)")
+        db_cols = {r[1] for r in cur.fetchall()}
+        def _col(name, alias=None):
+            a = alias or name
+            return name if name in db_cols else f"NULL AS {name}"
+        rows = conn.execute(f"""
+            SELECT symbol AS sym, side,
+                   entry_px AS ep, exit_px AS xp,
+                   outcome, pnl_usd AS pnl,
+                   {_col('tp1_hit')},
+                   opened_at AS entry_ts,
+                   closed_at,
+                   {_col('tf')},
+                   {_col('score')},
+                   {_col('regime')}
+            FROM trades
+            WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
+            ORDER BY closed_at ASC
+        """, (CUTOFF.isoformat(),)).fetchall()
+        conn.close()
     except Exception as e:
         return {"available": False, "label": "live_perf", "error": str(e)}
 
-    if df is None or df.empty:
+    if not rows:
         return {"available": False, "label": "live_perf",
-                "error": "backtest_live.csv ว่างเปล่า"}
+                "error": "ยังไม่มี trade ที่ปิดในสัปดาห์นี้"}
+
+    cols = ["sym","side","ep","xp","outcome","pnl",
+            "tp1_hit","entry_ts","closed_at","tf","score","regime"]
+    df = pd.DataFrame(rows, columns=cols)
+    df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
+    df["tp1_hit"] = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
+    df["outcome"] = df["outcome"].fillna("LOSS")
+    df["tf"]      = df["tf"].fillna("—")
+    if "in_kz" not in df.columns:
+        df["in_kz"] = False
+
+    # infer exit_type จาก outcome + pnl + tp1_hit
+    def _exit_type(row):
+        if row["outcome"] == "WIN":
+            return "TP HIT" if row["tp1_hit"] else "TP2 HIT"
+        elif row["outcome"] == "LOSS":
+            return "SL_BE" if row["pnl"] > 0 else "SL HIT"
+        return "VOID"
+    df["exit_type"] = df.apply(_exit_type, axis=1)
 
     try:
         summary   = _bt_metrics(df)
         breakdown = _bt_breakdowns(df, source="live")
 
         date_from = date_to = None
-        if "entry_ts" in df.columns:
-            ts2 = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dropna()
-            if len(ts2):
-                date_from = ts2.min().strftime("%Y-%m-%d")
-                date_to   = ts2.max().strftime("%Y-%m-%d")
+        ts2 = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dropna()
+        if len(ts2):
+            date_from = ts2.min().strftime("%Y-%m-%d")
+            date_to   = ts2.max().strftime("%Y-%m-%d")
 
-        mtime = os.path.getmtime(LIVE_CSV)
         return {
-            "available":   True,
-            "label":       "live_perf",
-            "source":      "weekly_backtest",
-            "source_file": LIVE_CSV,
-            "generated":   datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat(),
-            "date_from":   date_from,
-            "date_to":     date_to,
-            "period":      f"Weekly Backtest · 7d ({date_from or '?'} → {date_to or 'now'})",
-            "total_rows":  len(df),
-            "summary":     summary,
+            "available":  True,
+            "label":      "live_perf",
+            "source":     "paper_trades",
+            "generated":  datetime.now(timezone.utc).isoformat(),
+            "date_from":  date_from,
+            "date_to":    date_to,
+            "period":     f"Paper Trades · 7d ({date_from or '?'} → {date_to or 'now'})",
+            "total_rows": len(df),
+            "summary":    summary,
             **breakdown,
         }
     except Exception as e:
