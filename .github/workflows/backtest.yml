@@ -57,8 +57,8 @@ jobs:
           CMD="python backtest_live.py"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Scheduled weekly run — 10 symbols, 90 days, all TFs"
-            CMD="$CMD --days 90"
+            echo "Scheduled weekly run — 10 symbols, 7 days, 15m/30m/1H/4H/1D"
+            CMD="$CMD --days 7"
           else
             # fast mode
             if [ "${{ github.event.inputs.fast }}" = "true" ]; then

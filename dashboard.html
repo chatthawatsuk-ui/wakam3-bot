@@ -1389,7 +1389,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- sub-tab switcher -->
       <div style="display:flex;gap:8px;margin-bottom:16px">
         <button class="tab active" id="btsub-3y"   onclick="btSubTab('3y')">📊 Backtest 3Y</button>
-        <button class="tab"        id="btsub-live" onclick="btSubTab('live')">📡 Live Performance (30d)</button>
+        <button class="tab"        id="btsub-live" onclick="btSubTab('live')">📡 Weekly Backtest (7d)</button>
       </div>
 
       <!-- no data state -->
@@ -3637,7 +3637,7 @@ function renderBacktest(){
     const src = bt.source || 'live'
     const isMTF = src === 'mtf'
     const isLive = _btCurrentSub === 'live'
-    srcBadge.textContent = isLive ? 'LIVE 30D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
+    srcBadge.textContent = isLive ? 'WEEKLY 7D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
     srcBadge.style.cssText = isLive
       ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
       : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
@@ -3647,7 +3647,7 @@ function renderBacktest(){
   const drEl = document.getElementById('bt-date-range')
   if(drEl){
     const periodLabel = bt.period || `${bt.date_from} → ${bt.date_to}`
-    const sourceLabel = _btCurrentSub==='live' ? 'Paper Trades · Rolling 30d' : 'Walk-Forward · 3-Agent System'
+    const sourceLabel = _btCurrentSub==='live' ? 'Weekly Backtest · 15m/30m/1H/4H/1D' : 'Walk-Forward · 3-Agent System'
     drEl.textContent = `${periodLabel} · ${sourceLabel}`
   }
 
@@ -3784,7 +3784,7 @@ function renderBTTF(){
   if(tb){
     if(!tfs.length){
       const noTfMsg = _btCurrentSub==='live'
-        ? 'TF Breakdown ไม่มีใน Live Performance — ข้อมูลนี้อยู่ใน Backtest 3Y เท่านั้น'
+        ? 'ยังไม่มีข้อมูล — รอ Weekly Backtest รันวันอาทิตย์ หรือ Trigger workflow ด้วยตัวเอง'
         : 'รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_mtf.py</code> เพื่อดูผลแยก TF 15m / 30m / 1H / 2H / 4H / 1D'
       tb.innerHTML = `<tr><td colspan="9"><div class="empty" style="padding:20px;text-align:center;color:var(--t2)">${noTfMsg}</div></td></tr>`
     } else {

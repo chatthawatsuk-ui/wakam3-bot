@@ -892,53 +892,32 @@ def load_backtest_3y():
 
 def load_live_performance():
     """
-    📡 Live Performance — rolling 30 วันล่าสุด จาก paper_trades.db
-    วัตถุประสงค์: ดู current market performance / ปรับ tactical settings
+    📡 Weekly Backtest Live — ย้อนหลัง 7 วัน จาก backtest_live.csv
+    รันอัตโนมัติทุกอาทิตย์ | แสดง 5 TF: 15m/30m/1H/4H/1D
     """
     import pandas as pd
-    CUTOFF = datetime.now(timezone.utc) - __import__("datetime").timedelta(days=LIVE_PERF_DAYS)
+    CSV_PATH = "backtest_live.csv"
 
-    if not os.path.exists(DB_PATH):
-        return {"available": False, "label": "live_perf"}
+    if not os.path.exists(CSV_PATH):
+        return {"available": False, "label": "live_perf",
+                "error": "ยังไม่มี backtest_live.csv — รัน Weekly Backtest ก่อน"}
 
     try:
-        conn = sqlite3.connect(DB_PATH)
-        rows = conn.execute("""
-            SELECT symbol AS sym, side, score,
-                   COALESCE(score_trend, 0) AS score_trend,
-                   COALESCE(score_smc,   0) AS score_smc,
-                   COALESCE(score_osc,   0) AS score_osc,
-                   entry_px  AS ep,
-                   sl_px     AS sl,
-                   tp1_px    AS tp1,
-                   tp2_px    AS tp2,
-                   sl_pct,
-                   opened_at AS entry_ts,
-                   closed_at AS exit_ts,
-                   exit_px,
-                   COALESCE(exit_reason, 'SL') AS exit_type,
-                   tp1_hit,
-                   outcome,
-                   pnl_usd   AS pnl,
-                   COALESCE(regime, 'UNKNOWN') AS regime,
-                   COALESCE(rsi, 50)           AS rsi
-            FROM trades
-            WHERE status = 'CLOSED'
-              AND outcome IS NOT NULL
-              AND closed_at >= ?
-            ORDER BY closed_at ASC
-        """, (CUTOFF.isoformat(),)).fetchall()
-        cols = ["sym","side","score","score_trend","score_smc","score_osc",
-                "ep","sl","tp1","tp2","sl_pct","entry_ts","exit_ts","exit_px",
-                "exit_type","tp1_hit","outcome","pnl","regime","rsi"]
-        conn.close()
-
-        if not rows:
+        df = pd.read_csv(CSV_PATH)
+        if df.empty:
             return {"available": False, "label": "live_perf",
-                    "error": f"ยังไม่มี closed trade ใน {LIVE_PERF_DAYS} วันที่ผ่านมา"}
+                    "error": "backtest_live.csv ว่างเปล่า"}
 
-        df = pd.DataFrame(rows, columns=cols)
-        df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce").fillna(0)
+        # normalize columns ให้ตรงกับ _bt_metrics / _bt_breakdowns
+        df = df.rename(columns={"sym": "sym", "ep": "ep"})
+        df["pnl"]     = pd.to_numeric(df.get("pnl", 0), errors="coerce").fillna(0)
+        df["outcome"] = df.get("outcome", "LOSS").fillna("LOSS")
+        if "tp1_hit" not in df.columns:
+            df["tp1_hit"] = 0
+        if "in_kz" not in df.columns:
+            df["in_kz"] = False
+        if "tf" not in df.columns:
+            df["tf"] = "1H"
 
         summary   = _bt_metrics(df)
         breakdown = _bt_breakdowns(df, source="live")
@@ -955,11 +934,11 @@ def load_live_performance():
         return {
             "available":  True,
             "label":      "live_perf",
-            "source":     "paper_trades",
+            "source":     "weekly_backtest",
             "generated":  datetime.now(timezone.utc).isoformat(),
             "date_from":  date_from,
             "date_to":    date_to,
-            "period":     f"Rolling {LIVE_PERF_DAYS} วัน",
+            "period":     "Weekly Backtest · 7 วัน",
             "total_rows": len(df),
             "summary":    summary,
             **breakdown,
