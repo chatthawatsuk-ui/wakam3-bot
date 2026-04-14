@@ -516,7 +516,7 @@ def generate_weekly_report():
     bt_summary = None
     try:
         import pandas as pd
-        for fname in ["backtest_mtf.csv", "backtest_live.csv"]:
+        for fname in ["backtest_live.csv", "backtest_mtf.csv"]:
             if os.path.exists(fname):
                 df_bt = pd.read_csv(fname)
                 if not df_bt.empty and "outcome" in df_bt.columns:
@@ -526,11 +526,17 @@ def generate_weekly_report():
                     avg_bt  = df_bt["pnl"].mean() if "pnl" in df_bt.columns else 0
                     std_bt  = df_bt["pnl"].std()  if "pnl" in df_bt.columns else 1
                     sharpe  = (avg_bt / std_bt) * (252 ** 0.5) if std_bt > 0 else 0
+                    dd_val  = 0.0
+                    if "pnl" in df_bt.columns:
+                        eq = df_bt["pnl"].cumsum()
+                        pk = eq.cummax()
+                        dd_val = round(float(((eq - pk) / pk.abs().replace(0, 1) * 100).min()), 1)
                     bt_summary = {
                         "n":         n_bt,
                         "wr":        round(wins_bt / n_bt * 100, 1) if n_bt > 0 else 0,
                         "total_pnl": round(float(pnl_bt), 2),
                         "sharpe":    round(float(sharpe), 2),
+                        "dd":        dd_val,
                     }
                     break
     except Exception:

@@ -3643,7 +3643,7 @@ function renderBacktest(){
     const src = bt.source || 'live'
     const isMTF = src === 'mtf'
     const isLive = _btCurrentSub === 'live'
-    srcBadge.textContent = isLive ? 'PAPER 7D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
+    srcBadge.textContent = isLive ? 'WEEKLY 7D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
     srcBadge.style.cssText = isLive
       ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
       : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
@@ -3653,7 +3653,7 @@ function renderBacktest(){
   const drEl = document.getElementById('bt-date-range')
   if(drEl){
     const periodLabel = bt.period || `${bt.date_from} → ${bt.date_to}`
-    const sourceLabel = _btCurrentSub==='live' ? 'Paper Trades · 7d' : 'Walk-Forward · 3-Agent System'
+    const sourceLabel = _btCurrentSub==='live' ? 'Weekly Backtest · 7d' : 'Walk-Forward · 3-Agent System'
     drEl.textContent = `${periodLabel} · ${sourceLabel}`
   }
 
@@ -3705,32 +3705,51 @@ function renderBacktest(){
   const exitTb = document.getElementById('bt-exit-tb')
   if(exitTb) exitTb.innerHTML=(bt.by_exit||[]).map(r=>{
     const isTimeout = r.exit_type==='TIMEOUT'
-    const wrTxt = isTimeout ? '<span style="color:var(--t2)">—</span>' : `<span class="${r.wr>=50?'up':'dn'}">${r.wr}%</span>`
-    const pnlTxt = isTimeout ? '<span style="color:var(--t2)">$0 (breakeven)</span>' : `<span class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</span>`
-    return `<tr>
-    <td class="txt" style="font-weight:600">${r.exit_type}${isTimeout?'<span style="font-size:9px;color:var(--t2);margin-left:4px">VOID</span>':''}</td>
-    <td>${r.n}</td>
+    const isEmpty = r.n === 0
+    const dimStyle = isEmpty ? 'opacity:0.35' : ''
+    const wrTxt = r.wr===null
+      ? '<span style="color:var(--t2)">—</span>'
+      : `<span class="${r.wr>=50?'up':'dn'}">${r.wr}%</span>`
+    const pnlTxt = r.avg_pnl===null
+      ? '<span style="color:var(--t2)">—</span>'
+      : `<span class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</span>`
+    const label = isTimeout
+      ? `${r.exit_type}<span style="font-size:9px;color:var(--t2);margin-left:4px">time exit</span>`
+      : r.exit_type
+    return `<tr style="${dimStyle}">
+    <td class="txt" style="font-weight:600">${label}</td>
+    <td>${isEmpty?'<span style="color:var(--t2)">0</span>':r.n}</td>
     <td>${wrTxt}</td>
     <td>${pnlTxt}</td>
   </tr>`}).join('')
 
   // score band table
   const scoreTb = document.getElementById('bt-score-tb')
-  if(scoreTb) scoreTb.innerHTML=(bt.by_score||[]).map(r=>`<tr>
+  if(scoreTb) scoreTb.innerHTML=(bt.by_score||[]).map(r=>{
+    const isEmpty = r.n === 0
+    const dimStyle = isEmpty ? 'opacity:0.35' : ''
+    const wrTxt = r.wr===null ? '<span style="color:var(--t2)">—</span>' : `<span class="${r.wr>=50?'up':'dn'}">${r.wr}%</span>`
+    const pnlTxt = r.avg_pnl===null ? '<span style="color:var(--t2)">—</span>' : `<span class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</span>`
+    return `<tr style="${dimStyle}">
     <td class="txt" style="font-weight:600">${r.band}</td>
-    <td>${r.n}</td>
-    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
-    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
-  </tr>`).join('')
+    <td>${isEmpty?'<span style="color:var(--t2)">0</span>':r.n}</td>
+    <td>${wrTxt}</td>
+    <td>${pnlTxt}</td>
+  </tr>`}).join('')
 
   // regime table
   const regimeTb = document.getElementById('bt-regime-tb')
-  if(regimeTb) regimeTb.innerHTML=(bt.by_regime||[]).map(r=>`<tr>
+  if(regimeTb) regimeTb.innerHTML=(bt.by_regime||[]).map(r=>{
+    const isEmpty = r.n === 0
+    const dimStyle = isEmpty ? 'opacity:0.35' : ''
+    const wrTxt = r.wr===null ? '<span style="color:var(--t2)">—</span>' : `<span class="${r.wr>=50?'up':'dn'}">${r.wr}%</span>`
+    const pnlTxt = r.avg_pnl===null ? '<span style="color:var(--t2)">—</span>' : `<span class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</span>`
+    return `<tr style="${dimStyle}">
     <td class="txt" style="font-weight:600">${r.regime}</td>
-    <td>${r.n}</td>
-    <td class="${r.wr>=50?'up':'dn'}">${r.wr}%</td>
-    <td class="${r.avg_pnl>=0?'up':'dn'}">${r.avg_pnl>=0?'+':''}$${r.avg_pnl}</td>
-  </tr>`).join('')
+    <td>${isEmpty?'<span style="color:var(--t2)">0</span>':r.n}</td>
+    <td>${wrTxt}</td>
+    <td>${pnlTxt}</td>
+  </tr>`}).join('')
 
   // equity curve
   drawBTEquity(bt.equity||[])

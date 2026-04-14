@@ -726,41 +726,88 @@ def _bt_breakdowns(df, source=None):
         by_sym.sort(key=lambda x: x["total_pnl"], reverse=True)
     result["by_symbol"] = by_sym
 
-    # by exit type
+    # by exit type — fixed list เสมอ แม้ไม่มี trade ก็แสดง 0
+    ALL_EXIT_TYPES = ["SL", "SL_BE", "TP2", "TIMEOUT"]
     by_exit = []
     if "exit_type" in df.columns:
-        for et, g in df.groupby("exit_type"):
-            wins_e = (g["outcome"] == "WIN").sum()
-            by_exit.append({"exit_type": et, "n": len(g), "wins": int(wins_e),
-                             "wr": round(wins_e/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+        grouped_exit = df.groupby("exit_type")
+        for et in ALL_EXIT_TYPES:
+            if et in grouped_exit.groups:
+                g = grouped_exit.get_group(et)
+                wins_e = (g["outcome"] == "WIN").sum()
+                by_exit.append({
+                    "exit_type": et,
+                    "n":         len(g),
+                    "wins":      int(wins_e),
+                    "wr":        round(wins_e / len(g) * 100, 1),
+                    "avg_pnl":   round(g["pnl"].mean(), 2),
+                })
+            else:
+                # ไม่มี trade แต่ยังแสดง row
+                by_exit.append({
+                    "exit_type": et,
+                    "n":         0,
+                    "wins":      0,
+                    "wr":        None,
+                    "avg_pnl":   None,
+                })
+        # extra types ที่อาจเกิดใน future (TP1, TP_TRAIL, ฯลฯ) ต่อท้าย
+        for et, g in grouped_exit:
+            if et not in ALL_EXIT_TYPES:
+                wins_e = (g["outcome"] == "WIN").sum()
+                by_exit.append({
+                    "exit_type": et,
+                    "n":         len(g),
+                    "wins":      int(wins_e),
+                    "wr":        round(wins_e / len(g) * 100, 1),
+                    "avg_pnl":   round(g["pnl"].mean(), 2),
+                })
     result["by_exit"] = by_exit
 
-    # by score band
+    # by score band — fixed bins เสมอ: ≤5 | 6-8 | 9-11 | 12-14 | 15-17 | 18-20 | 21+
+    FIXED_BANDS = [
+        ("≤5",   -999,  5),
+        ("6-8",     6,  8),
+        ("9-11",    9, 11),
+        ("12-14",  12, 14),
+        ("15-17",  15, 17),
+        ("18-20",  18, 20),
+        ("21+",    21, 999),
+    ]
     by_score = []
     if "score" in df.columns:
-        s_min, s_max = int(df["score"].min()), int(df["score"].max())
-        step = 3
-        bin_start = (s_min // step) * step
-        bin_edges = list(range(bin_start, s_max + step + 1, step))
-        if len(bin_edges) < 2:
-            bin_edges = [s_min - 1, s_max + 1]
-        bin_labels = [f"{bin_edges[i]}–{bin_edges[i+1]-1}" for i in range(len(bin_edges)-1)]
-        df2 = df.copy()
-        df2["band"] = pd.cut(df2["score"], bins=bin_edges, labels=bin_labels, include_lowest=True)
-        for band, g in df2.groupby("band", observed=True):
-            if len(g) == 0: continue
-            wins_b = (g["outcome"] == "WIN").sum()
-            by_score.append({"band": str(band), "n": len(g),
-                              "wr": round(wins_b/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+        sc = pd.to_numeric(df["score"], errors="coerce")
+        for label, lo, hi in FIXED_BANDS:
+            mask = (sc >= lo) & (sc <= hi)
+            g = df[mask]
+            if len(g) == 0:
+                by_score.append({"band": label, "n": 0, "wr": None, "avg_pnl": None})
+            else:
+                wins_b = (g["outcome"] == "WIN").sum()
+                by_score.append({"band": label, "n": len(g),
+                                  "wr": round(wins_b / len(g) * 100, 1),
+                                  "avg_pnl": round(g["pnl"].mean(), 2)})
     result["by_score"] = by_score
 
-    # by regime
+    # by regime — fixed list เสมอ แม้ไม่มี trade ก็แสดง
+    ALL_REGIMES = ["TRENDING", "RANGING", "VOLATILE"]
     by_regime = []
     if "regime" in df.columns:
-        for reg, g in df.groupby("regime"):
-            wins_r = (g["outcome"] == "WIN").sum()
-            by_regime.append({"regime": reg, "n": len(g),
-                               "wr": round(wins_r/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+        grouped_reg = df.groupby("regime")
+        for reg in ALL_REGIMES:
+            if reg in grouped_reg.groups:
+                g = grouped_reg.get_group(reg)
+                wins_r = (g["outcome"] == "WIN").sum()
+                by_regime.append({"regime": reg, "n": len(g),
+                                   "wr": round(wins_r/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+            else:
+                by_regime.append({"regime": reg, "n": 0, "wr": None, "avg_pnl": None})
+        # extra regimes ที่ระบบอาจเพิ่มในอนาคต
+        for reg, g in grouped_reg:
+            if reg not in ALL_REGIMES:
+                wins_r = (g["outcome"] == "WIN").sum()
+                by_regime.append({"regime": reg, "n": len(g),
+                                   "wr": round(wins_r/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
     result["by_regime"] = by_regime
 
     # by year
@@ -895,84 +942,49 @@ def load_backtest_3y():
 
 def load_live_performance():
     """
-    📡 Weekly Performance — paper trades จริงใน 7 วันล่าสุด จาก paper_trades.db
-    ถ้าข้อมูลไม่ถึง 7 วัน ก็แสดงเท่าที่มี
+    📡 Weekly Performance — อ่านจาก backtest_live.csv (output ของ backtest_live.py --days 7)
+    เหมือน 3Y backtest ทุกอย่าง แค่เปลี่ยน file + label
     """
     import pandas as pd
-    from datetime import timedelta
 
-    CUTOFF = datetime.now(timezone.utc) - timedelta(days=7)
+    LIVE_CSV = "backtest_live.csv"
 
-    if not os.path.exists(DB_PATH):
+    if not os.path.exists(LIVE_CSV):
         return {"available": False, "label": "live_perf",
-                "error": "ยังไม่มี paper_trades.db — ระบบยังไม่เคยเปิด trade"}
+                "error": "ยังไม่มี backtest_live.csv — รอ Weekly Backtest workflow วิ่งก่อน"}
 
     try:
-        conn = sqlite3.connect(DB_PATH)
-        # ดึง column ทั้งหมดที่มี รวม exit_type/score/regime ถ้า DB มี
-        cur = conn.execute("PRAGMA table_info(trades)")
-        db_cols = {r[1] for r in cur.fetchall()}
-        def _col(name):
-            return name if name in db_cols else f"NULL AS {name}"
-        rows = conn.execute(f"""
-            SELECT symbol AS sym, side, entry_px AS ep, exit_px AS xp,
-                   outcome, pnl_usd AS pnl,
-                   {_col('tp1_hit')}, opened_at AS entry_ts,
-                   closed_at,
-                   {_col('tf')}, {_col('exit_type')}, {_col('score')}, {_col('regime')}
-            FROM trades
-            WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
-            ORDER BY closed_at ASC
-        """, (CUTOFF.isoformat(),)).fetchall()
-        conn.close()
+        df = pd.read_csv(LIVE_CSV)
+    except Exception as e:
+        return {"available": False, "label": "live_perf", "error": str(e)}
 
-        if not rows:
-            return {"available": False, "label": "live_perf",
-                    "error": "ยังไม่มี trade ที่ปิดในสัปดาห์นี้"}
+    if df is None or df.empty:
+        return {"available": False, "label": "live_perf",
+                "error": "backtest_live.csv ว่างเปล่า"}
 
-        cols = ["sym", "side", "ep", "xp", "outcome", "pnl",
-                "tp1_hit", "entry_ts", "closed_at", "tf", "exit_type", "score", "regime"]
-        df = pd.DataFrame(rows, columns=cols)
-
-        df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
-        df["outcome"] = df["outcome"].fillna("LOSS")
-        df["tp1_hit"] = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
-        df["tf"]      = df["tf"].fillna("–")
-        if "in_kz" not in df.columns:
-            df["in_kz"] = False
-
-        # คำนวณ exit_type จาก outcome + tp1_hit (ถ้า DB ไม่มี column นี้)
-        if df["exit_type"].isna().all():
-            def _exit_type(row):
-                if row["outcome"] == "WIN":
-                    return "TP HIT" if row["tp1_hit"] else "TP2 HIT"
-                elif row["outcome"] == "LOSS":
-                    return "SL HIT"
-                return "VOID"
-            df["exit_type"] = df.apply(_exit_type, axis=1)
-
+    try:
         summary   = _bt_metrics(df)
         breakdown = _bt_breakdowns(df, source="live")
 
         date_from = date_to = None
-        try:
+        if "entry_ts" in df.columns:
             ts2 = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dropna()
             if len(ts2):
                 date_from = ts2.min().strftime("%Y-%m-%d")
                 date_to   = ts2.max().strftime("%Y-%m-%d")
-        except Exception:
-            pass
 
+        mtime = os.path.getmtime(LIVE_CSV)
         return {
-            "available":  True,
-            "label":      "live_perf",
-            "source":     "paper_trades",
-            "generated":  datetime.now(timezone.utc).isoformat(),
-            "date_from":  date_from,
-            "date_to":    date_to,
-            "period":     f"Paper Trades · 7d ({date_from or '?'} → {date_to or 'now'})",
-            "total_rows": len(df),
-            "summary":    summary,
+            "available":   True,
+            "label":       "live_perf",
+            "source":      "weekly_backtest",
+            "source_file": LIVE_CSV,
+            "generated":   datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat(),
+            "date_from":   date_from,
+            "date_to":     date_to,
+            "period":      f"Weekly Backtest · 7d ({date_from or '?'} → {date_to or 'now'})",
+            "total_rows":  len(df),
+            "summary":     summary,
             **breakdown,
         }
     except Exception as e:
