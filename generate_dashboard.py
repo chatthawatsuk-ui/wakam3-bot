@@ -689,7 +689,10 @@ def _bt_metrics(df):
     avg   = round(df["pnl"].mean(), 2)
     eq    = df["pnl"].cumsum()
     pk    = eq.cummax()
-    dd    = round(((eq - pk) / pk.abs().replace(0, 1) * 100).min(), 1)
+    # normalize ด้วย RISK_USD×n (total capital at risk) เพื่อกัน denominator ≈ 0
+    # เมื่อ equity ไม่เคยบวก → MaxDD แสดงเป็น % ของ capital ที่ risk ทั้งหมด
+    capital_base = max(pk.max(), len(df) * 10.0)
+    dd    = round(((eq - pk) / capital_base * 100).min(), 1)
     std   = df["pnl"].std()
     sharpe = round((avg / std) * (252 ** 0.5), 2) if std > 0 else 0
     kz    = df["in_kz"].astype(str).str.lower().isin(["true","1"]) if "in_kz" in df.columns else None

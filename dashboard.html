@@ -1863,19 +1863,22 @@ function startClock(){
 function updateTopBar(){
   const bal=D.balance||1000
   const pnl=D.pnl||0
-  const wr=D.win_rate||0
-  const trades=D.total_trades||0
   const scan=D.scan_results||[]
   const sigCnt=scan.filter(r=>r.status==='SIGNAL').length
+
+  // WIN/LOSE/WINRATE มาจาก weekly backtest (live_perf) — ตรงกับ backtest tab
+  const lps=D.live_perf?.summary
+  const btTrades=lps?.n||0
+  const btWin=lps?.n_win!=null?lps.n_win:Math.round(btTrades*(lps?.wr||0)/100)
+  const btLose=btTrades-btWin
+  const btWr=lps?.wr||0
 
   setText('tb-bal','$'+bal.toFixed(2))
   const pnlEl=document.getElementById('tb-pnl')
   if(pnlEl){pnlEl.textContent=(pnl>=0?'+':'')+'$'+Math.abs(pnl).toFixed(2);pnlEl.className='tb-val '+(pnl>=0?'up':'dn')}
-  const nw=Math.round(trades*(wr/100))
-  const nl=trades-nw
-  setText('tb-wr',trades>0?wr.toFixed(1)+'%':'—')
-  setText('tb-win',trades>0?nw:'—')
-  setText('tb-lose',trades>0?nl:'—')
+  setText('tb-wr',btTrades>0?btWr.toFixed(1)+'%':'—')
+  setText('tb-win',btTrades>0?btWin:'—')
+  setText('tb-lose',btTrades>0?btLose:'—')
   setText('tb-sigs',sigCnt)
   const nb=document.getElementById('nb-sig-cnt')
   if(nb) nb.textContent=sigCnt
