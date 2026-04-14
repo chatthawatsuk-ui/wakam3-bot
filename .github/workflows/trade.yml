@@ -76,7 +76,10 @@ jobs:
           git add -f --verbose notified_signals.json 2>/dev/null && echo "notified_signals.json OK" || echo "notified_signals.json SKIP"
           git add -f --verbose weights.json          2>/dev/null && echo "weights.json OK"           || echo "weights.json SKIP"
           git add -f --verbose pending_weights.json  2>/dev/null && echo "pending_weights.json OK"   || echo "pending_weights.json SKIP"
-          git add -f --verbose telegram_offset.json  2>/dev/null && echo "telegram_offset.json OK"   || echo "telegram_offset.json SKIP"
+          git add -f --verbose telegram_offset.json     2>/dev/null && echo "telegram_offset.json OK"        || echo "telegram_offset.json SKIP"
+          git add -f --verbose winrate_snapshot.json    2>/dev/null && echo "winrate_snapshot.json OK"     || echo "winrate_snapshot.json SKIP"
+          git add -f --verbose regime_state.json        2>/dev/null && echo "regime_state.json OK"         || echo "regime_state.json SKIP"
+          git add -f --verbose weight_trigger_cooldown.json 2>/dev/null && echo "weight_trigger_cooldown.json OK" || echo "weight_trigger_cooldown.json SKIP"
           echo "=== git status ==="
           git status
           echo "=== staged diff ==="

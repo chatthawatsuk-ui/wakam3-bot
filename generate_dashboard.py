@@ -334,6 +334,183 @@ def _load_backtest_winrates():
         return None
 
 
+WR_SNAPSHOT_FILE     = "winrate_snapshot.json"
+REGIME_STATE_FILE    = "regime_state.json"
+TRIGGER_COOLDOWN_FILE = "weight_trigger_cooldown.json"
+TRIGGER_COOLDOWN_H   = 6    # ขั้นต่ำกี่ชั่วโมงก่อน trigger ใหม่ได้
+
+
+def check_weight_triggers(specialist_wr, scan_results):
+    """
+    ตรวจ 3 triggers ทุก scan → ถ้า fire → Claude Haiku → pending_weights.json → Telegram
+      Trigger 1: Win rate ตก > 15% ใน 24h (ต่อ specialist ใดก็ได้)
+      Trigger 2: Dominant regime เปลี่ยน (เช่น TRENDING → VOLATILE)
+      Trigger 3: ≥ 20 trades ใหม่นับจาก weights อัพเดทล่าสุด
+    """
+    PENDING = "pending_weights.json"
+    now_utc = datetime.now(timezone.utc)
+    now_str = now_utc.isoformat()
+
+    # ถ้ามี pending รออยู่แล้ว → รอ approve ก่อน
+    if os.path.exists(PENDING):
+        return
+
+    # cooldown — ป้องกัน trigger ถี่เกิน
+    if os.path.exists(TRIGGER_COOLDOWN_FILE):
+        try:
+            with open(TRIGGER_COOLDOWN_FILE) as f:
+                cd = json.load(f)
+            last = datetime.fromisoformat(cd.get("last_triggered", "2000-01-01T00:00:00+00:00"))
+            if (now_utc - last).total_seconds() / 3600 < TRIGGER_COOLDOWN_H:
+                return
+        except Exception:
+            pass
+
+    trigger_reason = None
+
+    # ── Trigger 1: Win rate drop > 15% in 24h ────────────────────────────────
+    snapshot = {}
+    if os.path.exists(WR_SNAPSHOT_FILE):
+        try:
+            with open(WR_SNAPSHOT_FILE) as f:
+                snapshot = json.load(f)
+        except Exception:
+            pass
+
+    if snapshot:
+        for key in ["trend", "smc", "osc"]:
+            d      = specialist_wr.get(key, {})
+            wr_now = d.get("winrate", 50.0)
+            old    = snapshot.get(key, {})
+            if not old:
+                continue
+            old_time = datetime.fromisoformat(old.get("ts", "2000-01-01T00:00:00+00:00"))
+            h_ago    = (now_utc - old_time).total_seconds() / 3600
+            if h_ago <= 24:
+                drop = old.get("wr", 50.0) - wr_now
+                if drop >= 15:
+                    trigger_reason = (
+                        f"Win rate {key.upper()} ตก {drop:.1f}% ใน {h_ago:.0f}h "
+                        f"({old['wr']:.1f}% → {wr_now:.1f}%)"
+                    )
+                    break
+
+    # อัพเดท snapshot ทุก 24h (หรือถ้ายังไม่มี)
+    needs_refresh = not snapshot
+    if not needs_refresh:
+        for key in ["trend", "smc", "osc"]:
+            old_ts = snapshot.get(key, {}).get("ts", "2000-01-01T00:00:00+00:00")
+            if (now_utc - datetime.fromisoformat(old_ts)).total_seconds() / 3600 > 24:
+                needs_refresh = True
+                break
+    if needs_refresh:
+        new_snap = {}
+        for key in ["trend", "smc", "osc"]:
+            d = specialist_wr.get(key, {})
+            new_snap[key] = {"wr": d.get("winrate", 50.0), "ts": now_str}
+        try:
+            with open(WR_SNAPSHOT_FILE, "w") as f:
+                json.dump(new_snap, f)
+        except Exception:
+            pass
+
+    # ── Trigger 2: Regime change ──────────────────────────────────────────────
+    if not trigger_reason and scan_results:
+        try:
+            from collections import Counter
+            regimes = [r.get("regime", "") for r in scan_results if r.get("regime")]
+            if regimes:
+                dominant = Counter(regimes).most_common(1)[0][0]
+                prev = None
+                if os.path.exists(REGIME_STATE_FILE):
+                    with open(REGIME_STATE_FILE) as f:
+                        prev = json.load(f).get("regime")
+                with open(REGIME_STATE_FILE, "w") as f:
+                    json.dump({"regime": dominant, "ts": now_str}, f)
+                if prev and prev != dominant:
+                    trigger_reason = f"Market Regime เปลี่ยนจาก {prev} → {dominant}"
+        except Exception:
+            pass
+
+    # ── Trigger 3: ≥ 20 new trades since last weight update ──────────────────
+    if not trigger_reason:
+        total_closed = specialist_wr.get("total_closed", 0)
+        last_total   = 0
+        if os.path.exists("weights.json"):
+            try:
+                with open("weights.json") as f:
+                    last_total = json.load(f).get("total_closed", 0)
+            except Exception:
+                pass
+        if total_closed - last_total >= 20:
+            trigger_reason = (
+                f"มี {total_closed - last_total} trades ใหม่นับจาก weights อัพเดทล่าสุด"
+            )
+
+    if not trigger_reason:
+        return
+
+    # ── Trigger fired ─────────────────────────────────────────────────────────
+    print(f"  ⚡ Weight Trigger: {trigger_reason}")
+
+    # บันทึก cooldown
+    try:
+        with open(TRIGGER_COOLDOWN_FILE, "w") as f:
+            json.dump({"last_triggered": now_str, "reason": trigger_reason}, f)
+    except Exception:
+        pass
+
+    try:
+        import weekly_report as WR
+        import notify as N
+
+        # backtest summary (lightweight)
+        bt_summary = None
+        try:
+            import pandas as pd
+            for fname in ["backtest_mtf.csv", "backtest_live.csv"]:
+                if os.path.exists(fname):
+                    df_bt = pd.read_csv(fname)
+                    if not df_bt.empty and "outcome" in df_bt.columns:
+                        wins_bt = (df_bt["outcome"] == "WIN").sum()
+                        n_bt    = len(df_bt)
+                        bt_summary = {
+                            "n":  n_bt,
+                            "wr": round(wins_bt / n_bt * 100, 1) if n_bt > 0 else 0,
+                        }
+                        break
+        except Exception:
+            pass
+
+        # convert specialist_wr → format ที่ _claude_weight_proposal ต้องการ
+        swr = {key: {"winrate": specialist_wr.get(key, {}).get("winrate", 50.0),
+                     "trades":  specialist_wr.get(key, {}).get("trades",  0)}
+               for key in ["trend", "smc", "osc"]}
+        swr["total_closed"] = specialist_wr.get("total_closed", 0)
+
+        prop = WR._claude_weight_proposal(swr, {}, {}, bt_summary)
+        if prop:
+            conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(
+                prop.get("confidence", ""), "⚪"
+            )
+            trigger_msg = (
+                f"⚡ <b>Weight Trigger!</b>\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"📌 {trigger_reason}\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"🎯 Trend : {prop['trend']:.3f}\n"
+                f"🏦 SMC   : {prop['smc']:.3f}\n"
+                f"📈 Osc   : {prop['osc']:.3f}\n"
+                f"{conf_icon} {prop.get('reasoning', '')}\n"
+                f"━━━━━━━━━━━━━━━━━━━━\n"
+                f"✅ พิมพ์ <b>/approve_weights</b> เพื่ออนุมัติ"
+            )
+            N.send(trigger_msg)
+
+    except Exception as e:
+        print(f"  [WARN] check_weight_triggers proposal: {e}")
+
+
 def check_weight_approval():
     """
     ตรวจ Telegram getUpdates → หา /approve_weights command
@@ -930,8 +1107,9 @@ def main():
     # ── Level 2: Specialist Win Rate ─────────────────────────────────────────
     specialist_wr = calc_specialist_winrate(conn)
 
-    # ── Level 3: Dynamic Weights (ตรวจ Telegram approval ก่อน) ─────────────────
+    # ── Level 3: Dynamic Weights (ตรวจ Telegram approval + triggers) ───────────
     check_weight_approval()
+    check_weight_triggers(specialist_wr, scan_results)
     dyn_weights = calc_dynamic_weights(specialist_wr)
 
     sess_data = {}
