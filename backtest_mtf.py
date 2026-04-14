@@ -64,6 +64,7 @@ SCANNER.save_specialist_history = lambda *a, **kw: None
 #  years      : ดึงข้อมูลย้อนหลังกี่ปี
 
 TF_CONFIGS = {
+    # window_p ต้องมากกว่า SMA200 (200) + buffer → ใช้ >= 300 เสมอ
     "15m": dict(primary="15m", htf="1h",  resample="15min",
                 window_p=2000, window_h=500,  warmup=800, timeout=192, step=8,  years=1),
     "30m": dict(primary="30m", htf="2h",  resample="30min",
@@ -71,11 +72,11 @@ TF_CONFIGS = {
     "1h":  dict(primary="1h",  htf="4h",  resample="1h",
                 window_p=500,  window_h=125,  warmup=250, timeout=48,  step=4,  years=3),
     "2h":  dict(primary="2h",  htf="8h",  resample="2h",
-                window_p=250,  window_h=62,   warmup=125, timeout=24,  step=2,  years=3),
+                window_p=300,  window_h=80,   warmup=200, timeout=24,  step=2,  years=3),
     "4h":  dict(primary="4h",  htf="1d",  resample="4h",
-                window_p=125,  window_h=31,   warmup=63,  timeout=12,  step=1,  years=3),
+                window_p=300,  window_h=80,   warmup=200, timeout=12,  step=1,  years=3),
     "1d":  dict(primary="1d",  htf="1w",  resample="1d",
-                window_p=62,   window_h=16,   warmup=32,  timeout=6,   step=1,  years=3),
+                window_p=300,  window_h=60,   warmup=200, timeout=6,   step=1,  years=3),
 }
 
 ALL_TF_ORDER = ["15m", "30m", "1h", "2h", "4h", "1d"]
