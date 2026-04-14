@@ -901,20 +901,33 @@ def load_live_performance():
     try:
         conn = sqlite3.connect(DB_PATH)
         rows = conn.execute("""
-            SELECT sym, side, score, score_trend, score_smc, score_osc,
-                   entry_price AS ep, sl_price AS sl, tp1_price AS tp1, tp2_price AS tp2,
-                   entry_time AS entry_ts, close_time AS exit_ts,
-                   exit_price AS exit_px, close_reason AS exit_type,
-                   tp1_hit, outcome, pnl, in_kz, regime, rsi
+            SELECT symbol AS sym, side, score,
+                   COALESCE(score_trend, 0) AS score_trend,
+                   COALESCE(score_smc,   0) AS score_smc,
+                   COALESCE(score_osc,   0) AS score_osc,
+                   entry_px  AS ep,
+                   sl_px     AS sl,
+                   tp1_px    AS tp1,
+                   tp2_px    AS tp2,
+                   sl_pct,
+                   opened_at AS entry_ts,
+                   closed_at AS exit_ts,
+                   exit_px,
+                   COALESCE(exit_reason, 'SL') AS exit_type,
+                   tp1_hit,
+                   outcome,
+                   pnl_usd   AS pnl,
+                   COALESCE(regime, 'UNKNOWN') AS regime,
+                   COALESCE(rsi, 50)           AS rsi
             FROM trades
             WHERE status = 'CLOSED'
               AND outcome IS NOT NULL
-              AND close_time >= ?
-            ORDER BY close_time ASC
+              AND closed_at >= ?
+            ORDER BY closed_at ASC
         """, (CUTOFF.isoformat(),)).fetchall()
         cols = ["sym","side","score","score_trend","score_smc","score_osc",
-                "ep","sl","tp1","tp2","entry_ts","exit_ts","exit_px","exit_type",
-                "tp1_hit","outcome","pnl","in_kz","regime","rsi"]
+                "ep","sl","tp1","tp2","sl_pct","entry_ts","exit_ts","exit_px",
+                "exit_type","tp1_hit","outcome","pnl","regime","rsi"]
         conn.close()
 
         if not rows:

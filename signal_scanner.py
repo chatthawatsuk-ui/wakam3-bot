@@ -20,7 +20,7 @@ import agent_osc   as OSC
 
 WEIGHTS_PATH = "weights.json"
 DB_PATH      = "paper_trades.db"
-MIN_SCORE    = 8
+MIN_SCORE    = 9
 TP1_R        = 1.2
 TP2_R        = 2.0
 
@@ -63,13 +63,14 @@ def _fmt_price(px):
 
 def _weighted_score(trend_s, smc_s, osc_s, kz=False):
     """
-    normalize แต่ละ specialist (÷ max) → weighted sum → ×30 + KZ
-    max score = 31 เสมอ ไม่ว่า weights จะเป็นเท่าไหร่
+    normalize แต่ละ specialist (÷ max) → weighted sum → ×31
+    max score = 31 — KZ ไม่ใช่ bonus แล้ว (ใช้เป็น context ใน claude_filter แทน)
+    Backtest 3Y พบว่า KZ bonus ดึงสัญญาณ WR 45.1% ผ่าน threshold โดยไม่จำเป็น
     """
     combined = (trend_s / 11) * W_TREND + \
                (smc_s   / 10) * W_SMC   + \
                (osc_s   /  9) * W_OSC
-    return round(combined * 30) + (1 if kz else 0)
+    return round(combined * 31)
 
 
 # ══════════════════════════════════════════════════════════════

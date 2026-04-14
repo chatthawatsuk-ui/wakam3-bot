@@ -1,6 +1,6 @@
 """
-🎯 Trend Agent — CDC ActionZone EMA7/30 · SMA50/100/200 · ATR Trailing Stop
-Pine Script source: WaKam3.pine (CDC ActionZone V3 + ATR Trail + SMA)
+🎯 Trend Agent — CDC ActionZone EMA7/30 · SMA99 · ATR Trailing Stop
+Pine Script source: WaKam3.pine (CDC ActionZone V3 + ATR Trail + SMA99)
 
 ส่ง report ให้ Signal Scanner ทุก scan
 """
@@ -13,8 +13,8 @@ NAME      = "Trend Agent"
 EMOJI     = "🎯"
 MAX_SCORE = 11
 
-EMA_FAST   = 7;   EMA_SLOW   = 30
-SMA_50     = 50;  SMA_100    = 100;  SMA_200 = 200
+EMA_FAST   = 7;   EMA_SLOW  = 30
+SMA_99     = 99
 ATR_FAST_P = 5;   ATR_FAST_M = 0.5
 ATR_SLOW_P = 10;  ATR_SLOW_M = 2.0
 RETRACE    = 0.003
@@ -38,20 +38,17 @@ def _add_indicators(df):
     c, h, l = df["close"], df["high"], df["low"]
 
     # CDC ActionZone
-    df["ema7"]   = EMAIndicator(c, EMA_FAST).ema_indicator()
-    df["ema30"]  = EMAIndicator(c, EMA_SLOW).ema_indicator()
-    df["sma50"]  = SMAIndicator(c, SMA_50).sma_indicator()
-    df["sma100"] = SMAIndicator(c, SMA_100).sma_indicator()
-    df["sma200"] = SMAIndicator(c, SMA_200).sma_indicator()
+    df["ema7"]  = EMAIndicator(c, EMA_FAST).ema_indicator()
+    df["ema30"] = EMAIndicator(c, EMA_SLOW).ema_indicator()
+    df["sma99"] = SMAIndicator(c, SMA_99).sma_indicator()
 
-    df["bull"]         = df["ema7"] > df["ema30"]
-    df["cross_up"]     = (~df["bull"].shift(1).fillna(False)) & df["bull"]
-    df["cross_dn"]     = df["bull"].shift(1).fillna(False) & (~df["bull"])
-    df["touch_bull"]   = (c >= df["ema30"] * (1 - RETRACE)) & (c <= df["ema30"] * (1 + RETRACE * 2)) & df["bull"]
-    df["touch_bear"]   = (c <= df["ema30"] * (1 + RETRACE)) & (c >= df["ema30"] * (1 - RETRACE * 2)) & (~df["bull"])
-    df["above_sma50"]  = c > df["sma50"]
-    df["above_sma200"] = c > df["sma200"]
-    df["sma50_gt_200"] = df["sma50"] > df["sma200"]
+    df["bull"]          = df["ema7"] > df["ema30"]
+    df["cross_up"]      = (~df["bull"].shift(1).fillna(False)) & df["bull"]
+    df["cross_dn"]      = df["bull"].shift(1).fillna(False) & (~df["bull"])
+    df["touch_bull"]    = (c >= df["ema30"] * (1 - RETRACE)) & (c <= df["ema30"] * (1 + RETRACE * 2)) & df["bull"]
+    df["touch_bear"]    = (c <= df["ema30"] * (1 + RETRACE)) & (c >= df["ema30"] * (1 - RETRACE * 2)) & (~df["bull"])
+    df["above_sma99"]   = c > df["sma99"]
+    df["ema7_gt_sma99"] = df["ema7"] > df["sma99"]
 
     # ATR Trailing Stop
     atr_f = AverageTrueRange(h, l, c, ATR_FAST_P).average_true_range() * ATR_FAST_M
@@ -72,11 +69,11 @@ def _htf_bias(df_1h, df_4h):
         df_1h["htf_sma"]  = True
         return df_1h
     df_4h = df_4h.copy()
-    df_4h["h7"]   = EMAIndicator(df_4h["close"], EMA_FAST).ema_indicator()
-    df_4h["h30"]  = EMAIndicator(df_4h["close"], EMA_SLOW).ema_indicator()
-    df_4h["h200"] = SMAIndicator(df_4h["close"], SMA_200).sma_indicator()
+    df_4h["h7"]  = EMAIndicator(df_4h["close"], EMA_FAST).ema_indicator()
+    df_4h["h30"] = EMAIndicator(df_4h["close"], EMA_SLOW).ema_indicator()
+    df_4h["h99"] = SMAIndicator(df_4h["close"], SMA_99).sma_indicator()
     df_4h["htf_bull"] = df_4h["h7"] > df_4h["h30"]
-    df_4h["htf_sma"]  = df_4h["close"] > df_4h["h200"]
+    df_4h["htf_sma"]  = df_4h["close"] > df_4h["h99"]
     htf   = df_4h[["htf_bull", "htf_sma"]].resample("1h").ffill()
     df_1h = df_1h.join(htf, how="left")
     df_1h["htf_bull"] = df_1h["htf_bull"].ffill().fillna(True)
@@ -86,25 +83,23 @@ def _htf_bias(df_1h, df_4h):
 
 def _score_long(r):
     s = 0
-    if r["bull"]:            s += 2
-    if r["cross_up"]:        s += 2
-    if r["touch_bull"]:      s += 1
-    if r["above_sma50"]:     s += 1
-    if r["above_sma200"]:    s += 2
-    if r["sma50_gt_200"]:    s += 1
-    if r["trail_slow_bull"]: s += 2
+    if r["bull"]:             s += 2
+    if r["cross_up"]:         s += 2
+    if r["touch_bull"]:       s += 1
+    if r["above_sma99"]:      s += 2
+    if r["ema7_gt_sma99"]:    s += 2
+    if r["trail_slow_bull"]:  s += 2
     return s   # max 11
 
 
 def _score_short(r):
     s = 0
-    if not r["bull"]:           s += 2
-    if r["cross_dn"]:           s += 2
-    if r["touch_bear"]:         s += 1
-    if not r["above_sma50"]:    s += 1
-    if not r["above_sma200"]:   s += 2
-    if not r["sma50_gt_200"]:   s += 1
-    if not r["trail_slow_bull"]:s += 2
+    if not r["bull"]:            s += 2
+    if r["cross_dn"]:            s += 2
+    if r["touch_bear"]:          s += 1
+    if not r["above_sma99"]:     s += 2
+    if not r["ema7_gt_sma99"]:   s += 2
+    if not r["trail_slow_bull"]: s += 2
     return s   # max 11
 
 
@@ -175,13 +170,12 @@ def run(df_1h, df_4h, df_1d=None):
             "cross_dn":        bool(r["cross_dn"]),
             "touch_bull":      bool(r["touch_bull"]),
             "touch_bear":      bool(r["touch_bear"]),
-            "above_sma50":     bool(r["above_sma50"]),
-            "above_sma200":    bool(r["above_sma200"]),
-            "sma50_gt_200":    bool(r["sma50_gt_200"]),
+            "above_sma99":     bool(r["above_sma99"]),
+            "ema7_gt_sma99":   bool(r["ema7_gt_sma99"]),
             "trail_slow_bull": bool(r["trail_slow_bull"]),
             "stoch_d_bull":    stoch_d_bull,
-            "ema7":            round(float(r["ema7"]),   6),
-            "ema30":           round(float(r["ema30"]),  6),
-            "sma200":          round(float(r["sma200"]), 6),
+            "ema7":            round(float(r["ema7"]),  6),
+            "ema30":           round(float(r["ema30"]), 6),
+            "sma99":           round(float(r["sma99"]), 6),
         },
     }
