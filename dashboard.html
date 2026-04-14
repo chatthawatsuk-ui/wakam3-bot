@@ -1650,6 +1650,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 // ═══════════════════════════════════════════════════════════
 let D={},LIVE={},MKT=[],FG={value:50,label:'Neutral',yesterday:50,lastWeek:50}
 let currentPage='dash',labFilterMode='all',posTab='open'
+const CUSTOM_PRICES={}  // cache ราคา custom symbols ที่ fetch จาก OKX public API
 const SYMS=[
   'BTC/USDT','ETH/USDT','BNB/USDT','XRP/USDT','SOL/USDT',
   'TRX/USDT','DOGE/USDT','ADA/USDT','BCH/USDT','LTC/USDT',
@@ -1778,7 +1779,7 @@ function nav(page){
   if(page==='health') renderHealth()
   if(page==='btc') renderBTCLive()
   if(page==='backtest') renderBacktest()
-  if(page==='watchlist') renderWatchlistPage()
+  if(page==='watchlist'){ renderWatchlistPage(); fetchCustomPrices() }
   if(page==='shadow') renderShadow()
 }
 
@@ -2323,6 +2324,35 @@ let WL_FILTER='all'
 let WL_CUSTOM=JSON.parse(localStorage.getItem('wl_custom')||'[]')
 function wlSave(){localStorage.setItem('wl_custom',JSON.stringify(WL_CUSTOM))}
 
+// ── fetch ราคาจาก OKX public API สำหรับ custom symbols ที่ไม่อยู่ใน scanner ──
+async function fetchCustomPrices(){
+  const missing=WL_CUSTOM.filter(sym=>!LIVE[sym] && CUSTOM_PRICES[sym]===undefined)
+  if(!missing.length) return
+  // mark as fetching ก่อนเพื่อกัน concurrent calls
+  missing.forEach(sym=>{ CUSTOM_PRICES[sym]=null })
+
+  await Promise.all(missing.map(async sym=>{
+    // sym = "RAVE/USDT" → try SWAP first, then SPOT
+    const base=sym.replace('/USDT','')
+    const candidates=[base+'-USDT-SWAP', base+'-USDT']
+    for(const instId of candidates){
+      try{
+        const r=await fetch('https://www.okx.com/api/v5/market/ticker?instId='+instId,{cache:'no-store'})
+        if(!r.ok) continue
+        const j=await r.json()
+        const d=j.data?.[0]
+        if(!d || !parseFloat(d.last)) continue
+        const px=parseFloat(d.last)
+        const open24h=parseFloat(d.open24h)||px
+        const chg=open24h>0?((px-open24h)/open24h*100):0
+        CUSTOM_PRICES[sym]={price:px, change:parseFloat(chg.toFixed(2)), instId}
+        break
+      }catch(e){}
+    }
+  }))
+  renderWatchlistPage()
+}
+
 function wlAdd(){
   const inp=document.getElementById('wl-add-input')
   if(!inp) return
@@ -2330,7 +2360,7 @@ function wlAdd(){
   if(!val) return
   if(!val.includes('/')) val=val+'/USDT'
   if(!WL_CUSTOM.includes(val)) WL_CUSTOM.push(val)
-  wlSave(); inp.value=''; renderWatchlistPage()
+  wlSave(); inp.value=''; renderWatchlistPage(); fetchCustomPrices()
 }
 
 function wlRemove(sym){
@@ -2390,30 +2420,49 @@ function renderWatchlistPage(){
   }
 
   tb.innerHTML=filtered.map(sym=>{
-    const lv=LIVE[sym], sc=scanMap[sym]
+    const lv=LIVE[sym]
+    const cp=CUSTOM_PRICES[sym]   // custom price จาก OKX API
+    const sc=scanMap[sym]
     const isCustom=WL_CUSTOM.includes(sym)
-    const px=lv?pxFmt(lv.price):sc?pxFmt(sc.price):'—'
-    const chg=lv?lv.change:null
+    const notScanned=isCustom&&!sc   // เพิ่มเองแต่ไม่ได้อยู่ใน scanner
+
+    // ราคา: LIVE (scanner) → CUSTOM_PRICES (OKX fetch) → scan price → '—'
+    const priceData=lv||cp
+    const px=priceData?pxFmt(priceData.price):sc?pxFmt(sc.price):'—'
+    const chg=priceData?priceData.change:null
+
+    // สถานะ price fetch สำหรับ custom symbols
+    const priceLoading=notScanned&&cp===undefined  // ยังไม่ได้ fetch
+    const priceNotFound=notScanned&&cp===null       // fetch แล้วไม่เจอบน OKX
+
     const score=sc?.best_score||0
     const bc=score>=8?'var(--green)':score>=5?'var(--yellow)':'var(--t2)'
     const url=tvUrl(sym)
     const isSig=sc?.status==='SIGNAL'
+
+    const pxCell=priceLoading
+      ?'<span style="color:var(--t2);font-size:10px">กำลังโหลด…</span>'
+      :priceNotFound
+        ?'<span style="color:var(--red);font-size:10px">ไม่พบบน OKX</span>'
+        :`<span style="font-family:var(--mono);font-size:12px">${px}</span>
+          ${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:10px">${chg>=0?'+':''}${chg.toFixed(2)}%</span>`:''}`
+
     return`<tr style="${isSig?'background:rgba(34,197,94,.04)':''}">
       <td style="white-space:nowrap">
         <span style="font-weight:700;font-family:var(--mono)">${symDisp(sym)}</span>
         ${isCustom?'<span style="font-size:9px;background:rgba(234,179,8,.12);color:var(--yellow);border-radius:5px;padding:1px 5px;margin-left:5px;border:1px solid rgba(234,179,8,.2)">★</span>':''}
       </td>
-      <td style="font-family:var(--mono);font-size:12px">${px}
-        ${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:10px">${chg>=0?'+':''}${chg.toFixed(2)}%</span>`:''}
+      <td>${pxCell}</td>
+      <td class="${chg===null?'t2':chg>=0?'up':'dn'}" style="font-size:11px">
+        ${chg===null?'—':(chg>=0?'+':'')+chg.toFixed(2)+'%'}
       </td>
-      <td class="${chg===null?'t2':chg>=0?'up':'dn'}" style="font-size:11px">${chg===null?'—':(chg>=0?'+':'')+chg.toFixed(2)+'%'}</td>
       <td style="min-width:80px">
         ${sc?`<div class="sbar">
           <span style="min-width:30px;color:${bc};font-weight:700;font-size:11px">${score}/31</span>
           <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(score/31*100)}%;background:${bc}"></div></div>
-        </div>`:'<span class="t2" style="font-size:11px">—</span>'}
+        </div>`:notScanned?'<span style="font-size:9px;color:var(--t2);background:var(--s3);border-radius:4px;padding:2px 6px;border:1px solid var(--border)">ไม่ได้ Scan</span>':'<span class="t2">—</span>'}
       </td>
-      <td>${sc?sBadge(sc.status):'<span class="t2">—</span>'}</td>
+      <td>${sc?sBadge(sc.status):notScanned?'<span style="font-size:9px;color:var(--t2)">Custom</span>':'<span class="t2">—</span>'}</td>
       <td>${sc?sideBadge(sc.side):'<span class="t2">—</span>'}</td>
       <td class="${sc?.rsi<40?'up':sc?.rsi>60?'dn':''}" style="font-size:11px">${sc?.rsi||'—'}</td>
       <td>${sc?(sc.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'):'<span class="t2">—</span>'}</td>
