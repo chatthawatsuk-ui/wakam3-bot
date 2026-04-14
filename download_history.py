@@ -36,8 +36,9 @@ DEFAULT_SYMBOLS = [
     "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT", "SUI/USDT",
 ]
 
-# primary + htf ของทุก TF config ใน backtest_live.py
-ALL_TFS = ["15m", "30m", "1h", "2h", "4h", "1d", "1w"]
+# TFs ที่ backtest_3y.py ใช้ (primary + htf ทุกคู่)
+# 15m→1h, 30m→2h, 1h→4h, 2h→4h, 4h→1d  ครอบคลุมทุก pair
+ALL_TFS = ["15m", "30m", "1h", "2h", "4h", "1d"]
 
 DEFAULT_DAYS = 1100   # ~3 ปี (เผื่อ weekend/holiday gaps)
 API_LIMIT    = 300    # OKX max candles per call

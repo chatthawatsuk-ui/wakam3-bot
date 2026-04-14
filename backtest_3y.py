@@ -1,19 +1,27 @@
 """
-backtest_3y.py — Walk-Forward Backtest ย้อนหลัง 3 ปี
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ต่างจาก backtest_live.py:
-  - Paginated OKX fetch  → 3 ปี ของ 1H candles (≈26,280 แท่ง)
-  - Rolling window 500 candles ส่งให้ scanner (ไม่ใช้ growing slice)
-  - Scan ทุก SCAN_STEP candles เพื่อลดรอบการคำนวณ
-  - Target runtime: < 40 min สำหรับ 5 symbols บน GitHub Actions
+backtest_3y.py — Walk-Forward Backtest ย้อนหลัง 3 ปี (Multi-TF Edition)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ทดสอบทุก TF แล้วสรุป Leaderboard ว่า TF ไหน win rate / sharpe ดีสุด
 
-Output: backtest_3y.csv  (columns เหมือน backtest_live.csv)
+TF Pairs ที่ทดสอบ:
+  15m → HTF 1h   | warmup 250  | window 500  | timeout 192c | step 16
+  30m → HTF 2h   | warmup 250  | window 500  | timeout  96c | step  8
+  1h  → HTF 4h   | warmup 250  | window 500  | timeout  48c | step  4
+  2h  → HTF 4h   | warmup 150  | window 300  | timeout  24c | step  2
+  4h  → HTF 1d   | warmup 100  | window 200  | timeout  12c | step  1
+  1d  → HTF 1d   | warmup  50  | window 100  | timeout   2c | step  1
+
+Output:
+  backtest_3y.csv       — ทุก trades รวมกัน (มีคอลัมน์ tf)
+  backtest_3y_tf.csv    — สรุป metrics แยกตาม TF (TF Leaderboard)
 
 Usage:
-  py backtest_3y.py                       # 5 symbols, 3 ปี
-  py backtest_3y.py --years 1             # 1 ปี (เร็วกว่า)
-  py backtest_3y.py --symbols BTC/USDT ETH/USDT
-  py backtest_3y.py --step 1              # scan ทุก candle (ช้า แต่แม่น)
+  py backtest_3y.py                           # ทุก TF, 5 symbols, 3Y
+  py backtest_3y.py --tf 1h 4h               # เลือก TF ที่ต้องการ
+  py backtest_3y.py --symbols BTC/USDT        # symbol เดียว
+  py backtest_3y.py --years 1                 # 1 ปี (เร็วกว่า)
+  py backtest_3y.py --extended               # 10 symbols
+  py backtest_3y.py --step 1                 # scan ทุก candle (ช้า แต่แม่น)
 """
 
 import sys, os, warnings, time as time_mod, argparse
@@ -36,7 +44,7 @@ import signal_scanner as SCANNER
 SCANNER.save_condition_snapshot    = lambda *a, **kw: None
 SCANNER.save_specialist_history    = lambda *a, **kw: None
 
-# ── CONFIG ────────────────────────────────────────────────────────────────────
+# ── SYMBOLS ───────────────────────────────────────────────────────────────────
 DEFAULT_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
 ]
@@ -44,18 +52,27 @@ EXTENDED_SYMBOLS = DEFAULT_SYMBOLS + [
     "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT", "SUI/USDT",
 ]
 
-TF_1H       = "1h"
-TF_4H       = "4h"
-WARMUP      = 250       # candles แรกที่รอ indicator warm-up
-WINDOW_1H   = 500       # rolling window ขนาดคงที่ที่ส่งให้ scanner
-CANDLES_4H  = 500       # 4H window สำหรับ HTF context
-SCAN_STEP   = 4         # scan ทุก N candles (4 = เทียบเท่า 4H)
-TP1_R       = 1.2
-TP2_R       = 2.0
-TIMEOUT_H   = 48
-RISK_USD    = 10.0
-OUTPUT_CSV  = "backtest_3y.csv"
-API_LIMIT   = 300       # max candles per OKX API call
+# ── MULTI-TF CONFIG ───────────────────────────────────────────────────────────
+# (primary_tf, htf_tf, warmup_candles, window_candles, timeout_candles, scan_step)
+# timeout_candles = 48h แปลงเป็น candle ตาม TF
+# scan_step       = วิ่งทุกกี่ candle (ลด runtime)
+TF_CONFIGS = {
+    "15m": ("15m", "1h",  250, 500, 192, 16),  # 48h × 4c/h = 192c
+    "30m": ("30m", "2h",  250, 500,  96,  8),  # 48h × 2c/h = 96c
+    "1h":  ("1h",  "4h",  250, 500,  48,  4),  # 48h × 1c/h = 48c
+    "2h":  ("2h",  "4h",  150, 300,  24,  2),  # 48h / 2h   = 24c
+    "4h":  ("4h",  "1d",  100, 200,  12,  1),  # 48h / 4h   = 12c
+    "1d":  ("1d",  "1d",   50, 100,   2,  1),  # 48h / 24h  =  2c
+}
+ALL_TFS    = ["15m", "30m", "1h", "2h", "4h", "1d"]
+
+TP1_R      = 1.2
+TP2_R      = 2.0
+RISK_USD   = 10.0
+OUTPUT_CSV = "backtest_3y.csv"
+TF_CSV     = "backtest_3y_tf.csv"
+API_LIMIT  = 300
+CACHE_DIR  = "historical_data"
 
 exchange = ccxt.okx({
     "enableRateLimit": True,
@@ -67,14 +84,11 @@ exchange.load_markets()
 print(f"{len(exchange.markets)} pairs")
 
 
-# ── CACHE — historical_data/{SYMBOL}_{TF}.parquet ────────────────────────────
-CACHE_DIR = "historical_data"
-
+# ── CACHE ─────────────────────────────────────────────────────────────────────
 def _cache_path(symbol: str, tf: str) -> str:
     return os.path.join(CACHE_DIR, symbol.replace("/", "_") + f"_{tf}.parquet")
 
 def _load_cache(symbol: str, tf: str, years: float) -> pd.DataFrame | None:
-    """โหลดจาก Parquet cache กรองเฉพาะช่วง years ย้อนหลัง — คืน None ถ้าไม่มี/ไม่พอ"""
     fpath = _cache_path(symbol, tf)
     if not os.path.exists(fpath):
         return None
@@ -87,22 +101,16 @@ def _load_cache(symbol: str, tf: str, years: float) -> pd.DataFrame | None:
         return None
 
 
-# ── PAGINATED FETCH (OKX API — fallback ถ้าไม่มี cache) ──────────────────────
+# ── PAGINATED FETCH ───────────────────────────────────────────────────────────
 def fetch_paginated(symbol, tf, years=3):
-    """
-    โหลด OHLCV ย้อนหลัง N ปี — ใช้ Parquet cache ก่อน fallback OKX API
-    Returns: DataFrame sorted ascending
-    """
-    # ── 1. ลอง cache ก่อน ────────────────────────────────────────────────────
     cached = _load_cache(symbol, tf, years)
     if cached is not None:
         return cached
 
-    # ── 2. Fallback: ดึงจาก OKX API ─────────────────────────────────────────
-    since_dt  = datetime.now(timezone.utc) - timedelta(days=int(years * 365))
-    since_ms  = int(since_dt.timestamp() * 1000)
-    all_bars  = []
-    page      = 0
+    since_dt = datetime.now(timezone.utc) - timedelta(days=int(years * 365))
+    since_ms = int(since_dt.timestamp() * 1000)
+    all_bars = []
+    page     = 0
 
     while True:
         try:
@@ -119,9 +127,9 @@ def fetch_paginated(symbol, tf, years=3):
         page += 1
 
         if len(bars) < API_LIMIT:
-            break  # last page
+            break
 
-        since_ms = bars[-1][0] + 1  # next page start
+        since_ms = bars[-1][0] + 1
         time_mod.sleep(0.25)
 
     if not all_bars:
@@ -131,11 +139,10 @@ def fetch_paginated(symbol, tf, years=3):
     df.drop_duplicates("ts", inplace=True)
     df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
     df.set_index("dt", inplace=True)
-    df = df[["open","high","low","close","volume"]].astype(float).sort_index()
-    return df
+    return df[["open","high","low","close","volume"]].astype(float).sort_index()
 
 
-# ── PnL CALCULATION (เหมือน backtest_live.py) ─────────────────────────────────
+# ── PnL ───────────────────────────────────────────────────────────────────────
 def calc_pnl(side, ep, sl_orig, tp1_px, exit_px, tp1_was_hit):
     dist_sl = abs(ep - sl_orig)
     if dist_sl < ep * 0.0001:
@@ -145,9 +152,7 @@ def calc_pnl(side, ep, sl_orig, tp1_px, exit_px, tp1_was_hit):
         return (px - ep) / dist_sl if side == "LONG" else (ep - px) / dist_sl
 
     if tp1_was_hit:
-        r1 = to_r(tp1_px)
-        r2 = to_r(exit_px)
-        r  = 0.5 * r1 + 0.5 * r2
+        r = 0.5 * to_r(tp1_px) + 0.5 * to_r(exit_px)
     else:
         r = to_r(exit_px)
 
@@ -156,18 +161,28 @@ def calc_pnl(side, ep, sl_orig, tp1_px, exit_px, tp1_was_hit):
     return pnl, outcome
 
 
-# ── WALK-FORWARD BACKTEST ─────────────────────────────────────────────────────
-def backtest_symbol(sym, df_1h, df_4h):
+# ── WALK-FORWARD BACKTEST (generic TF) ───────────────────────────────────────
+def backtest_symbol(sym, df_primary, df_htf,
+                    warmup, window, timeout_candles, scan_step, tf_label):
+    """
+    sym         — symbol เช่น BTC/USDT
+    df_primary  — OHLCV ของ TF หลัก (ใช้สแกน + วัดผล)
+    df_htf      — OHLCV ของ HTF (ส่งให้ scanner เป็น context)
+    warmup      — candles แรกที่ข้าม (indicator warm-up)
+    window      — rolling window size ที่ส่งให้ scanner
+    timeout_c   — max candles ก่อน timeout (แทน 48h fixed)
+    scan_step   — scan ทุก N candles
+    tf_label    — "1h", "15m" ฯลฯ สำหรับบันทึกใน CSV
+    """
     trades       = []
     in_trade     = False
     entry_data   = {}
     candles_open = 0
-    n            = len(df_1h)
+    n            = len(df_primary)
     scanned      = 0
-    skipped      = 0
 
-    for i in range(WARMUP, n):
-        row = df_1h.iloc[i]
+    for i in range(warmup, n):
+        row = df_primary.iloc[i]
 
         if in_trade:
             hi   = row["high"]
@@ -190,7 +205,7 @@ def backtest_symbol(sym, df_1h, df_4h):
             hit_sl  = (
                 (side == "LONG"  and lo <= active_sl) or
                 (side == "SHORT" and hi >= active_sl))
-            timeout = candles_open >= TIMEOUT_H
+            timeout = candles_open >= timeout_candles
 
             if hit_tp1 and not hit_sl:
                 entry_data["tp1_hit"] = True
@@ -199,7 +214,7 @@ def backtest_symbol(sym, df_1h, df_4h):
 
             if hit_tp2:
                 pnl, outcome = calc_pnl(side, ep, sl, tp1, tp2, True)
-                _record(trades, entry_data, i, df_1h, tp2, "TP2", outcome, pnl)
+                _record(trades, entry_data, i, df_primary, tp2, "TP2", outcome, pnl, tf_label)
                 in_trade = False
 
             elif hit_sl:
@@ -210,34 +225,31 @@ def backtest_symbol(sym, df_1h, df_4h):
                 else:
                     pnl, outcome = -RISK_USD, "LOSS"
                     exit_type = "SL"
-                _record(trades, entry_data, i, df_1h, exit_px, exit_type, outcome, pnl)
+                _record(trades, entry_data, i, df_primary, exit_px, exit_type, outcome, pnl, tf_label)
                 in_trade = False
 
             elif timeout:
                 exit_px = row["close"]
                 pnl, outcome = calc_pnl(side, ep, sl, tp1, exit_px, tp1h)
-                _record(trades, entry_data, i, df_1h, exit_px, "TIMEOUT", outcome, pnl)
+                _record(trades, entry_data, i, df_primary, exit_px, "TIMEOUT", outcome, pnl, tf_label)
                 in_trade = False
 
             candles_open += 1
 
         else:
-            # ── Scan ทุก SCAN_STEP candles ──────────────────────────────────
-            if (i - WARMUP) % SCAN_STEP != 0:
-                skipped += 1
+            if (i - warmup) % scan_step != 0:
                 continue
 
-            # Rolling window: ส่งแค่ WINDOW_1H candles ล่าสุด
-            win_start = max(0, i - WINDOW_1H)
-            slice_1h  = df_1h.iloc[win_start:i]
-            last_ts   = slice_1h.index[-1]
-            slice_4h  = df_4h[df_4h.index <= last_ts].iloc[-CANDLES_4H:]
+            win_start  = max(0, i - window)
+            slice_pri  = df_primary.iloc[win_start:i]
+            last_ts    = slice_pri.index[-1]
+            slice_htf  = df_htf[df_htf.index <= last_ts].iloc[-500:]
 
-            if len(slice_1h) < WARMUP:
+            if len(slice_pri) < warmup:
                 continue
 
             try:
-                sig, _ = SCANNER.scan_symbol(sym, slice_1h, slice_4h, "FUTURES")
+                sig, _ = SCANNER.scan_symbol(sym, slice_pri, slice_htf, "FUTURES")
             except Exception:
                 sig = None
 
@@ -246,6 +258,7 @@ def backtest_symbol(sym, df_1h, df_4h):
             if sig and abs(sig["price"] - sig["sl"]) > sig["price"] * 0.0001:
                 entry_data = {
                     "sym":         sym,
+                    "tf":          tf_label,
                     "side":        sig["side"],
                     "score":       sig["score"],
                     "score_trend": sig.get("score_trend", 0),
@@ -260,7 +273,7 @@ def backtest_symbol(sym, df_1h, df_4h):
                     "in_kz":       sig["in_kz"],
                     "regime":      sig.get("regime", ""),
                     "entry_i":     i,
-                    "entry_ts":    str(df_1h.index[i - 1]),
+                    "entry_ts":    str(df_primary.index[i - 1]),
                     "tp1_hit":     False,
                 }
                 in_trade     = True
@@ -269,9 +282,10 @@ def backtest_symbol(sym, df_1h, df_4h):
     return pd.DataFrame(trades), scanned
 
 
-def _record(trades, ed, i, df_1h, exit_px, exit_type, outcome, pnl):
+def _record(trades, ed, i, df_primary, exit_px, exit_type, outcome, pnl, tf_label):
     trades.append({
         "sym":         ed["sym"],
+        "tf":          tf_label,
         "side":        ed["side"],
         "score":       ed["score"],
         "score_trend": ed["score_trend"],
@@ -286,7 +300,7 @@ def _record(trades, ed, i, df_1h, exit_px, exit_type, outcome, pnl):
         "in_kz":       ed["in_kz"],
         "regime":      ed["regime"],
         "entry_ts":    ed["entry_ts"],
-        "exit_ts":     str(df_1h.index[i]),
+        "exit_ts":     str(df_primary.index[i]),
         "exit_px":     round(exit_px, 8),
         "exit_type":   exit_type,
         "tp1_hit":     ed["tp1_hit"],
@@ -324,10 +338,9 @@ def metrics(df):
     ).round(1)
 
     kz_mask = df["in_kz"].astype(bool)
-    kz_wr   = wins[kz_mask].mean() * 100  if kz_mask.any()  else float("nan")
+    kz_wr   = wins[kz_mask].mean()  * 100 if kz_mask.any()  else float("nan")
     nkz_wr  = wins[~kz_mask].mean() * 100 if (~kz_mask).any() else float("nan")
 
-    # Yearly breakdown
     df2 = df.copy()
     df2["year"] = pd.to_datetime(df2["entry_ts"]).dt.year
     by_year = df2.groupby("year").agg(
@@ -337,18 +350,18 @@ def metrics(df):
     ).round(2)
 
     return {
-        "n":        len(df),
-        "wr":       round(wr,    1),
-        "tp1r":     round(tp1r,  1),
-        "total":    round(total, 2),
-        "avg":      round(avg,   2),
-        "dd":       round(dd,    2),
-        "sharpe":   round(sharpe,2),
-        "kz_wr":    round(kz_wr, 1),
-        "nkz_wr":   round(nkz_wr,1),
-        "by_exit":  by_exit,
-        "by_regime":by_regime,
-        "by_year":  by_year,
+        "n":         len(df),
+        "wr":        round(wr,    1),
+        "tp1r":      round(tp1r,  1),
+        "total":     round(total, 2),
+        "avg":       round(avg,   2),
+        "dd":        round(dd,    2),
+        "sharpe":    round(sharpe,2),
+        "kz_wr":     round(kz_wr, 1),
+        "nkz_wr":    round(nkz_wr,1),
+        "by_exit":   by_exit,
+        "by_regime": by_regime,
+        "by_year":   by_year,
     }
 
 
@@ -361,7 +374,7 @@ def verdict(m):
 
 
 def report(m, label):
-    sep = "─" * 58
+    sep = "─" * 60
     print(f"\n{sep}")
     print(f"  {label}")
     print(sep)
@@ -402,93 +415,202 @@ def score_analysis(df):
     print(sc.to_string())
 
 
+# ── TF LEADERBOARD ────────────────────────────────────────────────────────────
+def print_tf_leaderboard(tf_summary: list[dict]):
+    """พิมพ์ตารางสรุป และหา TF ชนะ"""
+    if not tf_summary:
+        return
+
+    df = pd.DataFrame(tf_summary).set_index("tf")
+
+    # เรียงตาม wr ก่อน แล้ว sharpe
+    df_sorted = df.sort_values(["wr", "sharpe"], ascending=False)
+
+    sep = "═" * 70
+    print(f"\n\n{sep}")
+    print("  🏆  TF LEADERBOARD — ผลรวมทุก symbols")
+    print(sep)
+    header = f"  {'TF':<6} {'Trades':>7}  {'WR%':>6}  {'TP1%':>6}  {'Avg$':>7}  {'Total$':>9}  {'DD%':>7}  {'Sharpe':>7}  Verdict"
+    print(header)
+    print("  " + "─" * 66)
+
+    medals = ["🥇", "🥈", "🥉"]
+    for rank, (tf, row) in enumerate(df_sorted.iterrows()):
+        medal   = medals[rank] if rank < 3 else "  "
+        verd    = row["verdict"]
+        verd_s  = "STRONG" if "STRONG" in verd else ("PASS" if "PASS" in verd else ("MARG" if "MARG" in verd else "FAIL"))
+        print(f"  {medal} {tf:<5} {row['n']:>7,}  {row['wr']:>6.1f}%  {row['tp1r']:>6.1f}%  "
+              f"${row['avg']:>6.2f}  ${row['total']:>8.2f}  {row['dd']:>6.2f}%  "
+              f"{row['sharpe']:>7.2f}  {verd_s}")
+
+    print(sep)
+
+    # ผู้ชนะ
+    winner = df_sorted.index[0]
+    w      = df_sorted.iloc[0]
+    print(f"\n  ✅  TF ที่ดีที่สุด: {winner}  "
+          f"WR {w['wr']:.1f}%  Sharpe {w['sharpe']:.2f}  {w['verdict']}")
+    print(sep)
+
+    # Save leaderboard CSV
+    df_sorted.reset_index().to_csv(TF_CSV, index=False)
+    print(f"  บันทึก → {TF_CSV}")
+
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 def main():
-    parser = argparse.ArgumentParser(description="WAKAM3 3-Year Walk-Forward Backtest")
-    parser.add_argument("--years",   type=float, default=3,    help="จำนวนปีย้อนหลัง (default 3)")
-    parser.add_argument("--symbols", nargs="+",                help="เลือก symbols")
-    parser.add_argument("--step",    type=int,   default=4,    help="scan ทุก N candles (default 4)")
-    parser.add_argument("--extended",action="store_true",      help="ใช้ 10 symbols แทน 5")
+    parser = argparse.ArgumentParser(description="WAKAM3 Multi-TF Walk-Forward Backtest")
+    parser.add_argument("--years",    type=float, default=3,
+                        help="จำนวนปีย้อนหลัง (default 3)")
+    parser.add_argument("--symbols",  nargs="+",
+                        help="เลือก symbols")
+    parser.add_argument("--tf",       nargs="+", default=None,
+                        help=f"TFs ที่จะทดสอบ (default: ทุก TF = {ALL_TFS})")
+    parser.add_argument("--step",     type=int, default=None,
+                        help="override scan step ทุก TF (default ตาม TF config)")
+    parser.add_argument("--extended", action="store_true",
+                        help="ใช้ 10 symbols แทน 5")
     args = parser.parse_args()
 
-    global SCAN_STEP
-    SCAN_STEP = args.step
+    symbols  = args.symbols or (EXTENDED_SYMBOLS if args.extended else DEFAULT_SYMBOLS)
+    tfs      = args.tf or ALL_TFS
 
-    symbols = args.symbols or (EXTENDED_SYMBOLS if args.extended else DEFAULT_SYMBOLS)
+    # validate TF input
+    invalid = [t for t in tfs if t not in TF_CONFIGS]
+    if invalid:
+        print(f"[ERROR] TF ไม่รองรับ: {invalid}  รองรับ: {ALL_TFS}")
+        sys.exit(1)
 
-    candle_est = int(args.years * 365 * 24)
-
-    print("=" * 58)
-    print("  AI TRADE — Walk-Forward Backtest (3-Year Edition)")
+    print("=" * 60)
+    print("  AI TRADE — Multi-TF Walk-Forward Backtest (3-Year)")
     print(f"  Signal Scanner + 3 Agents | MIN_SCORE={SCANNER.MIN_SCORE}")
-    print(f"  TP1=RR{TP1_R} | TP2=RR{TP2_R} | Timeout={TIMEOUT_H}h")
-    print(f"  Period  : {args.years} years  (~{candle_est:,} 1H candles/symbol)")
-    print(f"  Window  : rolling {WINDOW_1H} candles | Step : every {SCAN_STEP}")
+    print(f"  TP1=RR{TP1_R} | TP2=RR{TP2_R} | Risk=${RISK_USD}/trade")
+    print(f"  Period  : {args.years} years")
     print(f"  Symbols : {', '.join(s.replace('/USDT','') for s in symbols)}")
-    print("=" * 58)
+    print(f"  TFs     : {', '.join(tfs)}")
+    print("=" * 60)
 
-    all_trades  = []
-    total_scans = 0
-    t_start     = time_mod.time()
-
+    # check cache
     cache_ok = os.path.isdir(CACHE_DIR) and any(
         f.endswith(".parquet") for f in os.listdir(CACHE_DIR)
     ) if os.path.isdir(CACHE_DIR) else False
-    data_src = "cache" if cache_ok else "OKX API"
     if not cache_ok:
         print(f"\n  [INFO] ไม่พบ {CACHE_DIR}/ — ดึงจาก OKX API (ช้ากว่า)")
         print(f"  [INFO] รัน  py download_history.py  เพื่อสร้าง cache 3Y ก่อน")
 
-    for sym in symbols:
-        print(f"\n[{sym}]  loading {args.years}y ({data_src})...", end=" ", flush=True)
-        t_fetch = time_mod.time()
-        df_1h = fetch_paginated(sym, TF_1H, args.years)
-        df_4h = fetch_paginated(sym, TF_4H, args.years)
-        src_1h = "cache" if _load_cache(sym, TF_1H, args.years) is not None else "API"
-        src_4h = "cache" if _load_cache(sym, TF_4H, args.years) is not None else "API"
-        print(f"1H:{len(df_1h)}[{src_1h}]  4H:{len(df_4h)}[{src_4h}]  ({time_mod.time()-t_fetch:.1f}s)")
+    all_trades  = []     # trades ทุก TF รวมกัน
+    tf_summary  = []     # สรุป metrics ต่อ TF
+    total_scans = 0
+    t_start     = time_mod.time()
 
-        if df_1h.empty or len(df_1h) < WARMUP + 10:
-            print("  ข้อมูลไม่พอ — ข้าม")
-            continue
+    # ── Loop ทุก TF ─────────────────────────────────────────────────────────
+    for tf_key in tfs:
+        pri_tf, htf_tf, warmup, window, timeout_c, step = TF_CONFIGS[tf_key]
 
-        t0 = time_mod.time()
-        trades_df, scanned = backtest_symbol(sym, df_1h, df_4h)
-        elapsed = time_mod.time() - t0
-        total_scans += scanned
+        # override step ถ้าระบุ --step
+        if args.step is not None:
+            step = args.step
 
-        n_trades = len(trades_df)
-        print(f"  scanned {scanned:,} windows → {n_trades} trades  ({elapsed:.1f}s)")
+        htf_label = htf_tf if htf_tf != pri_tf else f"{htf_tf}(self)"
+        candle_est = int(args.years * 365 * 24 / _tf_hours(pri_tf))
 
-        if not trades_df.empty:
-            m = metrics(trades_df)
-            report(m, f"{sym}  [{n_trades} trades | {args.years}y]")
-            all_trades.append(trades_df)
+        print(f"\n{'━'*60}")
+        print(f"  TF: {pri_tf}  (HTF: {htf_label})  "
+              f"warmup={warmup}  window={window}  timeout={timeout_c}c  step={step}")
+        print(f"  ≈{candle_est:,} candles/symbol")
+        print(f"{'━'*60}")
 
-    # ── Combined ───────────────────────────────────────────────────────────────
+        tf_trades   = []   # trades รอบนี้
+        tf_scans    = 0
+
+        for sym in symbols:
+            src_label = "cache" if cache_ok else "API"
+            print(f"\n  [{sym}]  loading {args.years}y ({src_label})...", end=" ", flush=True)
+            t_fetch = time_mod.time()
+
+            df_pri = fetch_paginated(sym, pri_tf, args.years)
+            df_htf = fetch_paginated(sym, htf_tf, args.years)
+
+            src_p = "[cache]" if _load_cache(sym, pri_tf, args.years) is not None else "[API]"
+            src_h = "[cache]" if _load_cache(sym, htf_tf, args.years) is not None else "[API]"
+            print(f"{pri_tf}:{len(df_pri)}{src_p}  {htf_tf}:{len(df_htf)}{src_h}  "
+                  f"({time_mod.time()-t_fetch:.1f}s)")
+
+            if df_pri.empty or len(df_pri) < warmup + 10:
+                print(f"  ข้อมูลไม่พอ — ข้าม")
+                continue
+
+            t0 = time_mod.time()
+            trades_df, scanned = backtest_symbol(
+                sym, df_pri, df_htf,
+                warmup, window, timeout_c, step,
+                pri_tf   # tf_label
+            )
+            elapsed = time_mod.time() - t0
+            tf_scans    += scanned
+            total_scans += scanned
+
+            n_t = len(trades_df)
+            print(f"  scanned {scanned:,} windows → {n_t} trades  ({elapsed:.1f}s)")
+
+            if not trades_df.empty:
+                m = metrics(trades_df)
+                report(m, f"{sym} [{pri_tf}]  [{n_t} trades | {args.years}y]")
+                tf_trades.append(trades_df)
+                all_trades.append(trades_df)
+
+        # ── TF summary ───────────────────────────────────────────────────────
+        if tf_trades:
+            tf_combined = pd.concat(tf_trades, ignore_index=True)
+            m = metrics(tf_combined)
+            report(m, f"TF {pri_tf} — ALL symbols  [{len(tf_combined)} trades]")
+            score_analysis(tf_combined)
+
+            if m:
+                tf_summary.append({
+                    "tf":      pri_tf,
+                    "htf":     htf_tf,
+                    "n":       m["n"],
+                    "wr":      m["wr"],
+                    "tp1r":    m["tp1r"],
+                    "avg":     m["avg"],
+                    "total":   m["total"],
+                    "dd":      m["dd"],
+                    "sharpe":  m["sharpe"],
+                    "verdict": verdict(m),
+                })
+        else:
+            print(f"\n  TF {pri_tf}: ไม่มี trades")
+
+    # ── Final summary ────────────────────────────────────────────────────────
     total_elapsed = time_mod.time() - t_start
-    print("\n" + "=" * 58)
+    print(f"\n\n{'='*60}")
     print(f"  เสร็จใน {total_elapsed:.0f}s ({total_elapsed/60:.1f} min)")
     print(f"  scan calls รวม : {total_scans:,}")
-    print("=" * 58)
+    print(f"{'='*60}")
 
+    # TF Leaderboard
+    print_tf_leaderboard(tf_summary)
+
+    # Save combined CSV
     if all_trades:
         combined = pd.concat(all_trades, ignore_index=True)
-
-        # เรียงตาม entry_ts เพื่อให้ equity curve ถูกต้อง
         combined["entry_ts_dt"] = pd.to_datetime(combined["entry_ts"], utc=True, errors="coerce")
         combined = combined.sort_values("entry_ts_dt").drop(columns="entry_ts_dt")
         combined.reset_index(drop=True, inplace=True)
-
         combined.to_csv(OUTPUT_CSV, index=False)
+        print(f"\n  บันทึก → {OUTPUT_CSV}  ({len(combined)} trades รวมทุก TF)")
 
-        m = metrics(combined)
-        report(m, f"COMBINED — {len(symbols)} symbols  [{len(combined)} trades | {args.years}y]")
+        # Score analysis รวม
         score_analysis(combined)
-
-        print(f"\n  บันทึก → {OUTPUT_CSV}  ({len(combined)} trades)")
     else:
         print("\n  ไม่มี trades — ไม่สร้าง CSV")
+
+
+def _tf_hours(tf: str) -> float:
+    """แปลง TF string → จำนวนชั่วโมง (สำหรับ estimate candle count)"""
+    m = {"15m": 0.25, "30m": 0.5, "1h": 1, "2h": 2, "4h": 4, "1d": 24, "1w": 168}
+    return m.get(tf, 1)
 
 
 if __name__ == "__main__":
