@@ -578,6 +578,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
     <span>Backtest</span>
   </button>
+  <button class="nav-btn" onclick="nav('shadow')" id="nb-shadow">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span>Shadow Mode</span>
+  </button>
 
   <div class="nav-sec">SYSTEM</div>
   <button class="nav-btn" onclick="nav('agents')" id="nb-agents">
@@ -1167,7 +1171,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <thead><tr>
             <th>#</th><th>Symbol</th><th>Side</th><th>Status</th>
             <th>Total /31</th>
-            <th title="🎯 CDC EMA12/26 + SMA50/200 + ATR Trail (max 11)">🎯 Trend /11</th>
+            <th title="🎯 CDC EMA7/30 + SMA50/200 + ATR Trail (max 11)">🎯 Trend /11</th>
             <th title="🏦 BOS/CHoCH/QM + Discount Zone (max 10)">🏦 SMC /10</th>
             <th title="📈 RSI Div + Stoch + MACD (max 9)">📈 Osc /9</th>
             <th>Price</th><th>RSI</th><th>HTF</th><th>KZ</th>
@@ -1431,6 +1435,46 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div><!-- /bt-main -->
     </div>
 
+    <!-- ══ SHADOW MODE ══ -->
+    <div id="pg-shadow" class="page">
+      <div class="card" style="margin-bottom:10px">
+        <div class="card-h">
+          <div class="card-title"><span class="icon">👻</span> Shadow Mode — Claude Filter Tracker</div>
+          <div class="card-meta" id="sh-meta">—</div>
+        </div>
+        <div style="font-size:11px;color:var(--t2);padding:0 16px 10px">
+          Signals ที่ Claude Reject — ถ้า WIN แสดงว่า over-filter, ถ้า LOSS แสดงว่า filter ถูกต้อง
+        </div>
+        <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:0">
+          <div class="stat-card"><div class="stat-lbl">TOTAL REJECTED</div><div class="stat-val" id="sh-total">0</div></div>
+          <div class="stat-card"><div class="stat-lbl">PENDING</div><div class="stat-val yl" id="sh-pending">0</div></div>
+          <div class="stat-card"><div class="stat-lbl">SHADOW WIN</div><div class="stat-val up" id="sh-win">0</div></div>
+          <div class="stat-card"><div class="stat-lbl">SHADOW LOSS</div><div class="stat-val dn" id="sh-loss">0</div></div>
+          <div class="stat-card"><div class="stat-lbl">WIN RATE (if opened)</div><div class="stat-val" id="sh-wr">0%</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Recent Rejected Signals</div></div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead>
+              <tr style="color:var(--t2);border-bottom:1px solid var(--border)">
+                <th style="padding:6px 10px;text-align:left">Symbol</th>
+                <th style="padding:6px 10px;text-align:left">Side</th>
+                <th style="padding:6px 10px;text-align:right">Score</th>
+                <th style="padding:6px 10px;text-align:right">SL%</th>
+                <th style="padding:6px 10px;text-align:left">Regime</th>
+                <th style="padding:6px 10px;text-align:left">Claude Reason</th>
+                <th style="padding:6px 10px;text-align:center">Outcome</th>
+                <th style="padding:6px 10px;text-align:left">Date</th>
+              </tr>
+            </thead>
+            <tbody id="sh-tb"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- end shadow -->
+
     <!-- ══ AGENT TEAM ══ -->
     <div id="pg-agents" class="page">
       <div class="pills" id="ag-pills">
@@ -1623,6 +1667,7 @@ function nav(page){
   if(page==='btc') renderBTCLive()
   if(page==='backtest') renderBacktest()
   if(page==='watchlist') renderWatchlistPage()
+  if(page==='shadow') renderShadow()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1672,8 +1717,9 @@ function spark(chg){
   return`<svg class="spark" viewBox="0 0 60 20"><line x1="2" y1="${y1}" x2="58" y2="${y2}" stroke="${c}" stroke-width="1.5" opacity=".8"/><circle cx="58" cy="${y2}" r="2" fill="${c}"/></svg>`
 }
 function sBadge(s){
-  if(s==='SIGNAL') return'<span class="bdg b-sig">SIGNAL</span>'
-  if(s==='WATCH') return'<span class="bdg b-wat">WATCH</span>'
+  if(s==='SIGNAL')   return'<span class="bdg b-sig">SIGNAL</span>'
+  if(s==='WATCH')    return'<span class="bdg b-wat">WATCH</span>'
+  if(s==='REJECTED') return'<span class="bdg" style="background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)">REJECTED</span>'
   return'<span class="bdg b-idl">IDLE</span>'
 }
 function sideBadge(s){
@@ -1908,6 +1954,7 @@ function render(){
   if(currentPage==='health') renderHealth()
   if(currentPage==='markets') renderMarkets()
   if(currentPage==='btc') renderBTCLive()
+  if(currentPage==='shadow') renderShadow()
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2935,33 +2982,39 @@ function renderLab(){
 // AGENT TEAM
 // ═══════════════════════════════════════════════════════════
 const AGENTS=[
-  // ── Core Pipeline ──────────────────────────────────────────
+  // ── Step 1: ดึงข้อมูล ─────────────────────────────────────
   {id:'data',   emoji:'📡', name:'Data Collector',
-   desc:'ดึง OHLCV + ราคา จาก OKX ทุก 15 นาที',
+   desc:'ดึง OHLCV จาก OKX ทุก 15 นาที (1H + 4H + 1D) → ส่งให้ 3 Specialists',
    cycle:'~15m', role:'core'},
-  {id:'signal', emoji:'🔍', name:'Signal Scanner',
-   desc:'รวม score จาก Trend / SMC / Oscillator → LONG/SHORT/WAIT + confidence%',
-   cycle:'~15m', role:'core'},
-  {id:'trader', emoji:'🤖', name:'Paper Trader',
-   desc:'เปิด/ปิด paper trade ตาม signal',
-   cycle:'~15m', role:'core'},
-  {id:'dash',   emoji:'📊', name:'Dashboard Builder',
-   desc:'สร้าง dashboard_data.json ทุก run',
-   cycle:'~15m', role:'core'},
-  {id:'notify', emoji:'📱', name:'Telegram Notifier',
-   desc:'ส่ง alert ผ่าน Telegram Bot',
-   cycle:'~15m', role:'core'},
-  // ── WaKam3.pine Specialists ────────────────────────────────
+  // ── Step 2: Pine Specialists วิเคราะห์พร้อมกัน ────────────
   {id:'trend',  emoji:'🎯', name:'Trend Agent',
-   desc:'WaKam3 › CDC ActionZone (EMA 12/26) + SMA 50/100/200 + ATR Trailing Stop → trend_direction / ema_cross / atr_sl',
+   desc:'WaKam3 › CDC ActionZone (EMA 7/30) + SMA 50/100/200 + ATR Trail + HTF 4H bias + Daily Stoch(14,3) filter',
    cycle:'~15m', role:'specialist'},
   {id:'smc',    emoji:'🏦', name:'SMC Agent',
    desc:'WaKam3 › BOS/CHoCH (Internal+Swing) + Order Blocks + Fair Value Gaps + EQH/EQL + Premium/Discount Zones',
    cycle:'~15m', role:'specialist'},
-  // ── WAKAME_RSI_MACD_STOCH.pine Specialist ─────────────────
   {id:'osc',    emoji:'📈', name:'Oscillator Agent',
-   desc:'RSI(14) Divergence (Regular+Hidden) + Stochastic (14,1,3) + MACD (12,26,9) normalized → momentum score → Signal Scanner',
+   desc:'RSI(14) Divergence (Regular+Hidden) + Stochastic (14,1,3) + MACD (12,26,9) + Kill Zone (London/NY)',
    cycle:'~15m', role:'specialist'},
+  // ── Step 3: รวม score ─────────────────────────────────────
+  {id:'signal', emoji:'🔍', name:'Signal Scanner',
+   desc:'Weighted score (Trend/SMC/Osc) → ถ้า ≥ 8/31 ส่งต่อ Claude Filter',
+   cycle:'~15m', role:'core'},
+  // ── Step 4: AI กรองสุดท้าย ────────────────────────────────
+  {id:'claude', emoji:'🧠', name:'Claude Final Filter',
+   desc:'Claude Haiku — ประเมิน context ก่อน signal ยิง (APPROVE/REJECT) + Shadow Mode tracking',
+   cycle:'~15m', role:'core'},
+  // ── Step 5: เปิด Trade ────────────────────────────────────
+  {id:'trader', emoji:'🤖', name:'Paper Trader',
+   desc:'เปิด/ปิด paper trade + Daily Loss Cap ($50) + Correlation Check + Shadow outcome tracker',
+   cycle:'~15m', role:'core'},
+  // ── Step 6: รายงานผล ──────────────────────────────────────
+  {id:'dash',   emoji:'📊', name:'Dashboard Builder',
+   desc:'สร้าง dashboard_data.json + Dynamic Weights + Backtest + Shadow Stats',
+   cycle:'~15m', role:'core'},
+  {id:'notify', emoji:'📱', name:'Telegram Notifier',
+   desc:'ส่ง alert TP1/TP2/SL/Timeout/New Signal ผ่าน Telegram Bot',
+   cycle:'~15m', role:'core'},
 ]
 
 function renderAgents(){
@@ -3039,7 +3092,7 @@ function renderSpecialistWR(){
 
   const specs=[
     {key:'trend', emoji:'🎯', name:'Trend Agent',  color:'#f7931a', maxScore:11,
-     desc:'CDC EMA12/26 + SMA + ATR Trail'},
+     desc:'CDC EMA7/30 + SMA + ATR Trail'},
     {key:'smc',   emoji:'🏦', name:'SMC Agent',    color:'#2157f3', maxScore:10,
      desc:'BOS/CHoCH/QM + Zones'},
     {key:'osc',   emoji:'📈', name:'Oscillator',   color:'#26a69a', maxScore:9,
@@ -3740,6 +3793,51 @@ function drawBTEquity(eq){
   ctx.fillText('$'+max.toFixed(0), pad.l-4, pad.t+4)
   ctx.fillText('$'+min.toFixed(0), pad.l-4, H-pad.b)
   ctx.fillText('$'+lastVal.toFixed(2), W-pad.r, sy(lastVal)-4)
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHADOW MODE PAGE
+// ═══════════════════════════════════════════════════════════
+function renderShadow(){
+  const sh = D.shadow_stats || {}
+  const total   = sh.total   || 0
+  const pending = sh.pending || 0
+  const win     = sh.win     || 0
+  const loss    = sh.loss    || 0
+  const wr      = sh.win_rate || 0
+  const recent  = sh.recent  || []
+
+  setText('sh-total',   total)
+  setText('sh-pending', pending)
+  setText('sh-win',     win)
+  setText('sh-loss',    loss)
+  setText('sh-wr',      wr + '%')
+  setText('sh-meta',    total + ' rejected signals | filter accuracy: ' +
+    (total > 0 ? (loss / Math.max(win+loss,1) * 100).toFixed(0) + '%' : '—'))
+
+  const tb = document.getElementById('sh-tb')
+  if(!tb) return
+  if(!recent.length){
+    tb.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--t2)">ยังไม่มีข้อมูล — รอ Claude Reject signal แรก</td></tr>'
+    return
+  }
+  tb.innerHTML = recent.map(r => {
+    const outCol = r.outcome === 'WIN' ? 'var(--green)' :
+                   r.outcome === 'LOSS'? 'var(--red)'   : 'var(--t2)'
+    const outTxt = r.outcome === 'WIN' ? '✅ WIN (over-filter!)' :
+                   r.outcome === 'LOSS'? '❌ LOSS (correct reject)' : '⏳ Pending'
+    const dt = r.created_at ? r.created_at.slice(0,16).replace('T',' ') : '—'
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:6px 10px;font-weight:600">${r.symbol||'—'}</td>
+      <td style="padding:6px 10px">${r.side==='LONG'?'<span class="bdg b-long">LONG</span>':'<span class="bdg b-short">SHORT</span>'}</td>
+      <td style="padding:6px 10px;text-align:right">${r.score||0}/31</td>
+      <td style="padding:6px 10px;text-align:right">${(r.sl_pct||0).toFixed(2)}%</td>
+      <td style="padding:6px 10px;color:var(--t2)">${r.regime||'—'}</td>
+      <td style="padding:6px 10px;color:var(--t2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.claude_reason||'—'}</td>
+      <td style="padding:6px 10px;text-align:center;color:${outCol}">${outTxt}</td>
+      <td style="padding:6px 10px;color:var(--t2)">${dt}</td>
+    </tr>`
+  }).join('')
 }
 
 // ═══════════════════════════════════════════════════════════

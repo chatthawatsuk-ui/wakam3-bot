@@ -75,7 +75,7 @@ def _weighted_score(trend_s, smc_s, osc_s, kz=False):
 # ══════════════════════════════════════════════════════════════
 # SCAN SINGLE SYMBOL
 # ══════════════════════════════════════════════════════════════
-def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
+def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
     """
     เรียก 3 specialists → รวม weighted score → คืน (signal|None, scan_result)
 
@@ -92,7 +92,7 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
             "in_discount": False, "trail_bull": False, "ts": ts}
 
     # ── รับ reports จาก 3 specialists ─────────────────────────
-    try: t_rep = TREND.run(df_1h, df_4h)
+    try: t_rep = TREND.run(df_1h, df_4h, df_1d)
     except Exception: t_rep = None
 
     try: s_rep = SMC.run(df_1h, df_4h)
@@ -190,6 +190,23 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES"):
         "score_osc":   b_osc,
         "ts":          ts,
     }
+
+    # ── Claude Final Filter — ตัวกรองสุดท้ายก่อน signal ยิง ──────────────────
+    try:
+        import claude_filter
+        approved, claude_reason = claude_filter.ask(signal, scan_result)
+    except Exception as _fe:
+        approved, claude_reason = True, f"filter_err:{str(_fe)[:40]}"
+
+    if not approved:
+        scan_result["status"]       = "REJECTED"
+        scan_result["claude_reason"] = claude_reason
+        print(f"  🚫 [CLAUDE] REJECT {sym} — {claude_reason}")
+        save_shadow_signal({**signal, "claude_reason": claude_reason})
+        return None, scan_result
+
+    signal["claude_approved"] = True
+    signal["claude_reason"]   = claude_reason
 
     # ── Level 4: บันทึก conditions ที่ active ตอน signal ยิง ──
     save_condition_snapshot(sym, side, regime, ts, t_rep, s_rep, o_rep)
@@ -324,6 +341,66 @@ def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
         con.close()
     except Exception as e:
         print(f"[ERR] save_condition_snapshot: {e}")
+
+
+# ══════════════════════════════════════════════════════════════
+# SHADOW SIGNAL — บันทึก signals ที่ถูก Claude Reject (Shadow Mode)
+# ══════════════════════════════════════════════════════════════
+def save_shadow_signal(signal: dict):
+    """
+    บันทึก signal ที่ Claude Reject ลง shadow_trades table
+    paper_trade.py จะ track outcome ทีหลัง (WIN/LOSS/TIMEOUT)
+    ใช้ประเมินว่า Claude filter ช่วยหรือ over-filter
+    """
+    try:
+        con = sqlite3.connect(DB_PATH)
+        cur = con.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS shadow_trades (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol        TEXT,
+                side          TEXT,
+                score         INTEGER,
+                entry_px      REAL,
+                sl_px         REAL,
+                tp1_px        REAL,
+                tp2_px        REAL,
+                sl_pct        REAL,
+                regime        TEXT,
+                claude_reason TEXT,
+                created_at    TEXT,
+                outcome       TEXT DEFAULT 'PENDING',
+                exit_px       REAL,
+                resolved_at   TEXT
+            )
+        """)
+        # ถ้า symbol เดิมยัง PENDING อยู่ → ไม่บันทึกซ้ำ
+        existing = cur.execute(
+            "SELECT id FROM shadow_trades WHERE symbol=? AND side=? AND outcome='PENDING'",
+            (signal.get("symbol"), signal.get("side"))
+        ).fetchone()
+        if existing:
+            con.close()
+            return
+        cur.execute("""
+            INSERT INTO shadow_trades
+            (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
+             sl_pct, regime, claude_reason, created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            signal.get("symbol"), signal.get("side"),
+            signal.get("score", 0),
+            signal.get("price", 0), signal.get("sl", 0),
+            signal.get("tp1",  0), signal.get("tp2", 0),
+            signal.get("sl_pct", 0),
+            signal.get("regime", "UNKNOWN"),
+            signal.get("claude_reason", ""),
+            datetime.now(timezone.utc).isoformat(),
+        ))
+        con.commit()
+        con.close()
+    except Exception as e:
+        print(f"[ERR] save_shadow_signal: {e}")
 
 
 # ══════════════════════════════════════════════════════════════

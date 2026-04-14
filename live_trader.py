@@ -46,7 +46,9 @@ FUTURES_SET = set(FUTURES_SYMBOLS)
 
 TF_1H   = "1h"
 TF_4H   = "4h"
+TF_1D   = "1d"
 CANDLES = 300
+CANDLES_D = 50   # Daily: พอสำหรับ Stochastic(14,3)
 
 DB_PATH  = "paper_trades.db"
 LOG_PATH = "signals.log"
@@ -99,6 +101,7 @@ def scan():
         try:
             d1h = fetch(sym, TF_1H)
             d4h = fetch(sym, TF_4H)
+            d1d = fetch(sym, TF_1D, limit=CANDLES_D)   # Daily — สำหรับ Stoch filter
 
             if d1h.empty or len(d1h) < 150:
                 log(f"  {sym}: ข้อมูลไม่พอ")
@@ -113,7 +116,7 @@ def scan():
                 continue
 
             # ── ส่ง df ให้ Signal Scanner ─────────────────────
-            sig, result = SCANNER.scan_symbol(sym, d1h, d4h, mtype)
+            sig, result = SCANNER.scan_symbol(sym, d1h, d4h, mtype, d1d)
 
             # merge TP/SL levels into scan result so dashboard can show them
             if sig:

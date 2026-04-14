@@ -1,5 +1,5 @@
 """
-🎯 Trend Agent — CDC ActionZone EMA12/26 · SMA50/100/200 · ATR Trailing Stop
+🎯 Trend Agent — CDC ActionZone EMA7/30 · SMA50/100/200 · ATR Trailing Stop
 Pine Script source: WaKam3.pine (CDC ActionZone V3 + ATR Trail + SMA)
 
 ส่ง report ให้ Signal Scanner ทุก scan
@@ -7,12 +7,13 @@ Pine Script source: WaKam3.pine (CDC ActionZone V3 + ATR Trail + SMA)
 import numpy as np
 from ta.trend      import EMAIndicator, SMAIndicator
 from ta.volatility import AverageTrueRange
+from ta.momentum   import StochasticOscillator
 
 NAME      = "Trend Agent"
 EMOJI     = "🎯"
 MAX_SCORE = 11
 
-EMA_FAST   = 12;  EMA_SLOW   = 26
+EMA_FAST   = 7;   EMA_SLOW   = 30
 SMA_50     = 50;  SMA_100    = 100;  SMA_200 = 200
 ATR_FAST_P = 5;   ATR_FAST_M = 0.5
 ATR_SLOW_P = 10;  ATR_SLOW_M = 2.0
@@ -37,17 +38,17 @@ def _add_indicators(df):
     c, h, l = df["close"], df["high"], df["low"]
 
     # CDC ActionZone
-    df["ema12"]  = EMAIndicator(c, EMA_FAST).ema_indicator()
-    df["ema26"]  = EMAIndicator(c, EMA_SLOW).ema_indicator()
+    df["ema7"]   = EMAIndicator(c, EMA_FAST).ema_indicator()
+    df["ema30"]  = EMAIndicator(c, EMA_SLOW).ema_indicator()
     df["sma50"]  = SMAIndicator(c, SMA_50).sma_indicator()
     df["sma100"] = SMAIndicator(c, SMA_100).sma_indicator()
     df["sma200"] = SMAIndicator(c, SMA_200).sma_indicator()
 
-    df["bull"]         = df["ema12"] > df["ema26"]
+    df["bull"]         = df["ema7"] > df["ema30"]
     df["cross_up"]     = (~df["bull"].shift(1).fillna(False)) & df["bull"]
     df["cross_dn"]     = df["bull"].shift(1).fillna(False) & (~df["bull"])
-    df["touch_bull"]   = (c >= df["ema26"] * (1 - RETRACE)) & (c <= df["ema26"] * (1 + RETRACE * 2)) & df["bull"]
-    df["touch_bear"]   = (c <= df["ema26"] * (1 + RETRACE)) & (c >= df["ema26"] * (1 - RETRACE * 2)) & (~df["bull"])
+    df["touch_bull"]   = (c >= df["ema30"] * (1 - RETRACE)) & (c <= df["ema30"] * (1 + RETRACE * 2)) & df["bull"]
+    df["touch_bear"]   = (c <= df["ema30"] * (1 + RETRACE)) & (c >= df["ema30"] * (1 - RETRACE * 2)) & (~df["bull"])
     df["above_sma50"]  = c > df["sma50"]
     df["above_sma200"] = c > df["sma200"]
     df["sma50_gt_200"] = df["sma50"] > df["sma200"]
@@ -71,10 +72,10 @@ def _htf_bias(df_1h, df_4h):
         df_1h["htf_sma"]  = True
         return df_1h
     df_4h = df_4h.copy()
-    df_4h["h12"]  = EMAIndicator(df_4h["close"], EMA_FAST).ema_indicator()
-    df_4h["h26"]  = EMAIndicator(df_4h["close"], EMA_SLOW).ema_indicator()
+    df_4h["h7"]   = EMAIndicator(df_4h["close"], EMA_FAST).ema_indicator()
+    df_4h["h30"]  = EMAIndicator(df_4h["close"], EMA_SLOW).ema_indicator()
     df_4h["h200"] = SMAIndicator(df_4h["close"], SMA_200).sma_indicator()
-    df_4h["htf_bull"] = df_4h["h12"] > df_4h["h26"]
+    df_4h["htf_bull"] = df_4h["h7"] > df_4h["h30"]
     df_4h["htf_sma"]  = df_4h["close"] > df_4h["h200"]
     htf   = df_4h[["htf_bull", "htf_sma"]].resample("1h").ffill()
     df_1h = df_1h.join(htf, how="left")
@@ -107,7 +108,29 @@ def _score_short(r):
     return s   # max 11
 
 
-def run(df_1h, df_4h):
+def _daily_stoch_bias(df_1d):
+    """
+    Daily Stochastic(14,1,3) — กำหนด bias วันนี้
+    คืน True  = Stoch bullish (K > D) → Buy-only day
+    คืน False = Stoch bearish (K < D) → Sell-only day
+    คืน None  = ไม่มีข้อมูลหรือคำนวณไม่ได้ → ไม่ filter
+    """
+    if df_1d is None or df_1d.empty or len(df_1d) < 20:
+        return None
+    try:
+        st  = StochasticOscillator(df_1d["high"], df_1d["low"], df_1d["close"], 14, 3)
+        stk = st.stoch()
+        std = st.stoch_signal()
+        last_k = stk.iloc[-1]
+        last_d = std.iloc[-1]
+        if np.isnan(float(last_k)) or np.isnan(float(last_d)):
+            return None
+        return bool(float(last_k) > float(last_d))
+    except Exception:
+        return None
+
+
+def run(df_1h, df_4h, df_1d=None):
     """
     🎯 รัน Trend Agent — ส่ง report ให้ Signal Scanner
     Returns dict หรือ None ถ้าข้อมูลไม่พอ
@@ -121,18 +144,31 @@ def run(df_1h, df_4h):
     htf_bull = bool(r.get("htf_bull", True))
     htf_sma  = bool(r.get("htf_sma",  True))
 
-    sl = _score_long(r)  if (htf_bull and htf_sma)   else 0
-    ss = _score_short(r) if not (htf_bull or htf_sma) else 0
+    # ── Daily Stochastic Filter (SRISIAM 7/30 style) ─────────────────────────
+    # True = Buy-only day, False = Sell-only day, None = filter disabled
+    stoch_d_bull = _daily_stoch_bias(df_1d)
+
+    long_ok  = htf_bull and htf_sma
+    short_ok = not (htf_bull or htf_sma)
+
+    # เพิ่ม Daily Stoch filter ถ้ามีข้อมูล Daily
+    if stoch_d_bull is not None:
+        long_ok  = long_ok  and stoch_d_bull
+        short_ok = short_ok and not stoch_d_bull
+
+    sl = _score_long(r)  if long_ok  else 0
+    ss = _score_short(r) if short_ok else 0
 
     return {
-        "agent":       NAME,
-        "emoji":       EMOJI,
-        "score_long":  sl,
-        "score_short": ss,
-        "max_score":   MAX_SCORE,
-        "htf_bull":    htf_bull,
-        "htf_sma":     htf_sma,
-        "atr":         float(r.get("atr14", 0) or 0),
+        "agent":         NAME,
+        "emoji":         EMOJI,
+        "score_long":    sl,
+        "score_short":   ss,
+        "max_score":     MAX_SCORE,
+        "htf_bull":      htf_bull,
+        "htf_sma":       htf_sma,
+        "stoch_d_bull":  stoch_d_bull,   # None = filter ไม่ active
+        "atr":           float(r.get("atr14", 0) or 0),
         "details": {
             "cdc_bull":        bool(r["bull"]),
             "cross_up":        bool(r["cross_up"]),
@@ -143,8 +179,9 @@ def run(df_1h, df_4h):
             "above_sma200":    bool(r["above_sma200"]),
             "sma50_gt_200":    bool(r["sma50_gt_200"]),
             "trail_slow_bull": bool(r["trail_slow_bull"]),
-            "ema12":           round(float(r["ema12"]),  6),
-            "ema26":           round(float(r["ema26"]),  6),
+            "stoch_d_bull":    stoch_d_bull,
+            "ema7":            round(float(r["ema7"]),   6),
+            "ema30":           round(float(r["ema30"]),  6),
             "sma200":          round(float(r["sma200"]), 6),
         },
     }

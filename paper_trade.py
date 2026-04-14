@@ -21,6 +21,27 @@ TRADE_TIMEOUT_HRS  = 48   # ปิด trade อัตโนมัติถ้า
 TP1_R         = 1.2
 TP2_R         = 2.0
 
+# ── GUARDRAIL 1: Daily Loss Cap ────────────────────────────────────────────────
+# ถ้าขาดทุนรวมวันนี้ (UTC) เกิน $50 → หยุดเปิด trade ใหม่ทั้งวัน
+DAILY_LOSS_CAP = 50.0
+
+# ── GUARDRAIL 2: Correlation Groups ──────────────────────────────────────────
+# สูงสุด N positions ทิศเดียวกันในกลุ่มเดียวกัน
+MAX_CORR_SAME_DIR = 2
+CORR_GROUPS = [
+    # Large caps — มักเคลื่อนตาม BTC
+    {"BTC/USDT","ETH/USDT","BNB/USDT","SOL/USDT","AVAX/USDT",
+     "DOT/USDT","LINK/USDT","NEAR/USDT","APT/USDT","SUI/USDT","TON/USDT"},
+    # XRP ecosystem
+    {"XRP/USDT","ADA/USDT","XLM/USDT","HBAR/USDT"},
+    # Meme coins
+    {"DOGE/USDT","SHIB/USDT","PEPE/USDT","TRUMP/USDT"},
+    # DeFi
+    {"AAVE/USDT","UNI/USDT","DEXE/USDT","ENA/USDT"},
+    # AI / Data
+    {"RENDER/USDT","WLD/USDT","TAO/USDT","ICP/USDT","ONDO/USDT"},
+]
+
 exchange = ccxt.okx({"enableRateLimit": True})
 
 
@@ -88,16 +109,18 @@ def init_db():
     """)
     # migrate: เพิ่ม columns ที่อาจไม่มีใน DB เก่า
     new_cols = [
-        ("score_trend",  "INTEGER DEFAULT 0"),
-        ("score_smc",    "INTEGER DEFAULT 0"),
-        ("score_osc",    "INTEGER DEFAULT 0"),
-        ("qty",          "REAL DEFAULT 0"),
-        ("notional_usd", "REAL DEFAULT 0"),
-        ("leverage",     "REAL DEFAULT 1"),
-        ("margin_usd",   "REAL DEFAULT 0"),
-        ("risk_usd",     "REAL DEFAULT 0"),
-        ("exit_reason",  "TEXT"),
-        ("regime",       "TEXT DEFAULT 'UNKNOWN'"),
+        ("score_trend",      "INTEGER DEFAULT 0"),
+        ("score_smc",        "INTEGER DEFAULT 0"),
+        ("score_osc",        "INTEGER DEFAULT 0"),
+        ("qty",              "REAL DEFAULT 0"),
+        ("notional_usd",     "REAL DEFAULT 0"),
+        ("leverage",         "REAL DEFAULT 1"),
+        ("margin_usd",       "REAL DEFAULT 0"),
+        ("risk_usd",         "REAL DEFAULT 0"),
+        ("exit_reason",      "TEXT"),
+        ("regime",           "TEXT DEFAULT 'UNKNOWN'"),
+        ("claude_approved",  "INTEGER DEFAULT 1"),   # 1=approved, 0=rejected (shouldn't reach here if 0)
+        ("claude_reason",    "TEXT DEFAULT ''"),
     ]
     for col, definition in new_cols:
         try:
@@ -110,6 +133,27 @@ def init_db():
             id      INTEGER PRIMARY KEY,
             balance REAL,
             updated TEXT
+        )
+    """)
+
+    # ── Shadow Trades — บันทึก signals ที่ Claude Reject เพื่อ track outcome ──
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS shadow_trades (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol        TEXT,
+            side          TEXT,
+            score         INTEGER,
+            entry_px      REAL,
+            sl_px         REAL,
+            tp1_px        REAL,
+            tp2_px        REAL,
+            sl_pct        REAL,
+            regime        TEXT,
+            claude_reason TEXT,
+            created_at    TEXT,
+            outcome       TEXT  DEFAULT 'PENDING',
+            exit_px       REAL,
+            resolved_at   TEXT
         )
     """)
     cur = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()
@@ -133,9 +177,109 @@ def get_balance(conn):
     return conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()[0]
 
 
+# ── GUARDRAIL 1: Daily Loss Cap ────────────────────────────────────────────────
+def get_daily_pnl(conn) -> float:
+    """ขาดทุนรวมวันนี้ (UTC) จาก trades ที่ปิดแล้ว — คืนค่าลบถ้าขาดทุน"""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    row = conn.execute(
+        "SELECT COALESCE(SUM(pnl_usd), 0) FROM trades WHERE status='CLOSED' AND closed_at LIKE ?",
+        (f"{today}%",)
+    ).fetchone()
+    return float(row[0]) if row else 0.0
+
+
+# ── GUARDRAIL 2: Correlation Check ────────────────────────────────────────────
+def check_correlation(conn, sym: str, side: str) -> tuple:
+    """
+    ตรวจว่าเปิด position นี้จะทำให้ concentrated ใน correlation group เกินไปหรือไม่
+    คืน (ok: bool, reason: str)
+    """
+    for group in CORR_GROUPS:
+        if sym not in group:
+            continue
+        placeholders = ",".join("?" * len(group))
+        count = conn.execute(
+            f"SELECT COUNT(*) FROM trades WHERE status='OPEN' AND symbol IN ({placeholders}) AND side=?",
+            (*sorted(group), side)
+        ).fetchone()[0]
+        if count >= MAX_CORR_SAME_DIR:
+            peers = [s for s in group if s != sym][:3]
+            return False, f"Corr limit: {count}/{MAX_CORR_SAME_DIR} {side} in group ({', '.join(peers)}...)"
+        return True, ""
+    return True, ""   # ไม่อยู่ในกลุ่มใด
+
+
+# ── SHADOW TRADE OUTCOME CHECKER ──────────────────────────────────────────────
+def check_shadow_trades(conn):
+    """
+    ตรวจ shadow trades ที่ยังค้าง PENDING — ดูว่าถ้าเปิดจริงจะ WIN/LOSS
+    resolve เมื่อ TP1 hit, SL hit, หรือ timeout 48h
+    """
+    rows = conn.execute("""
+        SELECT id, symbol, side, entry_px, sl_px, tp1_px, created_at
+        FROM shadow_trades WHERE outcome='PENDING'
+    """).fetchall()
+
+    if not rows:
+        return
+
+    now = datetime.now(timezone.utc)
+    resolved = 0
+    for row in rows:
+        sid, sym, side, ep, sl, tp1, created_at = row
+        px = get_price(sym)
+        if not px:
+            continue
+
+        try:
+            created_dt = datetime.fromisoformat(created_at)
+            if created_dt.tzinfo is None:
+                created_dt = created_dt.replace(tzinfo=timezone.utc)
+            hours = (now - created_dt).total_seconds() / 3600
+        except Exception:
+            hours = 0
+
+        hit_tp1 = tp1 and ((side == "LONG" and px >= tp1) or (side == "SHORT" and px <= tp1))
+        hit_sl  = sl  and ((side == "LONG" and px <= sl)  or (side == "SHORT" and px >= sl))
+        timed_out = hours >= TRADE_TIMEOUT_HRS
+
+        if hit_tp1:
+            outcome = "WIN"
+        elif hit_sl:
+            outcome = "LOSS"
+        elif timed_out:
+            if ep and ep > 0:
+                outcome = "WIN" if ((side == "LONG" and px > ep) or (side == "SHORT" and px < ep)) else "LOSS"
+            else:
+                outcome = "TIMEOUT"
+        else:
+            continue
+
+        conn.execute("""
+            UPDATE shadow_trades SET outcome=?, exit_px=?, resolved_at=? WHERE id=?
+        """, (outcome, round(px, 8), now.isoformat(), sid))
+        resolved += 1
+
+    if resolved:
+        conn.commit()
+        print(f"  [SHADOW] resolved {resolved} shadow trade(s)")
+
+
 # ── OPEN TRADE ────────────────────────────────────────────────────────────────
 def open_trade(conn, sig):
-    # ตรวจ symbol ซ้ำ
+    # ── Guardrail 1: Daily Loss Cap ─────────────────────────────────────────
+    daily_pnl = get_daily_pnl(conn)
+    if daily_pnl < -DAILY_LOSS_CAP:
+        print(f"  [GUARD] Daily loss cap: ${daily_pnl:.2f} < -${DAILY_LOSS_CAP} — หยุดเปิดทั้งวัน")
+        return None
+
+    # ── Guardrail 2: Correlation Check ──────────────────────────────────────
+    corr_ok, corr_reason = check_correlation(conn, sig["symbol"], sig["side"])
+    if not corr_ok:
+        print(f"  [GUARD] {sig['symbol']} — {corr_reason}")
+        return None
+
+    # ── ตรวจ symbol ซ้ำ ─────────────────────────────────────────────────────
     existing = conn.execute(
         "SELECT id FROM trades WHERE symbol=? AND status='OPEN'",
         (sig["symbol"],)).fetchone()
@@ -164,8 +308,9 @@ def open_trade(conn, sig):
         INSERT INTO trades
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px, sl_pct, rsi,
          qty, notional_usd, leverage, margin_usd, risk_usd,
-         score_trend, score_smc, score_osc, regime, opened_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         score_trend, score_smc, score_osc, regime,
+         claude_approved, claude_reason, opened_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig["score"],
         sig["price"], sig["sl"], sig["tp1"], sig["tp2"],
@@ -175,6 +320,8 @@ def open_trade(conn, sig):
         sig.get("score_smc",   0),
         sig.get("score_osc",   0),
         sig.get("regime", "UNKNOWN"),
+        int(sig.get("claude_approved", True)),
+        sig.get("claude_reason", ""),
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()
@@ -485,6 +632,16 @@ def main():
         print(f"  Voided {voided} positions ส่วนเกิน")
     cnt = conn.execute("SELECT COUNT(*) FROM trades WHERE status='OPEN'").fetchone()[0]
     print(f"  Open positions: {cnt}/{MAX_OPEN}")
+
+    print(f"\n[0b] Daily Loss Cap check (cap=${DAILY_LOSS_CAP})...")
+    daily_pnl = get_daily_pnl(conn)
+    if daily_pnl < -DAILY_LOSS_CAP:
+        print(f"  ⛔ Daily loss cap ACTIVE: ${daily_pnl:.2f} — ไม่เปิด trade ใหม่วันนี้")
+    else:
+        print(f"  Daily PnL: ${daily_pnl:+.2f} (cap: -${DAILY_LOSS_CAP})")
+
+    print("\n[0c] Shadow Trade outcomes...")
+    check_shadow_trades(conn)
 
     print("\n[1] เช็ค Open Trades...")
     closed = check_open_trades(conn)
