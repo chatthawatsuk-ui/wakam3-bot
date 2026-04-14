@@ -2880,17 +2880,21 @@ function switchTab(tab){
 
 function renderPositions(){
   const open=D.open_trades||[],closed=D.closed_trades||[]
-  const wins=closed.filter(t=>t.outcome==='WIN').length
   const pnl=D.pnl||0
-  const avgPnl=closed.length>0?pnl/closed.length:0
+  // ใช้ตัวเลขเดียวกับ topbar (D.total_trades / D.win_rate — ไม่นับ VOID)
+  const total=D.total_trades||0
+  const wr=D.win_rate||0
+  const wins=Math.round(total*wr/100)
+  const loses=total-wins
+  const avgPnl=total>0?pnl/total:0
 
   setText('pos-open',open.length)
-  setText('pos-closed',closed.length)
-  setText('pos-wr',D.total_trades>0?(D.win_rate||0).toFixed(1)+'%':'—')
+  setText('pos-closed',total)
+  setText('pos-wr',total>0?wr.toFixed(1)+'%':'—')
   const pnlEl=document.getElementById('pos-pnl')
   if(pnlEl){pnlEl.textContent='$'+pnl.toFixed(2);pnlEl.className='stat-val '+(pnl>=0?'up':'dn')}
-  setText('pos-avg-pnl',closed.length>0?(avgPnl>=0?'+':'')+avgPnl.toFixed(2)+'%':'—')
-  setText('pos-wl','W:'+wins+' L:'+(closed.length-wins))
+  setText('pos-avg-pnl',total>0?(avgPnl>=0?'+':'')+avgPnl.toFixed(2):'—')
+  setText('pos-wl','W:'+wins+' L:'+loses)
   setText('tab-open-cnt',open.length)
   setText('tab-closed-cnt',closed.length)
 
