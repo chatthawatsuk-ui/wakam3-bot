@@ -452,7 +452,7 @@ def main():
 
     # ── TFs to run ────────────────────────────────────────────────────────────
     if args.fast:
-        tfs     = ["1h", "2h", "4h", "1d"]
+        tfs     = ["1h", "4h", "1d"]
         symbols = args.symbols or FAST_SYMBOLS
     else:
         tfs     = args.tf or ALL_TF_ORDER
