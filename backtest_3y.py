@@ -67,12 +67,38 @@ exchange.load_markets()
 print(f"{len(exchange.markets)} pairs")
 
 
-# ── PAGINATED FETCH ───────────────────────────────────────────────────────────
+# ── CACHE — historical_data/{SYMBOL}_{TF}.parquet ────────────────────────────
+CACHE_DIR = "historical_data"
+
+def _cache_path(symbol: str, tf: str) -> str:
+    return os.path.join(CACHE_DIR, symbol.replace("/", "_") + f"_{tf}.parquet")
+
+def _load_cache(symbol: str, tf: str, years: float) -> pd.DataFrame | None:
+    """โหลดจาก Parquet cache กรองเฉพาะช่วง years ย้อนหลัง — คืน None ถ้าไม่มี/ไม่พอ"""
+    fpath = _cache_path(symbol, tf)
+    if not os.path.exists(fpath):
+        return None
+    try:
+        df    = pd.read_parquet(fpath)
+        since = datetime.now(timezone.utc) - timedelta(days=int(years * 365) + 1)
+        df    = df[df.index >= pd.Timestamp(since)]
+        return df[["open","high","low","close","volume"]].astype(float) if not df.empty else None
+    except Exception:
+        return None
+
+
+# ── PAGINATED FETCH (OKX API — fallback ถ้าไม่มี cache) ──────────────────────
 def fetch_paginated(symbol, tf, years=3):
     """
-    ดึงข้อมูล OHLCV ย้อนหลัง N ปี โดยใช้ pagination
+    โหลด OHLCV ย้อนหลัง N ปี — ใช้ Parquet cache ก่อน fallback OKX API
     Returns: DataFrame sorted ascending
     """
+    # ── 1. ลอง cache ก่อน ────────────────────────────────────────────────────
+    cached = _load_cache(symbol, tf, years)
+    if cached is not None:
+        return cached
+
+    # ── 2. Fallback: ดึงจาก OKX API ─────────────────────────────────────────
     since_dt  = datetime.now(timezone.utc) - timedelta(days=int(years * 365))
     since_ms  = int(since_dt.timestamp() * 1000)
     all_bars  = []
@@ -405,12 +431,22 @@ def main():
     total_scans = 0
     t_start     = time_mod.time()
 
+    cache_ok = os.path.isdir(CACHE_DIR) and any(
+        f.endswith(".parquet") for f in os.listdir(CACHE_DIR)
+    ) if os.path.isdir(CACHE_DIR) else False
+    data_src = "cache" if cache_ok else "OKX API"
+    if not cache_ok:
+        print(f"\n  [INFO] ไม่พบ {CACHE_DIR}/ — ดึงจาก OKX API (ช้ากว่า)")
+        print(f"  [INFO] รัน  py download_history.py  เพื่อสร้าง cache 3Y ก่อน")
+
     for sym in symbols:
-        print(f"\n[{sym}]  fetching {args.years}y of 1H data...", end=" ", flush=True)
+        print(f"\n[{sym}]  loading {args.years}y ({data_src})...", end=" ", flush=True)
         t_fetch = time_mod.time()
         df_1h = fetch_paginated(sym, TF_1H, args.years)
         df_4h = fetch_paginated(sym, TF_4H, args.years)
-        print(f"1H:{len(df_1h)}  4H:{len(df_4h)}  ({time_mod.time()-t_fetch:.1f}s)")
+        src_1h = "cache" if _load_cache(sym, TF_1H, args.years) is not None else "API"
+        src_4h = "cache" if _load_cache(sym, TF_4H, args.years) is not None else "API"
+        print(f"1H:{len(df_1h)}[{src_1h}]  4H:{len(df_4h)}[{src_4h}]  ({time_mod.time()-t_fetch:.1f}s)")
 
         if df_1h.empty or len(df_1h) < WARMUP + 10:
             print("  ข้อมูลไม่พอ — ข้าม")

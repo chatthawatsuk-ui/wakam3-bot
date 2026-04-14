@@ -1570,7 +1570,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="card-title"><span class="icon">👻</span> Shadow Mode — Claude Filter Tracker</div>
           <div class="card-meta" id="sh-meta">—</div>
         </div>
-        <div style="font-size:11px;color:var(--t2);padding:0 16px 10px">
+        <div style="font-size:11px;color:var(--t2);padding:8px 16px 10px">
           Signals ที่ Claude Reject — ถ้า WIN แสดงว่า over-filter, ถ้า LOSS แสดงว่า filter ถูกต้อง
         </div>
         <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:0">
@@ -4098,7 +4098,7 @@ function renderShadow(){
                    r.outcome === 'LOSS'? 'var(--red)'   : 'var(--t2)'
     const outTxt = r.outcome === 'WIN' ? '✅ WIN (over-filter!)' :
                    r.outcome === 'LOSS'? '❌ LOSS (correct reject)' : '⏳ Pending'
-    const dt = r.created_at ? r.created_at.slice(0,16).replace('T',' ') : '—'
+    const dt = r.created_at ? new Date(r.created_at.endsWith('Z')||r.created_at.includes('+') ? r.created_at : r.created_at+'Z').toLocaleString('th-TH',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).replace(',','') : '—'
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:6px 10px;font-weight:600">${r.symbol||'—'}</td>
       <td style="padding:6px 10px">${r.side==='LONG'?'<span class="bdg b-long">LONG</span>':'<span class="bdg b-short">SHORT</span>'}</td>

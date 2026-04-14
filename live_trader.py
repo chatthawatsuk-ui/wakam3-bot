@@ -128,6 +128,7 @@ def scan():
             scan_results.append(result)
 
             if sig:
+                sig["tf"] = TF_1H.upper()   # primary scan TF — store in trade record
                 signals.append(sig)
                 log(f"  ✅ {sym} {sig['side']} score={sig['score']}/31 "
                     f"[🎯{sig['score_trend']} 🏦{sig['score_smc']} 📈{sig['score_osc']}] "

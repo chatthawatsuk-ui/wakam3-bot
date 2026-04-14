@@ -1,0 +1,82 @@
+name: Download Historical Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: 'Symbols (เว้นว่าง = 10 ตัวหลัก)'
+        required: false
+        default: ''
+      tf:
+        description: 'TFs เช่น "1h 4h" (เว้นว่าง = ทุก TF)'
+        required: false
+        default: ''
+      days:
+        description: 'ย้อนหลังกี่วัน (default: 1100 ≈ 3Y)'
+        required: false
+        default: '1100'
+      refresh:
+        description: 'Force re-download ทับไฟล์เดิม (true/false)'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download Historical Data
+        run: |
+          CMD="python download_history.py"
+
+          if [ -n "${{ github.event.inputs.days }}" ]; then
+            CMD="$CMD --days ${{ github.event.inputs.days }}"
+          fi
+          if [ -n "${{ github.event.inputs.tf }}" ]; then
+            CMD="$CMD --tf ${{ github.event.inputs.tf }}"
+          fi
+          if [ -n "${{ github.event.inputs.symbols }}" ]; then
+            CMD="$CMD --symbols ${{ github.event.inputs.symbols }}"
+          fi
+          if [ "${{ github.event.inputs.refresh }}" = "true" ]; then
+            CMD="$CMD --refresh"
+          fi
+
+          echo "Running: $CMD"
+          $CMD
+
+      - name: Commit Parquet files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f historical_data/*.parquet 2>/dev/null || true
+          git diff --staged --stat
+          if git diff --staged --quiet; then
+            echo "Nothing to commit — ไม่มีไฟล์ใหม่"
+          else
+            COUNT=$(git diff --staged --name-only | wc -l)
+            git commit -m "history: download ${COUNT} parquet files ($(date -u '+%Y-%m-%d'))"
+            git pull --rebase -X ours --autostash origin main
+            git push origin main
+          fi

@@ -309,8 +309,8 @@ def open_trade(conn, sig):
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px, sl_pct, rsi,
          qty, notional_usd, leverage, margin_usd, risk_usd,
          score_trend, score_smc, score_osc, regime,
-         claude_approved, claude_reason, opened_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         claude_approved, claude_reason, tf, opened_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig["score"],
         sig["price"], sig["sl"], sig["tp1"], sig["tp2"],
@@ -322,6 +322,7 @@ def open_trade(conn, sig):
         sig.get("regime", "UNKNOWN"),
         int(sig.get("claude_approved", True)),
         sig.get("claude_reason", ""),
+        sig.get("tf", "1H"),
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()
