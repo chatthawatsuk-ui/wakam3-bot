@@ -57,12 +57,12 @@ FAST_SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
 
 # primary OKX tf, htf OKX tf, นาทีต่อ candle, warmup candles
 TF_CONFIGS = {
-    "15m": dict(primary="15m", htf="1H",  resample="15min", mins=15,   warmup=400),
-    "30m": dict(primary="30m", htf="2H",  resample="30min", mins=30,   warmup=200),
-    "1H":  dict(primary="1H",  htf="4H",  resample="1h",    mins=60,   warmup=200),
-    "2H":  dict(primary="2H",  htf="6H",  resample="2h",    mins=120,  warmup=200),
-    "4H":  dict(primary="4H",  htf="1D",  resample="4h",    mins=240,  warmup=200),
-    "1D":  dict(primary="1D",  htf="1W",  resample="1D",    mins=1440, warmup=200),
+    "15m": dict(primary="15m", htf="1h",  resample="15min", mins=15,   warmup=400),
+    "30m": dict(primary="30m", htf="2h",  resample="30min", mins=30,   warmup=200),
+    "1H":  dict(primary="1h",  htf="4h",  resample="1h",    mins=60,   warmup=200),
+    "2H":  dict(primary="2h",  htf="6h",  resample="2h",    mins=120,  warmup=200),
+    "4H":  dict(primary="4h",  htf="1d",  resample="4h",    mins=240,  warmup=200),
+    "1D":  dict(primary="1d",  htf="1w",  resample="1D",    mins=1440, warmup=200),
 }
 # Default TFs สำหรับ weekly run (ตัด 15m — ช้าเกินไปสำหรับ 90 วัน)
 DEFAULT_TFS = ["30m", "1H", "2H", "4H", "1D"]
@@ -445,9 +445,10 @@ def main():
 
             if not trades_df.empty:
                 all_trades.append(trades_df)
-                tf_results.setdefault(tf_name, [])
-                tf_results[tf_name] = trades_df if tf_name not in tf_results \
-                    else pd.concat([tf_results[tf_name], trades_df], ignore_index=True)
+                if tf_name not in tf_results:
+                    tf_results[tf_name] = trades_df
+                else:
+                    tf_results[tf_name] = pd.concat([tf_results[tf_name], trades_df], ignore_index=True)
 
     # ── รวม trades ทั้งหมด ──────────────────────────────────────────────────
     print(f"\n{'═'*70}")

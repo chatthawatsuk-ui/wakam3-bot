@@ -2325,16 +2325,23 @@ let WL_CUSTOM=JSON.parse(localStorage.getItem('wl_custom')||'[]')
 function wlSave(){localStorage.setItem('wl_custom',JSON.stringify(WL_CUSTOM))}
 
 // ── fetch ราคาจาก OKX public API สำหรับ custom symbols ที่ไม่อยู่ใน scanner ──
+const _CP_FETCHING=new Set()  // กัน concurrent fetch ซ้ำ
+
 async function fetchCustomPrices(){
-  const missing=WL_CUSTOM.filter(sym=>!LIVE[sym] && CUSTOM_PRICES[sym]===undefined)
+  // retry ทั้ง undefined (ยังไม่เคย fetch) และ 'err' (fetch เคย error — network/timeout)
+  const missing=WL_CUSTOM.filter(sym=>!LIVE[sym] && (CUSTOM_PRICES[sym]===undefined||CUSTOM_PRICES[sym]==='err') && !_CP_FETCHING.has(sym))
   if(!missing.length) return
-  // mark as fetching ก่อนเพื่อกัน concurrent calls
-  missing.forEach(sym=>{ CUSTOM_PRICES[sym]=null })
+  missing.forEach(sym=>_CP_FETCHING.add(sym))
 
   await Promise.all(missing.map(async sym=>{
-    // sym = "RAVE/USDT" → try SWAP first, then SPOT
     const base=sym.replace('/USDT','')
-    const candidates=[base+'-USDT-SWAP', base+'-USDT']
+    // ลองทุก format: SWAP, 1000x SWAP, SPOT
+    const candidates=[
+      base+'-USDT-SWAP',
+      '1000'+base+'-USDT-SWAP',
+      base+'-USDT'
+    ]
+    let found=false
     for(const instId of candidates){
       try{
         const r=await fetch('https://www.okx.com/api/v5/market/ticker?instId='+instId,{cache:'no-store'})
@@ -2346,9 +2353,16 @@ async function fetchCustomPrices(){
         const open24h=parseFloat(d.open24h)||px
         const chg=open24h>0?((px-open24h)/open24h*100):0
         CUSTOM_PRICES[sym]={price:px, change:parseFloat(chg.toFixed(2)), instId}
+        found=true
         break
-      }catch(e){}
+      }catch(e){
+        // network/timeout error — mark 'err' เพื่อ retry รอบหน้า (ไม่ใช่ null ถาวร)
+        CUSTOM_PRICES[sym]='err'
+      }
     }
+    // ถ้าลองทุก candidate แล้วไม่เจอเลย (404/empty) = ไม่มีบน OKX จริงๆ
+    if(!found && CUSTOM_PRICES[sym]!=='err') CUSTOM_PRICES[sym]=null
+    _CP_FETCHING.delete(sym)
   }))
   renderWatchlistPage()
 }
@@ -2426,14 +2440,21 @@ function renderWatchlistPage(){
     const isCustom=WL_CUSTOM.includes(sym)
     const notScanned=isCustom&&!sc   // เพิ่มเองแต่ไม่ได้อยู่ใน scanner
 
-    // ราคา: LIVE (scanner) → CUSTOM_PRICES (OKX fetch) → scan price → '—'
-    const priceData=lv||cp
+    // ราคา: LIVE (scanner/futures) → CUSTOM_PRICES (OKX fetch: SWAP > 1000xSWAP > SPOT) → scan price → '—'
+    // cp อาจเป็น object, null, 'err' — ใช้เฉพาะเมื่อเป็น object จริงๆ
+    const cpObj=(cp && typeof cp==='object') ? cp : null
+    const priceData=lv||cpObj
     const px=priceData?pxFmt(priceData.price):sc?pxFmt(sc.price):'—'
     const chg=priceData?priceData.change:null
+    // badge แหล่งราคา: PERP=futures, SPOT=spot (แสดงเฉพาะ custom ที่ดึงจาก OKX API)
+    const srcBadge=cpObj?(cpObj.instId.endsWith('-SWAP')
+      ?'<span style="font-size:8px;background:rgba(99,102,241,.15);color:#818cf8;border-radius:3px;padding:1px 4px;margin-left:3px;border:1px solid rgba(99,102,241,.25)">PERP</span>'
+      :'<span style="font-size:8px;background:rgba(148,163,184,.1);color:var(--t2);border-radius:3px;padding:1px 4px;margin-left:3px;border:1px solid var(--border)">SPOT</span>')
+      :''
 
     // สถานะ price fetch สำหรับ custom symbols
-    const priceLoading=notScanned&&cp===undefined  // ยังไม่ได้ fetch
-    const priceNotFound=notScanned&&cp===null       // fetch แล้วไม่เจอบน OKX
+    const priceLoading=notScanned&&(cp===undefined||cp==='err')  // ยังไม่ได้ fetch หรือ error — จะ retry
+    const priceNotFound=notScanned&&cp===null                   // fetch แล้วไม่เจอบน OKX จริงๆ
 
     const score=sc?.best_score||0
     const bc=score>=8?'var(--green)':score>=5?'var(--yellow)':'var(--t2)'
@@ -2443,8 +2464,8 @@ function renderWatchlistPage(){
     const pxCell=priceLoading
       ?'<span style="color:var(--t2);font-size:10px">กำลังโหลด…</span>'
       :priceNotFound
-        ?'<span style="color:var(--red);font-size:10px">ไม่พบบน OKX</span>'
-        :`<span style="font-family:var(--mono);font-size:12px">${px}</span>
+        ?'<span style="color:var(--yellow);font-size:9px;line-height:1.4">ไม่มีบน OKX<br><a href="https://www.okx.com/markets/spot" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">ตรวจชื่อ ↗</a></span>'
+        :`<span style="font-family:var(--mono);font-size:12px">${px}</span>${srcBadge}
           ${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:10px">${chg>=0?'+':''}${chg.toFixed(2)}%</span>`:''}`
 
     return`<tr style="${isSig?'background:rgba(34,197,94,.04)':''}">
@@ -3649,7 +3670,7 @@ function renderBacktest(){
     const ddC  = Math.abs(s.dd||0)<=20?'up':Math.abs(s.dd||0)<=30?'yl':'dn'
     const shC  = (s.sharpe||0)>=1?'up':(s.sharpe||0)>=0.5?'yl':'dn'
     statsEl.innerHTML=[
-      ['TRADES',    s.n||0,             '',   ''],
+      ['TRADES',    s.n||0, s.n_win!=null?`<span class="up">${s.n_win}W</span> <span style="color:var(--t2)">·</span> <span class="dn">${s.n_lose}L</span>`:'', ''],
       ['WIN RATE',  (s.wr||0)+'%',      '',   s.wr>=55?'up':s.wr>=48?'yl':'dn'],
       ['TOTAL PnL', '$'+(s.total_pnl||0).toFixed(2), '', pnlC],
       ['AVG PnL',   '$'+(s.avg_pnl||0).toFixed(2),   '', (s.avg_pnl||0)>=0?'up':'dn'],

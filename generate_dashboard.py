@@ -697,7 +697,10 @@ def _bt_metrics(df):
     gross_win  = df[df["pnl"] > 0]["pnl"].sum()
     gross_loss = abs(df[df["pnl"] < 0]["pnl"].sum())
     pf = round(gross_win / gross_loss, 2) if gross_loss > 0 else 9.99
-    return {"n": len(df), "wr": wr, "tp1r": tp1r,
+    n_win  = int(wins.sum())
+    n_lose = len(df) - n_win
+    return {"n": len(df), "n_win": n_win, "n_lose": n_lose,
+            "wr": wr, "tp1r": tp1r,
             "total_pnl": total, "avg_pnl": avg,
             "dd": dd, "sharpe": sharpe, "kz_wr": kz_wr,
             "profit_factor": pf}
