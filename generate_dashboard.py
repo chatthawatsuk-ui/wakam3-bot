@@ -673,14 +673,294 @@ def calc_dynamic_weights(specialist_wr):
     return weights
 
 
+BT3Y_DATE_FROM = "2023-03-01"
+BT3Y_DATE_TO   = "2026-03-01"
+LIVE_PERF_DAYS = 30   # rolling window สำหรับ live performance
+
+
+def _bt_metrics(df):
+    """คำนวณ summary metrics จาก dataframe — ใช้ร่วมกันทั้ง 2 ฟังก์ชัน"""
+    if df is None or len(df) < 2:
+        return None
+    wins  = df["outcome"] == "WIN"
+    wr    = round(wins.mean() * 100, 1)
+    tp1r  = round(df["tp1_hit"].mean() * 100, 1) if "tp1_hit" in df else 0
+    total = round(df["pnl"].sum(), 2)
+    avg   = round(df["pnl"].mean(), 2)
+    eq    = df["pnl"].cumsum()
+    pk    = eq.cummax()
+    dd    = round(((eq - pk) / pk.abs().replace(0, 1) * 100).min(), 1)
+    std   = df["pnl"].std()
+    sharpe = round((avg / std) * (252 ** 0.5), 2) if std > 0 else 0
+    kz    = df["in_kz"].astype(str).str.lower().isin(["true","1"]) if "in_kz" in df.columns else None
+    kz_wr = round(wins[kz].mean() * 100, 1) if kz is not None and kz.any() else None
+    gross_win  = df[df["pnl"] > 0]["pnl"].sum()
+    gross_loss = abs(df[df["pnl"] < 0]["pnl"].sum())
+    pf = round(gross_win / gross_loss, 2) if gross_loss > 0 else 9.99
+    return {"n": len(df), "wr": wr, "tp1r": tp1r,
+            "total_pnl": total, "avg_pnl": avg,
+            "dd": dd, "sharpe": sharpe, "kz_wr": kz_wr,
+            "profit_factor": pf}
+
+
+def _bt_breakdowns(df, source=None):
+    """คำนวณ breakdown tables: by_sym, by_exit, by_score, by_regime, by_year, by_tf"""
+    import pandas as pd
+    result = {}
+
+    # by symbol
+    by_sym = []
+    sym_col = "sym" if "sym" in df.columns else ("symbol" if "symbol" in df.columns else None)
+    if sym_col:
+        for sym, g in df.groupby(sym_col):
+            m = _bt_metrics(g)
+            if m:
+                m["sym"] = sym
+                by_sym.append(m)
+        by_sym.sort(key=lambda x: x["total_pnl"], reverse=True)
+    result["by_symbol"] = by_sym
+
+    # by exit type
+    by_exit = []
+    if "exit_type" in df.columns:
+        for et, g in df.groupby("exit_type"):
+            wins_e = (g["outcome"] == "WIN").sum()
+            by_exit.append({"exit_type": et, "n": len(g), "wins": int(wins_e),
+                             "wr": round(wins_e/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+    result["by_exit"] = by_exit
+
+    # by score band
+    by_score = []
+    if "score" in df.columns:
+        s_min, s_max = int(df["score"].min()), int(df["score"].max())
+        step = 3
+        bin_start = (s_min // step) * step
+        bin_edges = list(range(bin_start, s_max + step + 1, step))
+        if len(bin_edges) < 2:
+            bin_edges = [s_min - 1, s_max + 1]
+        bin_labels = [f"{bin_edges[i]}–{bin_edges[i+1]-1}" for i in range(len(bin_edges)-1)]
+        df2 = df.copy()
+        df2["band"] = pd.cut(df2["score"], bins=bin_edges, labels=bin_labels, include_lowest=True)
+        for band, g in df2.groupby("band", observed=True):
+            if len(g) == 0: continue
+            wins_b = (g["outcome"] == "WIN").sum()
+            by_score.append({"band": str(band), "n": len(g),
+                              "wr": round(wins_b/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+    result["by_score"] = by_score
+
+    # by regime
+    by_regime = []
+    if "regime" in df.columns:
+        for reg, g in df.groupby("regime"):
+            wins_r = (g["outcome"] == "WIN").sum()
+            by_regime.append({"regime": reg, "n": len(g),
+                               "wr": round(wins_r/len(g)*100,1), "avg_pnl": round(g["pnl"].mean(),2)})
+    result["by_regime"] = by_regime
+
+    # by year
+    by_year = []
+    if "entry_ts" in df.columns:
+        try:
+            df2 = df.copy()
+            df2["_yr"] = pd.to_datetime(df2["entry_ts"], utc=True, errors="coerce").dt.year
+            for yr, g in df2.groupby("_yr"):
+                if pd.isna(yr): continue
+                wins_y = (g["outcome"] == "WIN").sum()
+                n_y    = len(g)
+                std_y  = g["pnl"].std()
+                sharpe_y = round(g["pnl"].mean() / std_y * (n_y ** 0.5), 2) if std_y and std_y > 0 else 0
+                cum_y = g["pnl"].cumsum(); peak_y = cum_y.cummax()
+                dd_y  = round(((cum_y - peak_y) / (peak_y.abs() + 1e-9)).min() * 100, 1)
+                by_year.append({"year": int(yr), "n": n_y,
+                                 "wr": round(wins_y/n_y*100,1),
+                                 "total_pnl": round(g["pnl"].sum(),2),
+                                 "avg_pnl": round(g["pnl"].mean(),2),
+                                 "sharpe": sharpe_y, "dd": dd_y,
+                                 "equity": [0]+[round(v,2) for v in g["pnl"].cumsum().tolist()]})
+        except Exception:
+            pass
+    result["by_year"] = by_year
+
+    # by timeframe (backtest_mtf only)
+    by_tf = []
+    if source == "mtf" and "tf" in df.columns:
+        TF_ORDER = ["15m","30m","1h","2h","4h","1d"]
+        order_map = {tf: i for i, tf in enumerate(TF_ORDER)}
+        for tf_name, g in df.groupby("tf"):
+            if len(g) < 3: continue
+            avg_tf = round(g["pnl"].mean(), 2)
+            std_tf = g["pnl"].std()
+            wins_tf = (g["outcome"] == "WIN").sum()
+            n_tf    = len(g)
+            cum_tf = g["pnl"].cumsum(); peak_tf = cum_tf.cummax()
+            dd_tf  = round(((cum_tf - peak_tf) / (peak_tf.abs() + 1e-9)).min() * 100, 1)
+            gross_win  = g[g["pnl"] > 0]["pnl"].sum()
+            gross_loss = abs(g[g["pnl"] < 0]["pnl"].sum())
+            by_tf.append({"tf": tf_name, "n": n_tf,
+                           "wr": round(wins_tf/n_tf*100,1),
+                           "total_pnl": round(g["pnl"].sum(),2),
+                           "avg_pnl": avg_tf,
+                           "sharpe": round((avg_tf/std_tf)*(252**0.5),2) if std_tf > 0 else 0,
+                           "dd": dd_tf,
+                           "profit_factor": round(gross_win/gross_loss,2) if gross_loss > 0 else 9.99,
+                           "equity": [0]+[round(v,2) for v in g["pnl"].cumsum().tolist()]})
+        by_tf.sort(key=lambda r: order_map.get(r["tf"], 99))
+    result["by_tf"] = by_tf
+
+    # recent trades list
+    recent = df.tail(100).copy().fillna("")
+    cols = [c for c in ["sym","symbol","side","score","ep","sl","tp1","tp2",
+                         "entry_ts","exit_ts","exit_px","exit_type",
+                         "tp1_hit","outcome","pnl","in_kz","regime","rsi"]
+            if c in df.columns]
+    result["trades"] = recent[cols].to_dict("records")
+
+    # equity curve
+    result["equity"] = [0] + [round(v,2) for v in df["pnl"].cumsum().tolist()]
+
+    return result
+
+
+def load_backtest_3y():
+    """
+    📊 Historical Backtest — 2023-03-01 → 2026-03-01 (fixed window)
+    ใช้ backtest_mtf.csv กรองตาม entry_ts
+    วัตถุประสงค์: ประเมินระบบระยะยาว / ปรับ strategy
+    """
+    import pandas as pd
+    DATE_FROM = pd.Timestamp(BT3Y_DATE_FROM, tz="UTC")
+    DATE_TO   = pd.Timestamp(BT3Y_DATE_TO,   tz="UTC")
+
+    candidates = [("backtest_mtf.csv","mtf"), ("backtest_3y.csv","3y")]
+    df = None; source = None; loaded_file = None
+    for fname, fmt in candidates:
+        if os.path.exists(fname):
+            try:
+                tmp = pd.read_csv(fname)
+                if len(tmp) > 0:
+                    df = tmp; source = fmt; loaded_file = fname
+                    break
+            except Exception:
+                continue
+
+    if df is None or df.empty:
+        return {"available": False, "label": "backtest_3y"}
+
+    # กรองช่วง 2023-03-01 → 2026-03-01
+    if "entry_ts" in df.columns:
+        try:
+            ts = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce")
+            mask = (ts >= DATE_FROM) & (ts <= DATE_TO)
+            df = df[mask].copy()
+        except Exception:
+            pass
+
+    if df.empty:
+        return {"available": False, "label": "backtest_3y",
+                "error": f"ไม่มี trade ในช่วง {BT3Y_DATE_FROM} → {BT3Y_DATE_TO}"}
+
+    try:
+        summary = _bt_metrics(df)
+        breakdown = _bt_breakdowns(df, source)
+        date_from = date_to = None
+        if "entry_ts" in df.columns:
+            ts2 = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dropna()
+            if len(ts2):
+                date_from = ts2.min().strftime("%Y-%m-%d")
+                date_to   = ts2.max().strftime("%Y-%m-%d")
+        mtime = os.path.getmtime(loaded_file)
+        return {
+            "available":   True,
+            "label":       "backtest_3y",
+            "source":      source,
+            "source_file": loaded_file,
+            "generated":   datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat(),
+            "date_from":   date_from,
+            "date_to":     date_to,
+            "period":      f"{BT3Y_DATE_FROM} → {BT3Y_DATE_TO}",
+            "total_rows":  len(df),
+            "summary":     summary,
+            **breakdown,
+        }
+    except Exception as e:
+        print(f"  [WARN] load_backtest_3y: {e}")
+        return {"available": False, "label": "backtest_3y", "error": str(e)}
+
+
+def load_live_performance():
+    """
+    📡 Live Performance — rolling 30 วันล่าสุด จาก paper_trades.db
+    วัตถุประสงค์: ดู current market performance / ปรับ tactical settings
+    """
+    import pandas as pd
+    CUTOFF = datetime.now(timezone.utc) - __import__("datetime").timedelta(days=LIVE_PERF_DAYS)
+
+    if not os.path.exists(DB_PATH):
+        return {"available": False, "label": "live_perf"}
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        rows = conn.execute("""
+            SELECT sym, side, score, score_trend, score_smc, score_osc,
+                   entry_price AS ep, sl_price AS sl, tp1_price AS tp1, tp2_price AS tp2,
+                   entry_time AS entry_ts, close_time AS exit_ts,
+                   exit_price AS exit_px, close_reason AS exit_type,
+                   tp1_hit, outcome, pnl, in_kz, regime, rsi
+            FROM trades
+            WHERE status = 'CLOSED'
+              AND outcome IS NOT NULL
+              AND close_time >= ?
+            ORDER BY close_time ASC
+        """, (CUTOFF.isoformat(),)).fetchall()
+        cols = ["sym","side","score","score_trend","score_smc","score_osc",
+                "ep","sl","tp1","tp2","entry_ts","exit_ts","exit_px","exit_type",
+                "tp1_hit","outcome","pnl","in_kz","regime","rsi"]
+        conn.close()
+
+        if not rows:
+            return {"available": False, "label": "live_perf",
+                    "error": f"ยังไม่มี closed trade ใน {LIVE_PERF_DAYS} วันที่ผ่านมา"}
+
+        df = pd.DataFrame(rows, columns=cols)
+        df["pnl"] = pd.to_numeric(df["pnl"], errors="coerce").fillna(0)
+
+        summary   = _bt_metrics(df)
+        breakdown = _bt_breakdowns(df, source="live")
+
+        date_from = date_to = None
+        try:
+            ts2 = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dropna()
+            if len(ts2):
+                date_from = ts2.min().strftime("%Y-%m-%d")
+                date_to   = ts2.max().strftime("%Y-%m-%d")
+        except Exception:
+            pass
+
+        return {
+            "available":  True,
+            "label":      "live_perf",
+            "source":     "paper_trades",
+            "generated":  datetime.now(timezone.utc).isoformat(),
+            "date_from":  date_from,
+            "date_to":    date_to,
+            "period":     f"Rolling {LIVE_PERF_DAYS} วัน",
+            "total_rows": len(df),
+            "summary":    summary,
+            **breakdown,
+        }
+    except Exception as e:
+        print(f"  [WARN] load_live_performance: {e}")
+        return {"available": False, "label": "live_perf", "error": str(e)}
+
+
 def load_backtest_data():
-    """อ่าน backtest CSV → สร้าง summary สำหรับ Backtest page
+    """⚠️ Legacy wrapper — ยังใช้ได้เพื่อ backward compat (weight seeding)
     Priority: backtest_3y.csv > backtest_live.csv > v5 fallback
     """
     import pandas as pd
 
     candidates = [
-        ("backtest_mtf.csv",  "mtf"),   # ← Multi-TF backtest (highest priority)
+        ("backtest_mtf.csv",  "mtf"),
         ("backtest_3y.csv",   "3y"),
         ("backtest_live.csv", "live"),
         ("backtest_v5_B.csv", "v5"),
@@ -716,178 +996,8 @@ def load_backtest_data():
         if "regime"  not in df.columns: df["regime"]  = "UNKNOWN"
 
     try:
-
-        def _metrics(d):
-            if len(d) < 2:
-                return None
-            wins  = (d["outcome"] == "WIN")
-            wr    = round(wins.mean() * 100, 1)
-            tp1r  = round(d["tp1_hit"].mean() * 100, 1) if "tp1_hit" in d else 0
-            total = round(d["pnl"].sum(), 2)
-            avg   = round(d["pnl"].mean(), 2)
-            eq    = d["pnl"].cumsum()
-            pk    = eq.cummax()
-            dd    = round(((eq - pk) / pk.abs().replace(0, 1) * 100).min(), 1)
-            std   = d["pnl"].std()
-            sharpe = round((avg / std) * (252 ** 0.5), 2) if std > 0 else 0
-            kz = d["in_kz"].astype(str).str.lower().isin(["true","1"])
-            kz_wr = round(wins[kz].mean() * 100, 1) if kz.any() else None
-            return {"n": len(d), "wr": wr, "tp1r": tp1r,
-                    "total_pnl": total, "avg_pnl": avg,
-                    "dd": dd, "sharpe": sharpe, "kz_wr": kz_wr}
-
-        summary = _metrics(df)
-
-        # by symbol
-        by_sym = []
-        for sym, g in df.groupby("sym"):
-            m = _metrics(g)
-            if m:
-                m["sym"] = sym
-                by_sym.append(m)
-        by_sym.sort(key=lambda x: x["total_pnl"], reverse=True)
-
-        # by exit type
-        by_exit = []
-        for et, g in df.groupby("exit_type"):
-            wins_e = (g["outcome"] == "WIN").sum()
-            by_exit.append({
-                "exit_type": et,
-                "n":         len(g),
-                "wins":      int(wins_e),
-                "wr":        round(wins_e / len(g) * 100, 1),
-                "avg_pnl":   round(g["pnl"].mean(), 2),
-            })
-
-        # by score band — dynamic bins ตาม range จริงของ data
-        s_min = int(df["score"].min())
-        s_max = int(df["score"].max())
-        # สร้าง bins ทุก 3 คะแนน ครอบคลุม range จริง
-        step = 3
-        bin_start = (s_min // step) * step
-        bin_edges = list(range(bin_start, s_max + step + 1, step))
-        if len(bin_edges) < 2:
-            bin_edges = [s_min - 1, s_max + 1]
-        bin_labels = [f"{bin_edges[i]}–{bin_edges[i+1]-1}" for i in range(len(bin_edges)-1)]
-        df2 = df.copy()
-        df2["band"] = pd.cut(df2["score"], bins=bin_edges, labels=bin_labels, include_lowest=True)
-        by_score = []
-        for band, g in df2.groupby("band", observed=True):
-            if len(g) == 0:
-                continue
-            wins_b = (g["outcome"] == "WIN").sum()
-            by_score.append({
-                "band":    str(band),
-                "n":       len(g),
-                "wr":      round(wins_b / len(g) * 100, 1),
-                "avg_pnl": round(g["pnl"].mean(), 2),
-            })
-
-        # by regime
-        by_regime = []
-        for reg, g in df.groupby("regime"):
-            wins_r = (g["outcome"] == "WIN").sum()
-            by_regime.append({
-                "regime":  reg,
-                "n":       len(g),
-                "wr":      round(wins_r / len(g) * 100, 1),
-                "avg_pnl": round(g["pnl"].mean(), 2),
-            })
-
-        # recent trades (last 100)
-        recent = df.tail(100).copy()
-        recent = recent.fillna("")
-        trades_list = recent[["sym","side","score","ep","sl","tp1","tp2",
-                               "entry_ts","exit_ts","exit_px","exit_type",
-                               "tp1_hit","outcome","pnl","in_kz","regime",
-                               "rsi"]].to_dict("records")
-
-        # equity curve (cumulative PnL)
-        equity_bt = [0] + [round(v, 2) for v in df["pnl"].cumsum().tolist()]
-
-        # yearly breakdown (for 3y source)
-        by_year = []
-        if "entry_ts" in df.columns:
-            try:
-                df["_yr"] = pd.to_datetime(df["entry_ts"], utc=True, errors="coerce").dt.year
-                for yr, g in df.groupby("_yr"):
-                    if pd.isna(yr): continue
-                    wins_y = (g["outcome"] == "WIN").sum()
-                    n_y    = len(g)
-                    total_pnl_y = round(g["pnl"].sum(), 2)
-                    avg_pnl_y   = round(g["pnl"].mean(), 2) if n_y else 0
-                    # per-year equity curve
-                    eq_y = [0] + [round(v, 2) for v in g["pnl"].cumsum().tolist()]
-                    # per-year sharpe
-                    try:
-                        import numpy as _np
-                        std_y = g["pnl"].std()
-                        sharpe_y = round(g["pnl"].mean() / std_y * (_np.sqrt(n_y)), 2) if std_y and std_y > 0 else 0
-                    except Exception:
-                        sharpe_y = 0
-                    # per-year max drawdown
-                    try:
-                        cum_y = g["pnl"].cumsum()
-                        peak_y = cum_y.cummax()
-                        dd_y   = round(((cum_y - peak_y) / (peak_y.abs() + 1e-9)).min() * 100, 1)
-                    except Exception:
-                        dd_y = 0
-                    by_year.append({
-                        "year":      int(yr),
-                        "n":         n_y,
-                        "wr":        round(wins_y / n_y * 100, 1),
-                        "total_pnl": total_pnl_y,
-                        "avg_pnl":   avg_pnl_y,
-                        "sharpe":    sharpe_y,
-                        "dd":        dd_y,
-                        "equity":    eq_y,
-                    })
-                df.drop(columns=["_yr"], inplace=True)
-            except Exception:
-                pass
-
-        # by timeframe (only for backtest_mtf.csv)
-        by_tf = []
-        if source == "mtf" and "tf" in df.columns:
-            try:
-                TF_ORDER = ["15m", "30m", "1h", "2h", "4h", "1d"]
-                for tf_name, g in df.groupby("tf"):
-                    if len(g) < 3:
-                        continue
-                    wins_tf = (g["outcome"] == "WIN").sum()
-                    n_tf    = len(g)
-                    total_tf = round(g["pnl"].sum(), 2)
-                    avg_tf   = round(g["pnl"].mean(), 2)
-                    eq_tf    = [0] + [round(v, 2) for v in g["pnl"].cumsum().tolist()]
-                    std_tf   = g["pnl"].std()
-                    sharpe_tf = round((avg_tf / std_tf) * (252 ** 0.5), 2) if std_tf and std_tf > 0 else 0
-                    try:
-                        cum_tf = g["pnl"].cumsum()
-                        peak_tf = cum_tf.cummax()
-                        dd_tf = round(((cum_tf - peak_tf) / (peak_tf.abs() + 1e-9)).min() * 100, 1)
-                    except Exception:
-                        dd_tf = 0
-                    gross_win  = g[g["pnl"] > 0]["pnl"].sum()
-                    gross_loss = abs(g[g["pnl"] < 0]["pnl"].sum())
-                    pf_tf = round(gross_win / gross_loss, 2) if gross_loss > 0 else 9.99
-                    by_tf.append({
-                        "tf":          tf_name,
-                        "n":           n_tf,
-                        "wr":          round(wins_tf / n_tf * 100, 1),
-                        "total_pnl":   total_tf,
-                        "avg_pnl":     avg_tf,
-                        "sharpe":      sharpe_tf,
-                        "dd":          dd_tf,
-                        "profit_factor": pf_tf,
-                        "equity":      eq_tf,
-                    })
-                # sort by TF order
-                order_map = {tf: i for i, tf in enumerate(TF_ORDER)}
-                by_tf.sort(key=lambda r: order_map.get(r["tf"], 99))
-            except Exception:
-                pass
-
-        # date range
+        summary   = _bt_metrics(df)
+        breakdown = _bt_breakdowns(df, source)
         date_from = date_to = None
         if "entry_ts" in df.columns:
             try:
@@ -897,27 +1007,17 @@ def load_backtest_data():
                     date_to   = ts.max().strftime("%Y-%m-%d")
             except Exception:
                 pass
-
         mtime = os.path.getmtime(loaded_file)
-        generated = datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat()
-
         return {
             "available":   True,
-            "source":      source,        # "3y" | "live" | "v5"
+            "source":      source,
             "source_file": loaded_file,
-            "generated":   generated,
+            "generated":   datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat(),
             "date_from":   date_from,
             "date_to":     date_to,
             "total_rows":  len(df),
             "summary":     summary,
-            "by_symbol":   by_sym,
-            "by_exit":     by_exit,
-            "by_score":    by_score,
-            "by_regime":   by_regime,
-            "by_year":     by_year,
-            "by_tf":       by_tf,
-            "trades":      trades_list,
-            "equity":      equity_bt,
+            **breakdown,
         }
     except Exception as e:
         print(f"  [WARN] load_backtest_data: {e}")
@@ -1185,7 +1285,9 @@ def main():
         "generated":        last_scan,
         "specialist_wr":    specialist_wr,
         "dyn_weights":      dyn_weights,
-        "backtest":         load_backtest_data(),
+        "backtest":         load_backtest_data(),    # legacy key — ยังคงอยู่
+        "backtest_3y":      load_backtest_3y(),       # 📊 Historical 3Y
+        "live_perf":        load_live_performance(),  # 📡 Rolling 30d
         "shadow_stats":     shadow_stats,
     }
 

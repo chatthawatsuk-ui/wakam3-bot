@@ -1277,6 +1277,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <!-- ══ BACKTEST ══ -->
     <div id="pg-backtest" class="page">
 
+      <!-- sub-tab switcher -->
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="tab active" id="btsub-3y"   onclick="btSubTab('3y')">📊 Backtest 3Y</button>
+        <button class="tab"        id="btsub-live" onclick="btSubTab('live')">📡 Live Performance (30d)</button>
+      </div>
+
       <!-- no data state -->
       <div id="bt-nodata" style="display:none">
         <div class="coming-soon">
@@ -3393,11 +3399,31 @@ function btTab(tab){
   if(tab==='tf')     renderBTTF()
 }
 
+let _btCurrentSub = '3y'  // '3y' | 'live'
+
+function btSubTab(sub){
+  _btCurrentSub = sub
+  document.getElementById('btsub-3y').classList.toggle('active', sub==='3y')
+  document.getElementById('btsub-live').classList.toggle('active', sub==='live')
+  renderBacktest()
+}
+
 function renderBacktest(){
-  const bt = D.backtest || {}
+  const bt = (_btCurrentSub==='live' ? D.live_perf : D.backtest_3y) || D.backtest || {}
   const nodata = document.getElementById('bt-nodata')
   const main   = document.getElementById('bt-main')
-  if(!bt.available){ nodata.style.display='block'; main.style.display='none'; return }
+  if(!bt.available){
+    nodata.style.display='block'; main.style.display='none'
+    const nodataT = nodata.querySelector('.coming-soon-t')
+    const nodataS = nodata.querySelector('.coming-soon-s')
+    if(nodataT) nodataT.textContent = _btCurrentSub==='live'
+      ? 'ยังไม่มี Paper Trade ใน 30 วันที่ผ่านมา'
+      : 'ยังไม่มีข้อมูล Backtest 3Y'
+    if(nodataS) nodataS.innerHTML = _btCurrentSub==='live'
+      ? 'ระบบจะแสดงผลเมื่อมี closed trade จาก paper trading'
+      : 'รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_mtf.py</code> แล้ว <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py generate_dashboard.py</code>'
+    return
+  }
   nodata.style.display='none'; main.style.display='block'
 
   const s = bt.summary || {}
@@ -3408,18 +3434,20 @@ function renderBacktest(){
   const srcBadge = document.getElementById('bt-source-badge')
   if(srcBadge){
     const src = bt.source || 'live'
-    const is3y = src === '3y'
     const isMTF = src === 'mtf'
-    srcBadge.textContent = isMTF ? 'MULTI-TF' : is3y ? '3-YEAR' : src === 'v5' ? 'V5 LEGACY' : 'LIVE'
-    srcBadge.style.cssText = (isMTF || is3y)
-      ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
-      : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
+    const isLive = _btCurrentSub === 'live'
+    srcBadge.textContent = isLive ? 'LIVE 30D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
+    srcBadge.style.cssText = isLive
+      ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
+      : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
   }
 
   // date range
   const drEl = document.getElementById('bt-date-range')
-  if(drEl && bt.date_from && bt.date_to){
-    drEl.textContent = `Walk-Forward ${bt.date_from} → ${bt.date_to} · 3-Agent System · Dynamic Sizing`
+  if(drEl){
+    const periodLabel = bt.period || `${bt.date_from} → ${bt.date_to}`
+    const sourceLabel = _btCurrentSub==='live' ? 'Paper Trades · Rolling 30d' : 'Walk-Forward · 3-Agent System'
+    drEl.textContent = `${periodLabel} · ${sourceLabel}`
   }
 
   // verdict badge

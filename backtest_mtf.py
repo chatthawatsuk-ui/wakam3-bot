@@ -541,6 +541,18 @@ def main():
         return
 
     df_all = pd.concat(all_trades, ignore_index=True)
+
+    # ── Filter: เฉพาะ 2023-03-01 → 2026-03-01 ─────────────────────────────────
+    BT_DATE_FROM = pd.Timestamp("2023-03-01", tz="UTC")
+    BT_DATE_TO   = pd.Timestamp("2026-03-01", tz="UTC")
+    if "entry_ts" in df_all.columns:
+        ts_col = pd.to_datetime(df_all["entry_ts"], utc=True, errors="coerce")
+        mask   = (ts_col >= BT_DATE_FROM) & (ts_col <= BT_DATE_TO)
+        before = len(df_all)
+        df_all = df_all[mask].copy()
+        print(f"  Date filter {BT_DATE_FROM.date()} → {BT_DATE_TO.date()}: "
+              f"{before:,} → {len(df_all):,} trades")
+
     df_all.to_csv(OUTPUT_CSV, index=False)
     print(f"\n  Saved {OUTPUT_CSV}  ({len(df_all):,} trades)")
 
