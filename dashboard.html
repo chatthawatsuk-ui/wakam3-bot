@@ -517,6 +517,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
   .ai-dec-grid{grid-template-columns:1fr 1fr}
   .btc-stats-row{grid-template-columns:1fr 1fr}
 
+  /* Backtest: iPad landscape = 4 stats + 2-col breakdown */
+  #bt-stats{grid-template-columns:repeat(4,1fr) !important}
+  #bt-breakdown-grid{grid-template-columns:1fr 1fr !important}
+  #bt-tf-charts{grid-template-columns:repeat(2,1fr) !important}
+
   /* Touch-friendly targets */
   .nav-btn{min-height:52px}
   .tab,.wl-tab{min-height:40px;padding:8px 14px}
@@ -531,6 +536,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
   .dash-grid{grid-template-columns:1fr !important}
   .pos-cards{grid-template-columns:1fr 1fr !important}
   .hm{grid-template-columns:repeat(4,1fr)}
+  /* Backtest: 4 stat cols, single col breakdowns */
+  #bt-stats{grid-template-columns:repeat(4,1fr) !important}
+  #bt-breakdown-grid{grid-template-columns:1fr !important}
+  #bt-tf-charts{grid-template-columns:1fr !important}
 }
 
 /* ══ MOBILE (< 600px) ══════════════════════════════════════ */
@@ -564,6 +573,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
   .ai-dec-grid{grid-template-columns:1fr 1fr !important}
   .btc-stats-row{grid-template-columns:1fr 1fr !important}
   .hm{grid-template-columns:repeat(3,1fr);gap:5px;padding:8px}
+  /* Backtest: 4 stat cols (2 rows), stack breakdowns */
+  #bt-stats{grid-template-columns:repeat(4,1fr) !important}
+  #bt-breakdown-grid{grid-template-columns:1fr !important}
+  #bt-tf-charts{grid-template-columns:1fr !important}
 
   /* Heatmap cells: tighter */
   .hmc{padding:8px 4px}
@@ -1431,7 +1444,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 
         <!-- SUMMARY TAB -->
         <div id="bt-tab-summary">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div id="bt-breakdown-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
 
             <!-- exit types -->
             <div class="card">
