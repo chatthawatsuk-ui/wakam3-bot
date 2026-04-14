@@ -787,9 +787,9 @@ def _bt_breakdowns(df, source=None):
             pass
     result["by_year"] = by_year
 
-    # by timeframe (backtest_mtf only)
+    # by timeframe
     by_tf = []
-    if source == "mtf" and "tf" in df.columns:
+    if "tf" in df.columns and df["tf"].notna().any() and (df["tf"] != "–").any():
         TF_ORDER = ["15m","30m","1h","2h","4h","1d"]
         order_map = {tf: i for i, tf in enumerate(TF_ORDER)}
         for tf_name, g in df.groupby("tf"):
@@ -909,10 +909,19 @@ def load_live_performance():
 
     try:
         conn = sqlite3.connect(DB_PATH)
-        rows = conn.execute("""
+        # ดึง column ทั้งหมดที่มี รวม exit_type/score/regime ถ้า DB มี
+        cur = conn.execute("PRAGMA table_info(trades)")
+        db_cols = {r[1] for r in cur.fetchall()}
+        extra = {
+            "exit_type": "exit_type" if "exit_type" in db_cols else "NULL AS exit_type",
+            "score":     "score"     if "score"     in db_cols else "NULL AS score",
+            "regime":    "regime"    if "regime"    in db_cols else "NULL AS regime",
+        }
+        rows = conn.execute(f"""
             SELECT symbol AS sym, side, entry_px AS ep, exit_px AS xp,
                    outcome, pnl_usd AS pnl, tp1_hit, opened_at AS entry_ts,
-                   closed_at, tf
+                   closed_at, tf,
+                   {extra['exit_type']}, {extra['score']}, {extra['regime']}
             FROM trades
             WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
             ORDER BY closed_at ASC
@@ -923,7 +932,8 @@ def load_live_performance():
             return {"available": False, "label": "live_perf",
                     "error": "ยังไม่มี trade ที่ปิดในสัปดาห์นี้"}
 
-        cols = ["sym", "side", "ep", "xp", "outcome", "pnl", "tp1_hit", "entry_ts", "closed_at", "tf"]
+        cols = ["sym", "side", "ep", "xp", "outcome", "pnl", "tp1_hit", "entry_ts", "closed_at", "tf",
+                "exit_type", "score", "regime"]
         df = pd.DataFrame(rows, columns=cols)
 
         df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)

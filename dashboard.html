@@ -3790,7 +3790,7 @@ function renderBTTF(){
   if(tb){
     if(!tfs.length){
       const noTfMsg = _btCurrentSub==='live'
-        ? 'ยังไม่มี Paper Trade ที่ปิดแล้วใน 30 วันล่าสุด — ระบบจะแสดงข้อมูลหลังมี trade ปิด'
+        ? 'ยังไม่มีข้อมูล TF — paper trades ที่ปิดในสัปดาห์นี้ยังไม่มี tf บันทึกไว้'
         : 'รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_mtf.py</code> เพื่อดูผลแยก TF 15m / 30m / 1H / 2H / 4H / 1D'
       tb.innerHTML = `<tr><td colspan="9"><div class="empty" style="padding:20px;text-align:center;color:var(--t2)">${noTfMsg}</div></td></tr>`
     } else {
