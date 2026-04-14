@@ -941,6 +941,16 @@ def load_live_performance():
         if "in_kz" not in df.columns:
             df["in_kz"] = False
 
+        # คำนวณ exit_type จาก outcome + tp1_hit (ถ้า DB ไม่มี column นี้)
+        if df["exit_type"].isna().all():
+            def _exit_type(row):
+                if row["outcome"] == "WIN":
+                    return "TP HIT" if row["tp1_hit"] else "TP2 HIT"
+                elif row["outcome"] == "LOSS":
+                    return "SL HIT"
+                return "VOID"
+            df["exit_type"] = df.apply(_exit_type, axis=1)
+
         summary   = _bt_metrics(df)
         breakdown = _bt_breakdowns(df, source="live")
 
