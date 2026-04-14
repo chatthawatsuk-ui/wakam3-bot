@@ -122,8 +122,73 @@ def weekly_report_msg(proposal, backtest_summary=None):
     else:
         lines.append("  ⚠️ ข้อมูลไม่พอ (รอ 10+ trades)")
 
+    # Level 6 — Claude weight proposal (brief summary only, full in separate msg)
+    l6 = proposal.get("level6", {})
+    cp = l6.get("claude_weight_proposal")
+    if cp:
+        conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(cp.get("confidence",""), "⚪")
+        lines += [
+            "",
+            "🤖 <b>Level 6 — Claude Weight Proposal</b>",
+            f"  🎯{cp['trend']:.3f} 🏦{cp['smc']:.3f} 📈{cp['osc']:.3f} {conf_icon}",
+            "  → ดูรายละเอียดในข้อความถัดไป",
+        ]
+
     lines += ["", "================================", "💾 ดูรายละเอียด → proposals/"]
     return "\n".join(lines)
+
+
+def weight_proposal_msg(proposal):
+    """สร้าง Telegram message สำหรับ Claude Haiku weight proposal"""
+    l6 = proposal.get("level6", {})
+    cp = l6.get("claude_weight_proposal")
+    if not cp:
+        return None
+
+    conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(cp.get("confidence", ""), "⚪")
+    return (
+        f"================================\n"
+        f"🤖 <b>AI Weight Proposal — {proposal.get('generated','')}</b>\n"
+        f"================================\n"
+        f"🎯 Trend : {cp['trend']:.3f}\n"
+        f"🏦 SMC   : {cp['smc']:.3f}\n"
+        f"📈 Osc   : {cp['osc']:.3f}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"{conf_icon} Confidence: {cp.get('confidence','?')}\n"
+        f"📝 {cp.get('reasoning','')}\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"✅ พิมพ์ <b>/approve_weights</b> เพื่ออนุมัติ\n"
+        f"❌ ไม่ตอบ = ไม่มีการเปลี่ยนแปลง\n"
+        f"================================"
+    )
+
+
+def get_recent_messages(limit=20):
+    """
+    ดึง Telegram messages ล่าสุด (getUpdates)
+    คืน list of {"update_id", "text", "date"} หรือ []
+    """
+    try:
+        r = requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates",
+            params={"limit": limit, "allowed_updates": ["message"]},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            return []
+        results = r.json().get("result", [])
+        return [
+            {
+                "update_id": upd.get("update_id"),
+                "text":      upd.get("message", {}).get("text", ""),
+                "date":      upd.get("message", {}).get("date", 0),
+            }
+            for upd in results
+            if upd.get("message", {}).get("text")
+        ]
+    except Exception as e:
+        print(f"[NOTIFY] getUpdates error: {e}")
+        return []
 
 
 def order_limit_msg(r):

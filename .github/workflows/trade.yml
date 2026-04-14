@@ -33,12 +33,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Scan Signals (live_trader.py)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python live_trader.py
 
       - name: Update Paper Trades (paper_trade.py)
         run: python paper_trade.py
 
       - name: Generate Dashboard Data (generate_dashboard.py)
+        env:
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python generate_dashboard.py
 
       - name: Send Telegram Notification (notify.py)
@@ -50,6 +55,10 @@ jobs:
 
       - name: Weekly Report — อาทิตย์ 23:00 UTC (= จันทร์ 06:00 Thai) เท่านั้น
         if: github.event.schedule == '0 23 * * 0'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_TOKEN:    ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID:  ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python weekly_report.py
 
       - name: Commit updated data back to repo
@@ -65,6 +74,9 @@ jobs:
           git add -f --verbose proposals/          2>/dev/null && echo "proposals/ OK"           || echo "proposals/ SKIP"
           git add -f --verbose proposals/last_telegram_sent.json 2>/dev/null && echo "last_telegram_sent.json OK" || echo "last_telegram_sent.json SKIP"
           git add -f --verbose notified_signals.json 2>/dev/null && echo "notified_signals.json OK" || echo "notified_signals.json SKIP"
+          git add -f --verbose weights.json          2>/dev/null && echo "weights.json OK"           || echo "weights.json SKIP"
+          git add -f --verbose pending_weights.json  2>/dev/null && echo "pending_weights.json OK"   || echo "pending_weights.json SKIP"
+          git add -f --verbose telegram_offset.json  2>/dev/null && echo "telegram_offset.json OK"   || echo "telegram_offset.json SKIP"
           echo "=== git status ==="
           git status
           echo "=== staged diff ==="

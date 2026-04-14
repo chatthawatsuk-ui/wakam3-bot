@@ -270,24 +270,191 @@ def calc_specialist_winrate(conn):
 MIN_TRADES = 10    # ต้องปิดกี่ trade ถึงจะ unlock weights
 SMOOTHING  = 0.4   # blend กับ equal weight ป้องกัน overfit
 
+
+def _load_backtest_winrates():
+    """
+    อ่าน backtest_mtf.csv → คำนวณ win rate ต่อ specialist
+    ใช้ seeding weights ก่อนที่จะมี paper trade ครบ MIN_TRADES
+    คืน dict {"trend": float, "smc": float, "osc": float, "n": int} หรือ None
+    """
+    try:
+        import pandas as pd
+        candidates = ["backtest_mtf.csv", "backtest_live.csv", "backtest_3y.csv"]
+        df = None
+        fname_used = None
+        for fname in candidates:
+            if os.path.exists(fname):
+                tmp = pd.read_csv(fname)
+                if len(tmp) >= 10 and all(c in tmp.columns
+                        for c in ["score_trend", "score_smc", "score_osc", "outcome"]):
+                    df = tmp
+                    fname_used = fname
+                    break
+        if df is None:
+            return None
+
+        wins  = df[df["outcome"] == "WIN"]
+        total = len(df)
+        if total < 10:
+            return None
+
+        eq = 1 / 3
+
+        def _wr_by_score(score_col):
+            """win rate weighted by specialist score contribution"""
+            score_sum = df[score_col].sum()
+            if score_sum <= 0:
+                return 0.5
+            win_score = wins[score_col].sum()
+            return win_score / score_sum
+
+        wr_t = _wr_by_score("score_trend")
+        wr_s = _wr_by_score("score_smc")
+        wr_o = _wr_by_score("score_osc")
+
+        # blend กับ equal weight (SMOOTHING) เหมือน live weights
+        raw = {
+            "trend": (1 - SMOOTHING) * wr_t + SMOOTHING * eq,
+            "smc":   (1 - SMOOTHING) * wr_s + SMOOTHING * eq,
+            "osc":   (1 - SMOOTHING) * wr_o + SMOOTHING * eq,
+        }
+        total_raw = sum(raw.values())
+        return {
+            "trend": round(raw["trend"] / total_raw, 4),
+            "smc":   round(raw["smc"]   / total_raw, 4),
+            "osc":   round(raw["osc"]   / total_raw, 4),
+            "wr_trend": round(wr_t * 100, 1),
+            "wr_smc":   round(wr_s * 100, 1),
+            "wr_osc":   round(wr_o * 100, 1),
+            "n":     total,
+            "source": fname_used,
+        }
+    except Exception as e:
+        print(f"  [WARN] _load_backtest_winrates: {e}")
+        return None
+
+
+def check_weight_approval():
+    """
+    ตรวจ Telegram getUpdates → หา /approve_weights command
+    ถ้าเจอ: โหลด pending_weights.json → บันทึก weights.json → ส่ง confirm Telegram
+    เรียกก่อน calc_dynamic_weights() ทุก scan
+    """
+    PENDING = "pending_weights.json"
+    if not os.path.exists(PENDING):
+        return  # ไม่มี pending weight รอ approve
+
+    try:
+        import requests
+        import notify as N
+
+        # โหลด pending weights
+        with open(PENDING) as f:
+            pending = json.load(f)
+
+        # ดึง updates จาก Telegram
+        params = {
+            "allowed_updates": ["message"],
+            "limit": 20,
+        }
+        # ใช้ offset ล่าสุดเพื่อไม่อ่านซ้ำ
+        OFFSET_FILE = "telegram_offset.json"
+        if os.path.exists(OFFSET_FILE):
+            with open(OFFSET_FILE) as f:
+                params["offset"] = json.load(f).get("offset", 0)
+
+        r = requests.get(
+            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
+            params=params, timeout=10,
+        )
+        if r.status_code != 200:
+            return
+
+        data     = r.json()
+        updates  = data.get("result", [])
+        approved = False
+        max_update_id = params.get("offset", 0)
+
+        for upd in updates:
+            upd_id  = upd.get("update_id", 0)
+            max_update_id = max(max_update_id, upd_id + 1)
+            msg = upd.get("message", {})
+            text = msg.get("text", "").strip().lower()
+            if text in ("/approve_weights", "/approve_weights@"):
+                approved = True
+
+        # บันทึก offset ล่าสุดไว้สำหรับรอบถัดไป
+        with open(OFFSET_FILE, "w") as f:
+            json.dump({"offset": max_update_id}, f)
+
+        if approved:
+            # ใช้ pending weights เขียนทับ weights.json
+            weights = {
+                "trend":    pending["trend"],
+                "smc":      pending["smc"],
+                "osc":      pending["osc"],
+                "locked":   False,
+                "reason":   f"Approved via Telegram — {pending.get('reason', 'Claude Haiku proposal')}",
+                "generated": datetime.now(timezone.utc).isoformat(),
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+            }
+            with open("weights.json", "w") as f:
+                json.dump(weights, f, indent=2, ensure_ascii=False)
+
+            # ลบ pending_weights.json
+            os.remove(PENDING)
+
+            # ส่ง Telegram confirm
+            confirm_msg = (
+                "✅ <b>Weights อัพเดตแล้ว</b>\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                f"🎯 Trend : {pending['trend']:.3f}\n"
+                f"🏦 SMC   : {pending['smc']:.3f}\n"
+                f"📈 Osc   : {pending['osc']:.3f}\n"
+                "━━━━━━━━━━━━━━━━━━━━\n"
+                "จะใช้ weights ใหม่ตั้งแต่ scan ถัดไป"
+            )
+            N.send(confirm_msg)
+            print(f"  ✅ Weight approved via Telegram — "
+                  f"Trend:{pending['trend']} SMC:{pending['smc']} Osc:{pending['osc']}")
+
+    except Exception as e:
+        print(f"  [WARN] check_weight_approval: {e}")
+
+
 def calc_dynamic_weights(specialist_wr):
     """
     Level 3 — คำนวณ dynamic weights จาก win rate แต่ละ specialist
     บันทึก weights.json ให้ live_trader.py อ่านใช้ run ถัดไป
+    - ถ้า < MIN_TRADES: seed จาก backtest_mtf.csv (ถ้ามี) แทนที่จะ lock เป็น equal
     """
     total_closed = specialist_wr.get("total_closed", 0)
     eq = 1 / 3
 
     if total_closed < MIN_TRADES:
-        weights = {
-            "trend":   round(eq, 4),
-            "smc":     round(eq, 4),
-            "osc":     round(eq, 4),
-            "locked":  True,
-            "reason":  f"ต้องการ {MIN_TRADES} closed trades (มีอยู่ {total_closed})",
-            "total_closed": total_closed,
-            "generated": datetime.now(timezone.utc).isoformat(),
-        }
+        # ลอง seed จาก backtest ก่อน
+        bt = _load_backtest_winrates()
+        if bt:
+            weights = {
+                "trend":   bt["trend"],
+                "smc":     bt["smc"],
+                "osc":     bt["osc"],
+                "locked":  False,
+                "reason":  f"Seeded from {bt['source']} ({bt['n']} backtest trades, "
+                           f"WR Trend:{bt['wr_trend']}% SMC:{bt['wr_smc']}% Osc:{bt['wr_osc']}%)",
+                "total_closed": total_closed,
+                "generated": datetime.now(timezone.utc).isoformat(),
+            }
+        else:
+            weights = {
+                "trend":   round(eq, 4),
+                "smc":     round(eq, 4),
+                "osc":     round(eq, 4),
+                "locked":  True,
+                "reason":  f"ต้องการ {MIN_TRADES} closed trades (มีอยู่ {total_closed})",
+                "total_closed": total_closed,
+                "generated": datetime.now(timezone.utc).isoformat(),
+            }
     else:
         # win rate ต่อ specialist (fallback 0.5 ถ้าไม่มีข้อมูล)
         def _wr(key):
@@ -763,7 +930,8 @@ def main():
     # ── Level 2: Specialist Win Rate ─────────────────────────────────────────
     specialist_wr = calc_specialist_winrate(conn)
 
-    # ── Level 3: Dynamic Weights ──────────────────────────────────────────────
+    # ── Level 3: Dynamic Weights (ตรวจ Telegram approval ก่อน) ─────────────────
+    check_weight_approval()
     dyn_weights = calc_dynamic_weights(specialist_wr)
 
     sess_data = {}
@@ -789,6 +957,37 @@ def main():
             d["win_rate"] = round(d["wins"] / d["total"] * 100, 1) if d["total"] > 0 else 0
             sessions.append(d)
 
+    # ── Shadow Mode Stats ────────────────────────────────────────────────────
+    shadow_stats = {"total": 0, "pending": 0, "win": 0, "loss": 0,
+                    "win_rate": 0, "recent": []}
+    try:
+        sh_rows = conn.execute("""
+            SELECT symbol, side, score, entry_px, sl_pct, regime,
+                   claude_reason, outcome, exit_px, created_at, resolved_at
+            FROM shadow_trades ORDER BY id DESC LIMIT 50
+        """).fetchall()
+        resolved = [r for r in sh_rows if r["outcome"] != "PENDING"]
+        wins_sh  = sum(1 for r in resolved if r["outcome"] == "WIN")
+        shadow_stats = {
+            "total":    len(sh_rows),
+            "pending":  sum(1 for r in sh_rows if r["outcome"] == "PENDING"),
+            "win":      wins_sh,
+            "loss":     sum(1 for r in resolved if r["outcome"] == "LOSS"),
+            "win_rate": round(wins_sh / len(resolved) * 100, 1) if resolved else 0,
+            "recent":   [{
+                "symbol":        dict(r)["symbol"],
+                "side":          dict(r)["side"],
+                "score":         dict(r)["score"],
+                "sl_pct":        dict(r)["sl_pct"],
+                "regime":        dict(r)["regime"],
+                "claude_reason": dict(r)["claude_reason"],
+                "outcome":       dict(r)["outcome"],
+                "created_at":    dict(r)["created_at"],
+            } for r in sh_rows[:20]],
+        }
+    except Exception as e:
+        print(f"  [WARN] shadow_stats: {e}")
+
     data = {
         "balance":       round(balance, 2),
         "pnl":           round(total_pnl, 2),
@@ -809,6 +1008,7 @@ def main():
         "specialist_wr":    specialist_wr,
         "dyn_weights":      dyn_weights,
         "backtest":         load_backtest_data(),
+        "shadow_stats":     shadow_stats,
     }
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:

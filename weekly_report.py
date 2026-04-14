@@ -20,6 +20,8 @@ Level 5 — Market Regime Detection
 import os, json, sqlite3
 from datetime import datetime, timezone
 
+PENDING_WEIGHTS = "pending_weights.json"
+
 DB_PATH       = "paper_trades.db"
 PROPOSALS_DIR = "proposals"
 MIN_SIGNALS   = 10    # ขั้นต่ำก่อนเสนอปรับ
@@ -274,6 +276,164 @@ def propose_regime_weights(regime_data):
 
 
 # ══════════════════════════════════════════════════════════════
+# LEVEL 6 — CLAUDE HAIKU WEIGHT PROPOSAL
+# ══════════════════════════════════════════════════════════════
+def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summary=None):
+    """
+    ใช้ Claude Haiku วิเคราะห์ข้อมูลทั้งหมด → เสนอ weights พร้อมเหตุผล
+    บันทึก pending_weights.json (รอ /approve_weights จาก Telegram)
+    คืน dict หรือ None ถ้าเกิดข้อผิดพลาด
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        print("  [SKIP] ANTHROPIC_API_KEY ไม่พบ — ข้าม Claude weight proposal")
+        return None
+
+    try:
+        import anthropic
+
+        # รวบรวมข้อมูลให้ Claude วิเคราะห์
+        context_lines = [
+            "# AI Trade System — Weekly Weight Analysis",
+            f"Date: {datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
+            "",
+            "## Specialist Win Rates (Paper Trades)",
+        ]
+
+        total_closed = specialist_wr.get("total_closed", 0)
+        context_lines.append(f"Total closed trades: {total_closed}")
+        for key in ["trend", "smc", "osc"]:
+            d = specialist_wr.get(key, {})
+            if isinstance(d, dict) and "winrate" in d:
+                context_lines.append(
+                    f"- {key.upper()}: WR={d['winrate']}% over {d.get('trades', 0)} trades"
+                )
+
+        if backtest_summary:
+            context_lines += [
+                "",
+                "## Backtest Summary",
+                f"- Trades: {backtest_summary.get('n', 0)}",
+                f"- Win Rate: {backtest_summary.get('wr', 0)}%",
+                f"- Total PnL: ${backtest_summary.get('total_pnl', 0)}",
+                f"- Sharpe: {backtest_summary.get('sharpe', 0)}",
+                f"- Max DD: {backtest_summary.get('dd', 0)}%",
+            ]
+
+        if regime_data and "error" not in regime_data:
+            context_lines += ["", "## Market Regime Performance"]
+            for regime, d in regime_data.items():
+                context_lines.append(
+                    f"- {regime}: {d.get('count', 0)} trades, "
+                    f"WR={d.get('win_rate', 0):.1%}, "
+                    f"avg Trend={d.get('avg_score_trend', 0):.1f}/11 "
+                    f"SMC={d.get('avg_score_smc', 0):.1f}/10 "
+                    f"Osc={d.get('avg_score_osc', 0):.1f}/9"
+                )
+
+        if cond_wr and "error" not in cond_wr:
+            context_lines += ["", "## Top/Bottom Conditions by Win Rate"]
+            sorted_conds = sorted(
+                [(k, v) for k, v in cond_wr.items() if isinstance(v, dict) and "win_rate" in v],
+                key=lambda x: x[1]["win_rate"], reverse=True
+            )
+            for cond, d in sorted_conds[:5]:
+                context_lines.append(f"- TOP {cond}: WR={d['win_rate']:.1%} ({d['count']} trades)")
+            for cond, d in sorted_conds[-5:]:
+                context_lines.append(f"- BOT {cond}: WR={d['win_rate']:.1%} ({d['count']} trades)")
+
+        context = "\n".join(context_lines)
+
+        prompt = f"""You are an expert quant analyst for a crypto trading system.
+The system uses 3 specialist agents to score trading signals:
+- 🎯 Trend Agent (CDC EMA7/30 + SMA + ATR Trail, max 11 pts)
+- 🏦 SMC Agent (Smart Money Concepts, max 10 pts)
+- 📈 Oscillator Agent (RSI + Stochastic + MACD, max 9 pts)
+
+Current weights are blended and used to compute a combined score (max 31 pts).
+
+{context}
+
+Based on this data, propose new weights (trend, smc, osc) that must sum to exactly 1.0.
+Rules:
+- Each weight must be between 0.20 and 0.60
+- Weights must sum to 1.0 (round to 3 decimal places)
+- Base your reasoning on the actual performance data above
+- If data is insufficient (< 10 trades), recommend equal weights (0.333 each) and say why
+
+Respond ONLY with valid JSON in this exact format:
+{{
+  "trend": 0.xxx,
+  "smc": 0.xxx,
+  "osc": 0.xxx,
+  "reasoning": "brief explanation in Thai (2-3 sentences)",
+  "confidence": "LOW|MEDIUM|HIGH"
+}}"""
+
+        client = anthropic.Anthropic(api_key=api_key)
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        raw = response.content[0].text.strip()
+        # ดึง JSON จาก response (อาจมี markdown code block)
+        import re
+        json_match = re.search(r'\{[\s\S]*\}', raw)
+        if not json_match:
+            print(f"  [WARN] Claude response ไม่ใช่ JSON: {raw[:100]}")
+            return None
+
+        proposal = json.loads(json_match.group())
+
+        # validate
+        t = float(proposal.get("trend", 0))
+        s = float(proposal.get("smc", 0))
+        o = float(proposal.get("osc", 0))
+        total = t + s + o
+
+        if abs(total - 1.0) > 0.01:
+            print(f"  [WARN] Claude weights ไม่รวมเป็น 1.0: {total:.3f} — normalize")
+            t, s, o = t/total, s/total, o/total
+
+        # clamp ระหว่าง 0.20–0.60
+        t = max(0.20, min(0.60, t))
+        s = max(0.20, min(0.60, s))
+        o = max(0.20, min(0.60, o))
+        total2 = t + s + o
+        t, s, o = round(t/total2, 3), round(s/total2, 3), round(o/total2, 3)
+        # ปรับให้ sum = 1.000 พอดี
+        diff = round(1.0 - (t + s + o), 3)
+        t = round(t + diff, 3)
+
+        result = {
+            "trend":      t,
+            "smc":        s,
+            "osc":        o,
+            "reasoning":  proposal.get("reasoning", ""),
+            "confidence": proposal.get("confidence", "MEDIUM"),
+            "generated":  datetime.now(timezone.utc).isoformat(),
+            "reason":     f"Claude Haiku proposal ({proposal.get('confidence','?')} confidence): "
+                          f"{proposal.get('reasoning', '')}",
+        }
+
+        # บันทึก pending_weights.json
+        with open(PENDING_WEIGHTS, "w") as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+        print(f"  🤖 Claude Haiku เสนอ Weights — "
+              f"Trend:{t} SMC:{s} Osc:{o} [{result['confidence']}]")
+        print(f"     เหตุผล: {result['reasoning']}")
+        print(f"  💾 บันทึก → {PENDING_WEIGHTS} (รอ /approve_weights ทาง Telegram)")
+
+        return result
+
+    except Exception as e:
+        print(f"  [WARN] _claude_weight_proposal: {e}")
+        return None
+
+
+# ══════════════════════════════════════════════════════════════
 # GENERATE WEEKLY REPORT
 # ══════════════════════════════════════════════════════════════
 def generate_weekly_report():
@@ -326,6 +486,63 @@ def generate_weekly_report():
             print(f"      {regime}: Trend={p['W_TREND']:.3f} SMC={p['W_SMC']:.3f} Osc={p['W_OSC']:.3f}")
             print(f"        → {p['reason']}")
 
+    # ── Level 6: Claude Haiku Weight Proposal ────────────────
+    print("\n🤖 Level 6 — Claude Haiku Weight Proposal")
+    specialist_wr_raw = {}
+    try:
+        import sqlite3 as _sq
+        con = _sq.connect(DB_PATH)
+        cur = con.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='trades'")
+        if cur.fetchone():
+            rows = cur.execute(
+                "SELECT score_trend, score_smc, score_osc, outcome "
+                "FROM trades WHERE status='CLOSED' AND outcome IS NOT NULL"
+            ).fetchall()
+            con.close()
+            total_c = len(rows)
+            for key_i, key in enumerate(["trend", "smc", "osc"]):
+                trades_key = [(r[key_i], r[3]=="WIN") for r in rows]
+                wins  = sum(1 for _, w in trades_key if w)
+                w_pct = round(wins / total_c * 100, 1) if total_c > 0 else 50.0
+                specialist_wr_raw[key] = {"winrate": w_pct, "trades": total_c}
+            specialist_wr_raw["total_closed"] = total_c
+        else:
+            con.close()
+    except Exception:
+        pass
+
+    # backtest summary for Claude context
+    bt_summary = None
+    try:
+        import pandas as pd
+        for fname in ["backtest_mtf.csv", "backtest_live.csv"]:
+            if os.path.exists(fname):
+                df_bt = pd.read_csv(fname)
+                if not df_bt.empty and "outcome" in df_bt.columns:
+                    wins_bt = (df_bt["outcome"] == "WIN").sum()
+                    n_bt    = len(df_bt)
+                    pnl_bt  = df_bt["pnl"].sum() if "pnl" in df_bt.columns else 0
+                    avg_bt  = df_bt["pnl"].mean() if "pnl" in df_bt.columns else 0
+                    std_bt  = df_bt["pnl"].std()  if "pnl" in df_bt.columns else 1
+                    sharpe  = (avg_bt / std_bt) * (252 ** 0.5) if std_bt > 0 else 0
+                    bt_summary = {
+                        "n":         n_bt,
+                        "wr":        round(wins_bt / n_bt * 100, 1) if n_bt > 0 else 0,
+                        "total_pnl": round(float(pnl_bt), 2),
+                        "sharpe":    round(float(sharpe), 2),
+                    }
+                    break
+    except Exception:
+        pass
+
+    claude_prop = _claude_weight_proposal(
+        specialist_wr_raw,
+        regime_data if "error" not in regime_data else {},
+        cond_wr if "error" not in cond_wr else {},
+        bt_summary,
+    )
+
     # ── บันทึก Proposal ───────────────────────────────────────
     proposal = {
         "generated":        today,
@@ -338,6 +555,9 @@ def generate_weekly_report():
         "level5": {
             "regime_performance": regime_data if "error" not in regime_data else {},
             "proposals":          regime_prop,
+        },
+        "level6": {
+            "claude_weight_proposal": claude_prop,
         },
     }
 
@@ -354,11 +574,11 @@ def generate_weekly_report():
     print(f"💾 บันทึก → {latest}")
     print("\n" + "=" * 60)
     print("⚠️  กรุณา Review และ Confirm ก่อนนำไปใช้")
-    print("   หลัง Confirm → สร้าง proposals/confirmed_proposal.json")
+    print("   หลัง Confirm → ตอบ /approve_weights ทาง Telegram")
     print("=" * 60)
 
     # ── ส่ง Telegram ──────────────────────────────────────────────────────────
-    _send_telegram(proposal)
+    _send_telegram(proposal, bt_summary)
 
     return proposal
 
@@ -409,6 +629,13 @@ def _send_telegram(proposal, backtest_summary=None):
         msg = N.weekly_report_msg(proposal, backtest_summary)
         ok  = N.send(msg)
         print(f"  Telegram Weekly Report: {'✅ ส่งแล้ว' if ok else '❌ ส่งไม่ได้'}")
+
+        # ส่ง weight proposal แยกต่างหาก (ถ้ามี)
+        wp_msg = N.weight_proposal_msg(proposal)
+        if wp_msg:
+            ok2 = N.send(wp_msg)
+            print(f"  Telegram Weight Proposal: {'✅ ส่งแล้ว' if ok2 else '❌ ส่งไม่ได้'}")
+
         # บันทึกเวลาส่งล่าสุด → ป้องกันส่งซ้ำในรอบ 6 วัน
         if ok:
             with open(SENT_FLAG, "w") as f:
