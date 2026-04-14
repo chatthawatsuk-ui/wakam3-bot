@@ -5,14 +5,26 @@ on:
     - cron: '0 16 * * 0'    # อาทิตย์ 16:00 UTC = 23:00 Thai time
   workflow_dispatch:
     inputs:
-      symbols:
-        description: 'Symbols (เว้นว่างสำหรับ fast mode 5 symbols)'
+      days:
+        description: 'ย้อนหลังกี่วัน (default: 90)'
+        required: false
+        default: '90'
+      tf:
+        description: 'TF ที่ต้องการ เช่น "1H 4H" (เว้นว่าง = 30m/1H/2H/4H/1D)'
         required: false
         default: ''
-      candles:
-        description: 'จำนวน 1H candles (default 300)'
+      symbols:
+        description: 'Symbols (เว้นว่าง = 10 ตัวหลัก)'
         required: false
-        default: '300'
+        default: ''
+      fast:
+        description: 'Fast mode: 3 symbols, 60 days, 1H/4H เท่านั้น'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 permissions:
   contents: write
@@ -42,16 +54,32 @@ jobs:
 
       - name: Run Backtest
         run: |
+          CMD="python backtest_live.py"
+
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Scheduled run — full 10 symbols, 500 candles"
-            python backtest_live.py --candles 500
-          elif [ -z "${{ github.event.inputs.symbols }}" ]; then
-            echo "Manual fast mode (5 symbols, ${{ github.event.inputs.candles }} candles)"
-            python backtest_live.py --fast --candles ${{ github.event.inputs.candles }}
+            echo "Scheduled weekly run — 10 symbols, 90 days, all TFs"
+            CMD="$CMD --days 90"
           else
-            echo "Manual with symbols: ${{ github.event.inputs.symbols }}"
-            python backtest_live.py --symbols ${{ github.event.inputs.symbols }} --candles ${{ github.event.inputs.candles }}
+            # fast mode
+            if [ "${{ github.event.inputs.fast }}" = "true" ]; then
+              CMD="$CMD --fast"
+            fi
+            # days
+            if [ -n "${{ github.event.inputs.days }}" ]; then
+              CMD="$CMD --days ${{ github.event.inputs.days }}"
+            fi
+            # tf
+            if [ -n "${{ github.event.inputs.tf }}" ]; then
+              CMD="$CMD --tf ${{ github.event.inputs.tf }}"
+            fi
+            # symbols
+            if [ -n "${{ github.event.inputs.symbols }}" ]; then
+              CMD="$CMD --symbols ${{ github.event.inputs.symbols }}"
+            fi
           fi
+
+          echo "Running: $CMD"
+          $CMD
 
       - name: Update Dashboard Data
         run: python generate_dashboard.py
