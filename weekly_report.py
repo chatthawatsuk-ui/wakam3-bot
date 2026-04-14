@@ -528,9 +528,10 @@ def generate_weekly_report():
                     sharpe  = (avg_bt / std_bt) * (252 ** 0.5) if std_bt > 0 else 0
                     dd_val  = 0.0
                     if "pnl" in df_bt.columns:
-                        eq = df_bt["pnl"].cumsum()
-                        pk = eq.cummax()
-                        dd_val = round(float(((eq - pk) / pk.abs().replace(0, 1) * 100).min()), 1)
+                        eq  = df_bt["pnl"].cumsum()
+                        pk  = eq.cummax()
+                        cap = max(float(pk.max()), n_bt * 10.0)
+                        dd_val = round(float(((eq - pk) / cap * 100).min()), 1)
                     bt_summary = {
                         "n":         n_bt,
                         "wr":        round(wins_bt / n_bt * 100, 1) if n_bt > 0 else 0,
@@ -621,7 +622,8 @@ def _send_telegram(proposal, backtest_summary=None):
                     std = df["pnl"].std()
                     eq  = df["pnl"].cumsum()
                     pk  = eq.cummax()
-                    dd  = ((eq - pk) / pk.abs().replace(0, 1) * 100).min()
+                    cap = max(float(pk.max()), total * 10.0)
+                    dd  = ((eq - pk) / cap * 100).min()
                     sharpe = (avg / std) * (252 ** 0.5) if std > 0 else 0
                     backtest_summary = {
                         "n":         total,

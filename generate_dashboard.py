@@ -823,7 +823,8 @@ def _bt_breakdowns(df, source=None):
                 std_y  = g["pnl"].std()
                 sharpe_y = round(g["pnl"].mean() / std_y * (n_y ** 0.5), 2) if std_y and std_y > 0 else 0
                 cum_y = g["pnl"].cumsum(); peak_y = cum_y.cummax()
-                dd_y  = round(((cum_y - peak_y) / (peak_y.abs() + 1e-9)).min() * 100, 1)
+                cap_y = max(peak_y.max(), n_y * 10.0)
+                dd_y  = round(((cum_y - peak_y) / cap_y * 100).min(), 1)
                 by_year.append({"year": int(yr), "n": n_y,
                                  "wr": round(wins_y/n_y*100,1),
                                  "total_pnl": round(g["pnl"].sum(),2),
@@ -846,7 +847,8 @@ def _bt_breakdowns(df, source=None):
             wins_tf = (g["outcome"] == "WIN").sum()
             n_tf    = len(g)
             cum_tf = g["pnl"].cumsum(); peak_tf = cum_tf.cummax()
-            dd_tf  = round(((cum_tf - peak_tf) / (peak_tf.abs() + 1e-9)).min() * 100, 1)
+            cap_tf = max(peak_tf.max(), n_tf * 10.0)
+            dd_tf  = round(((cum_tf - peak_tf) / cap_tf * 100).min(), 1)
             gross_win  = g[g["pnl"] > 0]["pnl"].sum()
             gross_loss = abs(g[g["pnl"] < 0]["pnl"].sum())
             by_tf.append({"tf": tf_name, "n": n_tf,
