@@ -13,6 +13,9 @@ NAME      = "Trend Agent"
 EMOJI     = "🎯"
 MAX_SCORE = 11
 
+# ── Alert throttle — ส่ง HTF fallback alert ไม่เกิน 1 ครั้ง/ชั่วโมง ────────────
+_htf_warn_ts = 0.0
+
 EMA_FAST   = 7;   EMA_SLOW  = 30
 SMA_99     = 99
 ATR_FAST_P = 5;   ATR_FAST_M = 0.5
@@ -64,6 +67,22 @@ def _add_indicators(df):
 def _htf_bias(df_1h, df_4h):
     """4H EMA/SMA bias — Trend Agent เป็นคนตัดสิน HTF"""
     if df_4h.empty:
+        global _htf_warn_ts
+        import time
+        now = time.time()
+        if now - _htf_warn_ts > 3600:
+            _htf_warn_ts = now
+            try:
+                import notify
+                notify.send(
+                    "⚠️ <b>[DEGRADED] HTF 4H Data Missing</b>\n"
+                    "Trend Agent fallback: htf_bull=True, htf_sma=True\n"
+                    "▸ LONG gate เปิดโดยอัตโนมัติ (ไม่ผ่าน HTF filter)\n"
+                    "▸ SHORT signals ถูก block\n"
+                    "▸ ตรวจสอบ: OKX 4H data fetch หรือ rate limit"
+                )
+            except Exception:
+                pass
         df_1h = df_1h.copy()
         df_1h["htf_bull"] = True
         df_1h["htf_sma"]  = True

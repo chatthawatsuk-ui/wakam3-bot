@@ -12,6 +12,9 @@ _client = None
 
 MODEL = "claude-haiku-4-5-20251001"
 
+# ── Alert throttle — ส่ง API-down alert ไม่เกิน 1 ครั้ง/ชั่วโมง ─────────────
+_api_warn_ts = 0.0
+
 # ── System prompt (cached) ──────────────────────────────────────────────────────
 # prompt นี้จะถูก cache ไว้ที่ Anthropic ประมาณ 5 นาที
 # ทุก call ในรอบ scan เดียวกัน (~45 coins) ประหยัดค่า input token ~90%
@@ -157,5 +160,21 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         return approved, reason
 
     except Exception as e:
-        # fallback: อย่า block signal ถ้า Claude error
+        # fallback: อย่า block signal ถ้า Claude error — แต่แจ้งเตือน Telegram
+        global _api_warn_ts
+        import time
+        now = time.time()
+        if now - _api_warn_ts > 3600:
+            _api_warn_ts = now
+            try:
+                import notify
+                notify.send(
+                    "⚠️ <b>[DEGRADED] Claude Filter API Down</b>\n"
+                    f"Error: {str(e)[:100]}\n"
+                    "▸ Fallback: signals ผ่านทั้งหมด (filter disabled)\n"
+                    "▸ Hard-reject rules ยังทำงานปกติ\n"
+                    "▸ ตรวจสอบ: ANTHROPIC_API_KEY และ API status"
+                )
+            except Exception:
+                pass
         return True, f"err:{str(e)[:60]}"

@@ -77,7 +77,18 @@
       "Bash(py -c \"import json; d=json.load\\(open\\('dashboard_data.json'\\)\\); lp=d.get\\('live_prices',{}\\); print\\('live_prices count:', len\\(lp\\)\\); print\\('sample:', list\\(lp.items\\(\\)\\)[:2] if lp else 'EMPTY'\\)\")",
       "Bash(py -c \"import json; d=json.load\\(open\\('dashboard_data.json', encoding='utf-8'\\)\\); lp=d.get\\('live_prices',{}\\); print\\('live_prices count:', len\\(lp\\)\\); print\\('sample:', list\\(lp.items\\(\\)\\)[:2] if lp else 'EMPTY'\\)\")",
       "Bash(py -c \"import json; d=json.load\\(open\\('dashboard_data.json',encoding='utf-8'\\)\\); lp=d.get\\('live_prices',{}\\); print\\('live_prices count:', len\\(lp\\)\\)\")",
-      "Bash(where gh:*)"
+      "Bash(where gh:*)",
+      "Bash(python -c \"import json; d=json.load\\(open\\('dashboard_data.json'\\)\\); ot=d.get\\('open_trades',[]\\); print\\('open trades:', len\\(ot\\)\\); [print\\(t\\) for t in ot[:3]]\")",
+      "Bash(py -3 -c \"import json; d=json.load\\(open\\('dashboard_data.json'\\)\\); ot=d.get\\('open_trades',[]\\); print\\('open trades:', len\\(ot\\)\\); [print\\(t\\) for t in ot[:3]]\")",
+      "Bash(py -3 -c ':*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:impeccable.style)",
+      "Bash(grep -n \"tp1\\\\|tp2\\\\|sl_px\\\\|entry_px\\\\|atr\\\\|stop_loss\\\\|take_profit\\\\|risk_reward\\\\|rr_ratio\\\\|0\\\\\\\\.02\\\\|0\\\\\\\\.04\\\\|0\\\\\\\\.015\" \"C:/Users/chatt/OneDrive - STEEL FRAME BUILDING CO.,LTD/Desktop/ai-trade/paper_trade_live.py\")",
+      "Bash(ls \"C:/Users/chatt/OneDrive - STEEL FRAME BUILDING CO.,LTD/Desktop/ai-trade/\"*.py)",
+      "Bash(py backtest_mtf.py --tf 1h --symbols BTC/USDT --years 0.1)",
+      "Bash(gh api:*)"
     ]
   }
 }
