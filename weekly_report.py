@@ -278,9 +278,9 @@ def propose_regime_weights(regime_data):
 # ══════════════════════════════════════════════════════════════
 # LEVEL 6 — CLAUDE HAIKU WEIGHT PROPOSAL
 # ══════════════════════════════════════════════════════════════
-def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summary=None):
+def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summary=None, tf_data=None):
     """
-    ใช้ Claude Haiku วิเคราะห์ข้อมูลทั้งหมด → เสนอ weights พร้อมเหตุผล
+    ใช้ Claude Haiku วิเคราะห์ข้อมูลทั้งหมด → เสนอ weights + วิเคราะห์เชิงลึก
     บันทึก pending_weights.json (รอ /approve_weights จาก Telegram)
     คืน dict หรือ None ถ้าเกิดข้อผิดพลาด
     """
@@ -332,15 +332,23 @@ def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summar
                 )
 
         if cond_wr and "error" not in cond_wr:
-            context_lines += ["", "## Top/Bottom Conditions by Win Rate"]
+            context_lines += ["", "## Condition Win Rates (Top 5 / Bottom 5)"]
             sorted_conds = sorted(
                 [(k, v) for k, v in cond_wr.items() if isinstance(v, dict) and "win_rate" in v],
                 key=lambda x: x[1]["win_rate"], reverse=True
             )
             for cond, d in sorted_conds[:5]:
-                context_lines.append(f"- TOP {cond}: WR={d['win_rate']:.1%} ({d['count']} trades)")
+                context_lines.append(f"- TOP {cond}: WR={d['win_rate']:.1%} ({d['count']} trades, avg_pnl=${d['avg_pnl']:.2f})")
             for cond, d in sorted_conds[-5:]:
-                context_lines.append(f"- BOT {cond}: WR={d['win_rate']:.1%} ({d['count']} trades)")
+                context_lines.append(f"- BOT {cond}: WR={d['win_rate']:.1%} ({d['count']} trades, avg_pnl=${d['avg_pnl']:.2f})")
+
+        if tf_data:
+            context_lines += ["", "## Performance by Timeframe"]
+            for tf, d in sorted(tf_data.items(), key=lambda x: x[1].get("wr", 0), reverse=True):
+                context_lines.append(
+                    f"- {tf}: {d['n']} trades, WR={d['wr']:.1f}%, "
+                    f"avg_pnl=${d['avg_pnl']:.2f}, total_pnl=${d['total_pnl']:.2f}"
+                )
 
         context = "\n".join(context_lines)
 
@@ -350,30 +358,34 @@ The system uses 3 specialist agents to score trading signals:
 - 🏦 SMC Agent (Smart Money Concepts, max 10 pts)
 - 📈 Oscillator Agent (RSI + Stochastic + MACD, max 9 pts)
 
-Current weights are blended and used to compute a combined score (max 31 pts).
+Current weights are blended into a combined score (max 31 pts).
 
 {context}
 
-Based on this data, propose new weights (trend, smc, osc) that must sum to exactly 1.0.
-Rules:
-- Each weight must be between 0.20 and 0.60
-- Weights must sum to 1.0 (round to 3 decimal places)
-- Base your reasoning on the actual performance data above
-- If data is insufficient (< 10 trades), recommend equal weights (0.333 each) and say why
-
-Respond ONLY with valid JSON in this exact format:
+Analyze the data above and respond ONLY with valid JSON in this exact format:
 {{
   "trend": 0.xxx,
   "smc": 0.xxx,
   "osc": 0.xxx,
-  "reasoning": "brief explanation in Thai (2-3 sentences)",
-  "confidence": "LOW|MEDIUM|HIGH"
-}}"""
+  "confidence": "LOW|MEDIUM|HIGH",
+  "reasoning": "เหตุผลการเลือก weight เป็นภาษาไทย 2-3 ประโยค",
+  "best_tf": "TF ที่ WR สูงสุด เช่น 1H",
+  "best_tf_reason": "เหตุผลสั้นๆ เป็นภาษาไทย 1 ประโยค",
+  "top_condition": "condition ที่ดีที่สุด",
+  "weak_condition": "condition ที่แย่ที่สุด",
+  "regime_insight": "วิเคราะห์ regime ที่ระบบทำได้ดีที่สุด เป็นภาษาไทย 1 ประโยค",
+  "weekly_verdict": "สรุปสัปดาห์นี้เป็นภาษาไทย 1 ประโยค"
+}}
+
+Rules for weights:
+- Each weight between 0.20 and 0.60
+- Must sum to exactly 1.0
+- If total trades < 10: use equal weights (0.333) and set confidence=LOW"""
 
         client = anthropic.Anthropic(api_key=api_key)
         response = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=300,
+            max_tokens=600,
             messages=[{"role": "user", "content": prompt}],
         )
 
@@ -408,14 +420,19 @@ Respond ONLY with valid JSON in this exact format:
         t = round(t + diff, 3)
 
         result = {
-            "trend":      t,
-            "smc":        s,
-            "osc":        o,
-            "reasoning":  proposal.get("reasoning", ""),
-            "confidence": proposal.get("confidence", "MEDIUM"),
-            "generated":  datetime.now(timezone.utc).isoformat(),
-            "reason":     f"Claude Haiku proposal ({proposal.get('confidence','?')} confidence): "
-                          f"{proposal.get('reasoning', '')}",
+            "trend":           t,
+            "smc":             s,
+            "osc":             o,
+            "confidence":      proposal.get("confidence", "MEDIUM"),
+            "reasoning":       proposal.get("reasoning", ""),
+            "best_tf":         proposal.get("best_tf", ""),
+            "best_tf_reason":  proposal.get("best_tf_reason", ""),
+            "top_condition":   proposal.get("top_condition", ""),
+            "weak_condition":  proposal.get("weak_condition", ""),
+            "regime_insight":  proposal.get("regime_insight", ""),
+            "weekly_verdict":  proposal.get("weekly_verdict", ""),
+            "generated":       datetime.now(timezone.utc).isoformat(),
+            "reason":          f"Claude Haiku ({proposal.get('confidence','?')}): {proposal.get('reasoning', '')}",
         }
 
         # บันทึก pending_weights.json
@@ -551,11 +568,52 @@ def generate_weekly_report():
     except Exception:
         pass
 
+    # ── TF Performance (all-time) ─────────────────────────────
+    tf_data = {}
+    try:
+        if os.path.exists(DB_PATH):
+            con_tf = sqlite3.connect(DB_PATH)
+            cur_tf = con_tf.cursor()
+            cur_tf.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='trades'")
+            if cur_tf.fetchone():
+                # ตรวจว่ามี tf column ไหม
+                tf_cols = {r[1] for r in con_tf.execute("PRAGMA table_info(trades)").fetchall()}
+                if "tf" in tf_cols:
+                    tf_rows = con_tf.execute(
+                        "SELECT tf, outcome, pnl_usd FROM trades "
+                        "WHERE status='CLOSED' AND outcome IS NOT NULL AND tf IS NOT NULL"
+                    ).fetchall()
+                    from collections import defaultdict
+                    tf_bucket = defaultdict(list)
+                    for tf, outcome, pnl in tf_rows:
+                        tf_bucket[tf].append((outcome, pnl or 0.0))
+                    for tf, trades_list in tf_bucket.items():
+                        n    = len(trades_list)
+                        wins = sum(1 for o, _ in trades_list if o == "WIN")
+                        pnls = [p for _, p in trades_list]
+                        tf_data[tf] = {
+                            "n":         n,
+                            "wr":        round(wins / n * 100, 1),
+                            "avg_pnl":   round(sum(pnls) / n, 2),
+                            "total_pnl": round(sum(pnls), 2),
+                        }
+            con_tf.close()
+    except Exception as e:
+        print(f"  [WARN] tf_data: {e}")
+
+    if tf_data:
+        best_tf = max(tf_data, key=lambda k: tf_data[k]["wr"])
+        print(f"\n📊 TF Performance:")
+        for tf, d in sorted(tf_data.items(), key=lambda x: x[1]["wr"], reverse=True):
+            star = " ⭐" if tf == best_tf else ""
+            print(f"   {tf}: {d['n']} trades, WR={d['wr']}%, avg=${d['avg_pnl']}{star}")
+
     claude_prop = _claude_weight_proposal(
         specialist_wr_raw,
         regime_data if "error" not in regime_data else {},
         cond_wr if "error" not in cond_wr else {},
         bt_summary,
+        tf_data if tf_data else None,
     )
 
     # ── บันทึก Proposal ───────────────────────────────────────

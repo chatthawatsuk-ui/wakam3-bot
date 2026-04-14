@@ -139,28 +139,55 @@ def weekly_report_msg(proposal, backtest_summary=None):
 
 
 def weight_proposal_msg(proposal):
-    """สร้าง Telegram message สำหรับ Claude Haiku weight proposal"""
+    """สร้าง Telegram message สำหรับ Claude Haiku weight proposal + deep analysis"""
     l6 = proposal.get("level6", {})
     cp = l6.get("claude_weight_proposal")
     if not cp:
         return None
 
     conf_icon = {"HIGH": "🟢", "MEDIUM": "🟡", "LOW": "🔴"}.get(cp.get("confidence", ""), "⚪")
-    return (
-        f"================================\n"
-        f"🤖 <b>AI Weight Proposal — {proposal.get('generated','')}</b>\n"
-        f"================================\n"
-        f"🎯 Trend : {cp['trend']:.3f}\n"
-        f"🏦 SMC   : {cp['smc']:.3f}\n"
-        f"📈 Osc   : {cp['osc']:.3f}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"{conf_icon} Confidence: {cp.get('confidence','?')}\n"
-        f"📝 {cp.get('reasoning','')}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"✅ พิมพ์ <b>/approve_weights</b> เพื่ออนุมัติ\n"
-        f"❌ ไม่ตอบ = ไม่มีการเปลี่ยนแปลง\n"
-        f"================================"
-    )
+
+    lines = [
+        "================================",
+        f"🤖 <b>AI Analysis — {proposal.get('generated','')} </b>",
+        "================================",
+        "",
+        "⚖️ <b>Weight Proposal</b>",
+        f"  🎯 Trend : {cp['trend']:.3f}",
+        f"  🏦 SMC   : {cp['smc']:.3f}",
+        f"  📈 Osc   : {cp['osc']:.3f}",
+        f"  {conf_icon} Confidence: {cp.get('confidence','?')}",
+        f"  📝 {cp.get('reasoning','')}",
+    ]
+
+    if cp.get("best_tf"):
+        lines += [
+            "",
+            "⏱ <b>Best Timeframe</b>",
+            f"  🏆 {cp['best_tf']} — {cp.get('best_tf_reason', '')}",
+        ]
+
+    if cp.get("top_condition") or cp.get("weak_condition"):
+        lines += ["", "🔬 <b>Condition Insight</b>"]
+        if cp.get("top_condition"):
+            lines.append(f"  ✅ ดีที่สุด : {cp['top_condition']}")
+        if cp.get("weak_condition"):
+            lines.append(f"  ⚠️ แย่ที่สุด: {cp['weak_condition']}")
+
+    if cp.get("regime_insight"):
+        lines += ["", f"🌐 <b>Regime</b>: {cp['regime_insight']}"]
+
+    if cp.get("weekly_verdict"):
+        lines += ["", f"📋 <b>สรุปสัปดาห์</b>: {cp['weekly_verdict']}"]
+
+    lines += [
+        "",
+        "━━━━━━━━━━━━━━━━━━━━",
+        "✅ พิมพ์ <b>/approve_weights</b> เพื่ออนุมัติ",
+        "❌ ไม่ตอบ = ไม่มีการเปลี่ยนแปลง",
+        "================================",
+    ]
+    return "\n".join(lines)
 
 
 def get_recent_messages(limit=20):
