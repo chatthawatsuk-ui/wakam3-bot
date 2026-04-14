@@ -103,7 +103,7 @@ def calc_condition_winrates():
 
         # JOIN: จับคู่ signal_ts กับ entry_time ใน trades (±2 นาที)
         query = """
-            SELECT cs.*, t.pnl
+            SELECT cs.*, t.pnl_usd AS pnl
             FROM condition_snapshots cs
             JOIN trades t
               ON cs.symbol = t.symbol
@@ -112,7 +112,7 @@ def calc_condition_winrates():
                  (julianday(cs.signal_ts) - julianday(t.entry_time)) * 86400
              ) < 120
             WHERE t.status = 'CLOSED'
-              AND t.pnl IS NOT NULL
+              AND t.pnl_usd IS NOT NULL
         """
         rows = cur.execute(query).fetchall()
         cols = [d[0] for d in cur.description]
@@ -195,7 +195,7 @@ def calc_regime_performance():
             return {}
 
         query = """
-            SELECT cs.regime, t.pnl,
+            SELECT cs.regime, t.pnl_usd AS pnl,
                    t.score_trend, t.score_smc, t.score_osc
             FROM condition_snapshots cs
             JOIN trades t
@@ -205,7 +205,7 @@ def calc_regime_performance():
                  (julianday(cs.signal_ts) - julianday(t.entry_time)) * 86400
              ) < 120
             WHERE t.status = 'CLOSED'
-              AND t.pnl IS NOT NULL
+              AND t.pnl_usd IS NOT NULL
         """
         rows = cur.execute(query).fetchall()
         con.close()
@@ -587,8 +587,9 @@ def _send_telegram(proposal, backtest_summary=None):
     """ส่ง Weekly Report สรุปไป Telegram — ส่งได้แค่ครั้งเดียวต่อสัปดาห์"""
     # ── Dedup: ตรวจว่าส่งไปแล้วในรอบ 6 วันที่ผ่านมาหรือยัง ──────────────────
     SENT_FLAG = os.path.join(PROPOSALS_DIR, "last_telegram_sent.json")
+    force = os.environ.get("FORCE_REPORT", "").lower() in ("1", "true", "yes")
     try:
-        if os.path.exists(SENT_FLAG):
+        if not force and os.path.exists(SENT_FLAG):
             with open(SENT_FLAG) as f:
                 flag = json.load(f)
             last_sent = datetime.fromisoformat(flag.get("sent_at", "2000-01-01T00:00:00+00:00"))

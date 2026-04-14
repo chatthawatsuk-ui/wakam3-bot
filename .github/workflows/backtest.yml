@@ -17,6 +17,10 @@ on:
         description: 'Symbols (เว้นว่าง = 10 ตัวหลัก)'
         required: false
         default: ''
+      force_report:
+        description: 'บังคับส่ง Telegram แม้ส่งไปแล้วใน 6 วัน (true/false)'
+        required: false
+        default: 'false'
 
 permissions:
   contents: write
@@ -73,6 +77,7 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FORCE_REPORT: ${{ github.event.inputs.force_report }}
         run: python weekly_report.py
 
       - name: Commit backtest results
