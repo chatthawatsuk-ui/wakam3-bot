@@ -7,8 +7,8 @@ except ImportError:
     print("[ERROR] pip install requests")
     sys.exit(1)
 
-BOT_TOKEN = os.environ.get("TELEGRAM_TOKEN", "8696462277:AAFJQr2TkZBF0SkA3Cr2NuypcEshiJ2aUfA")
-CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "6512968157")
+BOT_TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
+CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 NOTIFIED_PATH = "notified_signals.json"   # track signals ที่ส่งไปแล้ว
 CLOSED_PATH   = "closed_results.json"     # paper_trade.py เขียน, notify.py อ่าน
