@@ -460,62 +460,168 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .stat-num-val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
   font-size:12px;font-weight:600;font-family:var(--mono)}
 
-/* Watchlist tighter on small containers */
-.wl-chg{font-size:11px;font-weight:600;min-width:48px;text-align:right}
+/* Always-scrollable table wrapper with scroll shadow */
+.tw{
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,var(--s2) 20%,transparent) left,
+    linear-gradient(to left, var(--s2) 20%,transparent) right;
+  background-attachment:local,local;
+  background-size:30px 100%,30px 100%;
+  background-repeat:no-repeat;
+}
+
+/* Scrollable tab bars everywhere */
+.tabs{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0}
+.wl-tab{flex-shrink:0}
 
 /* ── Mobile bottom nav ─── */
 .mob-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;
-  height:56px;background:var(--s1);border-top:1px solid var(--border);
+  height:58px;background:var(--s1);border-top:1px solid var(--border);
   align-items:center;justify-content:space-around;
+  padding-bottom:env(safe-area-inset-bottom);
 }
 .mob-nav-btn{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:6px 14px;background:none;border:none;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  min-width:52px;padding:6px 8px;background:none;border:none;
   color:var(--t2);cursor:pointer;font-size:9px;font-family:var(--font);
-  letter-spacing:.05em;transition:.12s;
+  letter-spacing:.04em;transition:.12s;border-radius:8px;
 }
 .mob-nav-btn.active{color:var(--blue)}
-.mob-nav-btn svg{width:20px;height:20px;flex-shrink:0}
+.mob-nav-btn svg{width:22px;height:22px;flex-shrink:0}
 
-/* ── iPad / Tablet (600 – 1023px) ─── */
+/* ══ TABLET / iPad (768 – 1023px) ══════════════════════════ */
 @media(max-width:1023px){
-  .sidebar{width:48px;padding:8px 0}
+  /* Sidebar: icons + tiny labels */
+  .sidebar{width:60px;padding:6px 0}
   .s-logo-text,.s-logo-sub,.nav-sec{display:none}
   .s-logo{padding:10px;justify-content:center}
-  .nav-btn{padding:10px;justify-content:center}
-  .nav-btn span{display:none}
+  .nav-btn{
+    padding:8px 4px;flex-direction:column;justify-content:center;gap:3px;
+    font-size:8px;letter-spacing:.04em;color:var(--t3);
+  }
+  .nav-btn span{
+    display:block;font-size:8px;line-height:1;white-space:nowrap;
+    overflow:hidden;text-overflow:clip;max-width:52px;text-align:center;
+  }
+  .nav-btn.active{color:var(--text)}
+  .nav-icon{width:16px;height:16px}
+  .nav-badge{position:absolute;top:4px;right:4px;padding:1px 4px;font-size:8px}
+
+  /* Main layout */
   .dash-grid{grid-template-columns:1fr 1fr !important}
-}
-@media(max-width:767px){
-  .dash-grid{grid-template-columns:1fr !important}
+  .hm{grid-template-columns:repeat(4,1fr)}
+  .ai-dec-grid{grid-template-columns:1fr 1fr}
+  .btc-stats-row{grid-template-columns:1fr 1fr}
+
+  /* Touch-friendly targets */
+  .nav-btn{min-height:52px}
+  .tab,.wl-tab{min-height:40px;padding:8px 14px}
+  .btn-sm{min-height:36px;padding:6px 12px}
+
+  /* Topbar: hide TRADES + SIGNALS on tablet */
+  .tb-hide-tab{display:none}
 }
 
-/* ── Mobile (< 600px) ─── */
+/* ══ LARGE MOBILE / small tablet (600 – 767px) ══════════════ */
+@media(max-width:767px){
+  .dash-grid{grid-template-columns:1fr !important}
+  .pos-cards{grid-template-columns:1fr 1fr !important}
+  .hm{grid-template-columns:repeat(4,1fr)}
+}
+
+/* ══ MOBILE (< 600px) ══════════════════════════════════════ */
 @media(max-width:599px){
   :root{--sidebar-w:0px}
   html,body{overflow:hidden}
+  body{font-size:13px}
   .sidebar{display:none}
   .mob-nav{display:flex}
-  .app{padding-bottom:56px}
-  .page{padding:10px 10px 72px}
-  .topbar{gap:0;padding:0 8px}
+  .app{padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+
+  /* Pages */
+  .page{padding:10px 10px 76px}
+
+  /* Topbar: compact, show only key fields */
+  .topbar{height:40px;padding:0 10px;gap:0}
   .tb-seg{padding:0 8px}
   .tb-lbl{font-size:8px}
   .tb-val{font-size:11px}
-  /* dashboard grid single col */
+  .tb-hide-mob{display:none}
+
+  /* Cards */
+  .card-h{padding:8px 11px}
+  .card-body{padding:10px 11px}
+  .card{border-radius:8px}
+
+  /* Layout grids: all single col */
   .dash-grid{grid-template-columns:1fr !important}
-  /* stats row: 2x2 */
   .stats-4col{grid-template-columns:1fr 1fr !important}
-  /* pos-cards: single col */
   .pos-cards{grid-template-columns:1fr !important}
-  /* watchlist: hide change on tiny screens */
-  @media(max-width:399px){.wl-chg{display:none}}
-  /* table scroll */
+  .ai-dec-grid{grid-template-columns:1fr 1fr !important}
+  .btc-stats-row{grid-template-columns:1fr 1fr !important}
+  .hm{grid-template-columns:repeat(3,1fr);gap:5px;padding:8px}
+
+  /* Heatmap cells: tighter */
+  .hmc{padding:8px 4px}
+  .hmc-sym{font-size:11px}
+  .hmc-px,.hmc-chg,.hmc-sc{font-size:9px}
+
+  /* Tabs: always horizontal scroll */
+  .tabs{gap:0;padding-bottom:0}
+  .tab{padding:8px 12px;font-size:10.5px;min-height:40px}
+  .wl-tab{padding:8px 12px;font-size:10.5px;min-height:40px}
+
+  /* Tables: scroll + slightly smaller */
   .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  /* card padding tighter */
-  .card-h{padding:8px 10px}
-  .card-body{padding:10px}
+  th{padding:5px 8px;font-size:8px}
+  td{padding:6px 8px;font-size:10.5px}
+
+  /* Touch-friendly buttons */
+  .btn-sm{min-height:36px;padding:5px 12px;font-size:10px}
+  .nav-btn,.tab,.wl-tab,.mob-nav-btn{cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+  /* Position cards */
+  .pc-head{padding:10px 12px 6px}
+  .pc-sym{font-size:14px}
+  .pc-pnl-val{font-size:16px}
+  .pc-prices,.pc-levels{padding:0 12px 8px}
+  .pc-lv{padding:5px 6px}
+  .pc-bar-wrap{padding:0 12px 10px}
+
+  /* Signal cards: slightly larger on mobile */
+  .sig-card{min-width:155px;padding:10px 11px}
+  .sig-sym{font-size:14px}
+  .sig-score{font-size:20px}
+
+  /* Stat cards: bigger values */
+  .stat-val{font-size:18px}
+  .stat-num-val{font-size:13px}
+
+  /* Agent cards */
+  .ag-grid{padding:10px;gap:8px}
+  .ag-card{padding:12px}
+  .ag-avatar{width:38px;height:38px;font-size:18px}
+
+  /* Watchlist: hide volume on small mobile */
+  .wl-vol{display:none}
+
+  /* BTC hero: smaller */
+  .btc-hero-px{font-size:32px}
+
+  /* Empty state */
+  .empty{padding:22px}
+}
+
+/* ══ TINY MOBILE (< 400px) ══════════════════════════════════ */
+@media(max-width:399px){
+  .wl-chg{display:none}
+  .hm{grid-template-columns:repeat(3,1fr)}
+  .tb-seg{padding:0 6px}
+  .topbar .tb-seg:nth-child(5){display:none} /* P&L hidden on tiny */
 }
 </style>
 </head>
@@ -615,13 +721,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
       </div>
     </div>
-    <div class="tb-seg">
+    <div class="tb-seg tb-hide-mob">
       <div>
         <div class="tb-lbl">REGIME</div>
         <div id="tb-regime"><span class="tb-tag tag-side-y">SIDEWAY / RANGING</span></div>
       </div>
     </div>
-    <div class="tb-seg">
+    <div class="tb-seg tb-hide-mob">
       <div>
         <div class="tb-lbl">MODE</div>
         <div style="display:flex;gap:5px;margin-top:2px">
@@ -633,13 +739,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <div class="tb-seg">
       <div><div class="tb-lbl">P&amp;L</div><div class="tb-val" id="tb-pnl">+$0.00</div></div>
     </div>
-    <div class="tb-seg">
+    <div class="tb-seg tb-hide-mob">
       <div><div class="tb-lbl">WIN RATE</div><div class="tb-val" id="tb-wr">—</div></div>
     </div>
-    <div class="tb-seg">
+    <div class="tb-seg tb-hide-tab tb-hide-mob">
       <div><div class="tb-lbl">TRADES</div><div class="tb-val" id="tb-trades">0</div></div>
     </div>
-    <div class="tb-seg">
+    <div class="tb-seg tb-hide-tab tb-hide-mob">
       <div><div class="tb-lbl">SIGNALS</div><div class="tb-val" id="tb-sigs">0</div></div>
     </div>
     <div class="tb-seg" style="margin-left:auto;border-right:none">
