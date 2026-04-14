@@ -934,12 +934,8 @@ def load_live_performance():
         if "tf" not in df.columns:
             df["tf"] = "–"
 
-        summary = _bt_metrics(df)
-
-        # breakdown by symbol
-        by_sym = {}
-        for sym, g in df.groupby("sym"):
-            by_sym[sym] = _bt_metrics(g)
+        summary   = _bt_metrics(df)
+        breakdown = _bt_breakdowns(df, source="paper_trades")
 
         date_from = date_to = None
         try:
@@ -960,7 +956,7 @@ def load_live_performance():
             "period":      f"Paper Trades · Rolling {LIVE_PERF_DAYS}d",
             "total_rows":  len(df),
             "summary":     summary,
-            "by_symbol":   by_sym,
+            **breakdown,
         }
     except Exception as e:
         print(f"  [WARN] load_live_performance: {e}")
