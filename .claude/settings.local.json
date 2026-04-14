@@ -96,7 +96,12 @@
       "Bash(gh auth:*)",
       "Bash(where git:*)",
       "Bash(sort -k5 -rn)",
-      "Bash(gh workflow:*)"
+      "Bash(gh workflow:*)",
+      "Bash(grep -v \"^.*//.*slice\")",
+      "Bash(py -3 -c \"import ast; ast.parse\\(open\\('backtest_3y.py', encoding='utf-8'\\).read\\(\\)\\); print\\('backtest_3y.py OK'\\)\")",
+      "Bash(py -3 -c \"import ast; ast.parse\\(open\\('backtest_live.py', encoding='utf-8'\\).read\\(\\)\\); print\\('backtest_live.py OK'\\)\")",
+      "Bash(py -3 -c \"import ast; ast.parse\\(open\\('download_history.py', encoding='utf-8'\\).read\\(\\)\\); print\\('download_history.py OK'\\)\")",
+      "Bash(dir \"C:\\\\Users\\\\chatt\\\\OneDrive - STEEL FRAME BUILDING CO.,LTD\\\\Desktop\\\\ai-trade\\\\historical_data\")"
     ]
   }
 }

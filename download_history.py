@@ -66,9 +66,17 @@ except Exception as e:
 # ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
+def to_swap_symbol(symbol: str) -> str:
+    """BTC/USDT → BTC/USDT:USDT  (OKX linear perpetual swap format)"""
+    if ":" in symbol:
+        return symbol
+    base, quote = symbol.split("/")
+    return f"{base}/{quote}:{quote}"
+
 def sym_to_fname(symbol: str, tf: str) -> str:
-    """BTC/USDT + 1h → BTC_USDT_1h"""
-    return symbol.replace("/", "_") + f"_{tf}"
+    """BTC/USDT + 1h → BTC_USDT_1h  (ชื่อไฟล์ใช้ format สั้น)"""
+    base_sym = symbol.split(":")[0]   # ตัด :USDT ออก
+    return base_sym.replace("/", "_") + f"_{tf}"
 
 def cache_path(symbol: str, tf: str) -> str:
     fname = sym_to_fname(symbol, tf)
@@ -76,6 +84,7 @@ def cache_path(symbol: str, tf: str) -> str:
 
 def fetch_all(symbol: str, tf: str, days: float) -> pd.DataFrame:
     """ดึง OHLCV ย้อนหลัง N วัน ด้วย pagination"""
+    swap_sym = to_swap_symbol(symbol)   # BTC/USDT → BTC/USDT:USDT
     since_dt = datetime.now(timezone.utc) - timedelta(days=days + 0.5)
     since_ms = int(since_dt.timestamp() * 1000)
     all_bars: list = []
@@ -83,10 +92,10 @@ def fetch_all(symbol: str, tf: str, days: float) -> pd.DataFrame:
 
     while True:
         try:
-            bars = exchange.fetch_ohlcv(symbol, tf, since=since_ms, limit=API_LIMIT)
+            bars = exchange.fetch_ohlcv(swap_sym, tf, since=since_ms, limit=API_LIMIT)
             call_count += 1
         except Exception as e:
-            print(f"\n  [WARN] {symbol} {tf} call#{call_count}: {e}")
+            print(f"\n  [WARN] {swap_sym} {tf} call#{call_count}: {e}")
             break
 
         if not bars:
