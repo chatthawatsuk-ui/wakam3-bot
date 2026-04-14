@@ -11,25 +11,32 @@
         "avg_pnl": 0.3983,
         "current_pt": 1
       },
-      "sma50_gt_200": {
+      "above_sma200": {
         "win_rate": 0.8,
         "count": 5,
         "wins": 4,
-        "avg_pnl": 0.448,
+        "avg_pnl": 0.628,
+        "current_pt": 2
+      },
+      "sma50_gt_200": {
+        "win_rate": 0.833,
+        "count": 6,
+        "wins": 5,
+        "avg_pnl": 0.6517,
         "current_pt": 1
       },
       "trail_slow_bull": {
-        "win_rate": 0.714,
-        "count": 7,
-        "wins": 5,
-        "avg_pnl": 0.2757,
+        "win_rate": 0.75,
+        "count": 8,
+        "wins": 6,
+        "avg_pnl": 0.45,
         "current_pt": 2
       },
       "in_discount": {
         "win_rate": 1.0,
-        "count": 7,
-        "wins": 7,
-        "avg_pnl": 0.5171,
+        "count": 8,
+        "wins": 8,
+        "avg_pnl": 0.6613,
         "current_pt": 2
       },
       "in_premium": {
@@ -51,6 +58,11 @@
       "touch_bear": {
         "current": 1,
         "proposed": 1,
+        "reason": "ข้อมูลไม่พอ"
+      },
+      "above_sma200": {
+        "current": 2,
+        "proposed": 2,
         "reason": "ข้อมูลไม่พอ"
       },
       "sma50_gt_200": {
@@ -103,19 +115,19 @@
   },
   "level6": {
     "claude_weight_proposal": {
-      "trend": 0.334,
-      "smc": 0.333,
-      "osc": 0.333,
+      "trend": 0.4,
+      "smc": 0.25,
+      "osc": 0.35,
       "confidence": "LOW",
-      "reasoning": "ข้อมูลตัวอย่าง 13 trades มีขนาดค่อนข้างเล็กและ Win Rate ต่ำมาก (15.4%) ทำให้ไม่สามารถแยกความแตกต่างของประสิทธิภาพระหว่าง agents ได้อย่างชัดเจน ควรเก็บข้อมูลต่อเนื่องมากขึ้นก่อนปรับ weight",
-      "best_tf": "ไม่สามารถระบุได้",
-      "best_tf_reason": "ข้อมูลไม่ได้แยกตามกรอบเวลา จึงไม่อาจบอกได้ว่า TF ใดมี WR สูงสุด",
-      "top_condition": "touch_bear, in_discount, in_eq (WR=100%)",
+      "reasoning": "ข้อมูล 14 trades มีขนาดตัวอย่างต่ำและทั้ง 3 agent มี WR เท่ากันที่ 21.4% ทำให้ความน่าเชื่อถือต่ำ ปรับ Trend สูงขึ้นเล็กน้อยเพราะมีคะแนนเฉลี่ย 6.2/11 ในช่วง RANGING ที่มี WR ดี 83.3% ขณะที่ SMC ต่ำมาก 1.9/10 แนะนำเพิ่มเติมข้อมูล",
+      "best_tf": "ข้อมูลไม่มี timeframe detail",
+      "best_tf_reason": "ยังไม่มี breakdown โดย timeframe ต้องรวบรวมข้อมูลเพิ่มเติม",
+      "top_condition": "touch_bear / in_discount / in_eq (WR=100%)",
       "weak_condition": "in_premium (WR=66.7%)",
-      "regime_insight": "ระบบทำงานได้ยอดเยี่ยมในช่วง RANGING market (WR=83.3%) โดย Trend agent มีสัญญาณอยู่ที่ 6.2/11 ซึ่งสอดคล้องกับลักษณะของ market ที่มีการเคลื่อนไหวในช่วง",
-      "weekly_verdict": "ยังไม่ควรปรับ weight เนื่องจากข้อมูล 13 trades ไม่พอเพียง ใช้ equal weights ต่อไปและเก็บข้อมูลจากตลาดจริงอย่างน้อย 30-50 trades ก่อนการปรับ weight ใหม่",
-      "generated": "2026-04-14T10:22:05.040975+00:00",
-      "reason": "Claude Haiku (LOW): ข้อมูลตัวอย่าง 13 trades มีขนาดค่อนข้างเล็กและ Win Rate ต่ำมาก (15.4%) ทำให้ไม่สามารถแยกความแตกต่างของประสิทธิภาพระหว่าง agents ได้อย่างชัดเจน ควรเก็บข้อมูลต่อเนื่องมากขึ้นก่อนปรับ weight"
+      "regime_insight": "ระบบทำงานดีเยี่ยมในสภาวะ RANGING ด้วย WR 83.3% ปรมาณ 12 trades โดย Trend scores สูง แต่ข้อมูล trending market ขาด",
+      "weekly_verdict": "ความเชื่อมั่นต่ำ ข้อมูล 14 trades ไม่เพียงพอ แนะนำรวบรวมอย่างน้อย 30+ trades ก่อนปรับ weight ฉบับถาวร",
+      "generated": "2026-04-14T15:21:07.368257+00:00",
+      "reason": "Claude Haiku (LOW): ข้อมูล 14 trades มีขนาดตัวอย่างต่ำและทั้ง 3 agent มี WR เท่ากันที่ 21.4% ทำให้ความน่าเชื่อถือต่ำ ปรับ Trend สูงขึ้นเล็กน้อยเพราะมีคะแนนเฉลี่ย 6.2/11 ในช่วง RANGING ที่มี WR ดี 83.3% ขณะที่ SMC ต่ำมาก 1.9/10 แนะนำเพิ่มเติมข้อมูล"
     }
   }
 }
