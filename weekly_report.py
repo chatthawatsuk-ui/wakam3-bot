@@ -109,7 +109,7 @@ def calc_condition_winrates():
               ON cs.symbol = t.symbol
              AND cs.side   = t.side
              AND ABS(
-                 (julianday(cs.signal_ts) - julianday(t.entry_time)) * 86400
+                 (julianday(cs.signal_ts) - julianday(t.opened_at)) * 86400
              ) < 120
             WHERE t.status = 'CLOSED'
               AND t.pnl_usd IS NOT NULL
@@ -202,7 +202,7 @@ def calc_regime_performance():
               ON cs.symbol = t.symbol
              AND cs.side   = t.side
              AND ABS(
-                 (julianday(cs.signal_ts) - julianday(t.entry_time)) * 86400
+                 (julianday(cs.signal_ts) - julianday(t.opened_at)) * 86400
              ) < 120
             WHERE t.status = 'CLOSED'
               AND t.pnl_usd IS NOT NULL
