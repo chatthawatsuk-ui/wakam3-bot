@@ -118,8 +118,11 @@ def scan():
             d4h = fetch(sym, TF_4H)
             d1d = fetch(sym, TF_1D, limit=CANDLES_D)   # Daily — สำหรับ Stoch filter
 
-            if d1h.empty or len(d1h) < 150:
-                log(f"  {sym}: ข้อมูลไม่พอ")
+            # MIN_CANDLES: 80 พอสำหรับ EMA30, RSI14, MACD(12,26,9), Stoch(14)
+            # เดิม 150 ทำให้เหรียญ new listing ถูก reject แม้ indicator คำนวณได้
+            MIN_CANDLES = 80
+            if d1h.empty or len(d1h) < MIN_CANDLES:
+                log(f"  {sym}: ข้อมูลไม่พอ ({len(d1h)} candles < {MIN_CANDLES})")
                 scan_results.append({
                     "symbol": sym, "market_type": mtype, "status": "NO_DATA",
                     "best_score": 0, "score_long": 0, "score_short": 0,

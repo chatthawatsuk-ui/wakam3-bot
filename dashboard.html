@@ -1701,7 +1701,10 @@ const FUTURES_SET=new Set([
   'CRO/USDT','TRUMP/USDT','ONDO/USDT','HYPE/USDT','DEXE/USDT',
 ])
 
-function isFutures(sym){ return FUTURES_SET.has(sym) }
+function isFutures(sym){
+  // hardcoded list + custom watchlist (ทุก custom symbol ดึงจาก Futures OKX)
+  return FUTURES_SET.has(sym) || WL_CUSTOM.includes(sym)
+}
 
 // แสดง "BTC.P" สำหรับ futures, "BTC" สำหรับ spot
 function symDisp(sym){
@@ -2286,7 +2289,7 @@ function renderDash(){
       <td class="up" style="font-family:var(--mono);font-size:10.5px">${isSig&&tp1?pxFmt(tp1):'—'}</td>
       <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${isSig&&tp2?pxFmt(tp2):'—'}</td>
       <td class="dn" style="font-family:var(--mono);font-size:10.5px">${isSig&&sl?pxFmt(sl):'—'}</td>
-      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi>0?r.rsi.toFixed(1):'—'}</td>
     </tr>`
   }
 
@@ -2525,7 +2528,7 @@ function renderWatchlistPage(){
       </td>
       <td>${sc?sBadge(sc.status):notScanned?'<span style="font-size:9px;color:var(--t2)">Custom</span>':'<span class="t2">—</span>'}</td>
       <td>${sc?sideBadge(sc.side):'<span class="t2">—</span>'}</td>
-      <td class="${sc?.rsi<40?'up':sc?.rsi>60?'dn':''}" style="font-size:11px">${sc?.rsi||'—'}</td>
+      <td class="${sc?.rsi<40?'up':sc?.rsi>60?'dn':''}" style="font-size:11px">${sc?.rsi>0?sc.rsi.toFixed(1):'—'}</td>
       <td>${sc?(sc.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'):'<span class="t2">—</span>'}</td>
       <td>${sc?(sc.in_kz?'<span class="up">⚡</span>':'<span class="t2">—</span>'):'<span class="t2">—</span>'}</td>
       <td><a href="${url}" target="_blank" style="color:var(--t2);text-decoration:none;font-size:14px" title="เปิด TradingView">↗</a></td>
@@ -2892,7 +2895,7 @@ function renderSignals(){
         <td class="up" style="font-family:var(--mono);font-size:10.5px">${r.status==='SIGNAL'&&(r.tp_price||ot?.tp_price)?pxFmt(r.tp_price||ot.tp_price):'—'}</td>
         <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${r.status==='SIGNAL'&&(r.tp2_price||ot?.tp2_price)?pxFmt(r.tp2_price||ot.tp2_price):'—'}</td>
         <td class="dn" style="font-family:var(--mono);font-size:10.5px">${r.status==='SIGNAL'&&(r.sl_price||ot?.sl_price)?pxFmt(r.sl_price||ot.sl_price):'—'}</td>
-        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}" style="font-size:11px">${r.rsi||'—'}</td>
+        <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}" style="font-size:11px">${r.rsi>0?r.rsi.toFixed(1):'—'}</td>
         <td style="font-size:11px">${r.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'}</td>
         <td>${r.in_kz?'<span class="up" style="font-size:11px">⚡</span>':'<span class="t2">—</span>'}</td>
       </tr>`
@@ -3048,7 +3051,7 @@ function renderScanner(){
           <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/31*100)}%;background:${bc}"></div></div>
         </div>
       </td>
-      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi||'—'}</td>
+      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi>0?r.rsi.toFixed(1):'—'}</td>
       <td>${r.htf_bull?'<span class="up">▲ BULL</span>':'<span class="dn">▼ BEAR</span>'}</td>
       <td>${r.in_kz?'<span class="up">⚡ YES</span>':'<span class="t2">—</span>'}</td>
     </tr>`
