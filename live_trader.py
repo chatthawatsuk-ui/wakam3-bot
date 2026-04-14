@@ -41,6 +41,21 @@ SPOT_SYMBOLS = [
     "MORPHO/USDT", "KAS/USDT", "QNT/USDT", "ZEC/USDT", "FLR/USDT",
 ]
 
+# ── Watchlist Custom — โหลดจาก watchlist_custom.json ──────────────────────────
+# เพิ่มเหรียญใน watchlist_custom.json แล้ว scanner จะ scan อัตโนมัติเป็น Futures
+_WL_CUSTOM_PATH = "watchlist_custom.json"
+try:
+    import json as _json
+    _wl_custom = _json.load(open(_WL_CUSTOM_PATH, encoding="utf-8"))
+    _wl_futures = [s if "/" in s else s + "/USDT" for s in _wl_custom]
+    # merge เฉพาะ symbol ที่ยังไม่มีใน list หลัก
+    _new = [s for s in _wl_futures if s not in FUTURES_SYMBOLS and s not in SPOT_SYMBOLS]
+    if _new:
+        FUTURES_SYMBOLS = FUTURES_SYMBOLS + _new
+        print(f"[Watchlist] เพิ่ม {len(_new)} custom Futures: {', '.join(_new)}")
+except Exception:
+    pass  # ไม่มีไฟล์ หรือ parse error → ข้ามไป
+
 SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
 FUTURES_SET = set(FUTURES_SYMBOLS)
 

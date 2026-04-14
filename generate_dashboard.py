@@ -942,6 +942,17 @@ def load_backtest_3y():
         return {"available": False, "label": "backtest_3y", "error": str(e)}
 
 
+def _load_custom_symbols():
+    """โหลด custom Futures symbols จาก watchlist_custom.json"""
+    path = "watchlist_custom.json"
+    try:
+        with open(path, encoding="utf-8") as f:
+            syms = json.load(f)
+        return [s if "/" in s else s + "/USDT" for s in syms if s]
+    except Exception:
+        return []
+
+
 def load_live_performance():
     """
     📡 Weekly Performance — paper trades จริงใน 7 วันล่าสุด จาก paper_trades.db
@@ -1366,6 +1377,7 @@ def main():
         "backtest_3y":      load_backtest_3y(),       # 📊 Historical 3Y
         "live_perf":        load_live_performance(),  # 📡 Rolling 30d
         "shadow_stats":     shadow_stats,
+        "custom_symbols":   _load_custom_symbols(),   # Watchlist custom Futures
     }
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:

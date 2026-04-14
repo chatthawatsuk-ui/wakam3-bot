@@ -1733,6 +1733,7 @@ async function loadDashData(){
     const r=await fetch('dashboard_data.json?_='+Date.now())
     if(!r.ok) return
     D=await r.json()
+    wlSyncFromData()   // sync custom symbols จาก watchlist_custom.json → localStorage
     loadLive()
     loadMarkets()
     render()
@@ -2343,6 +2344,15 @@ function renderDash(){
 // ═══════════════════════════════════════════════════════════
 let WL_FILTER='all'
 let WL_CUSTOM=JSON.parse(localStorage.getItem('wl_custom')||'[]')
+
+// ── sync custom_symbols จาก dashboard_data.json → localStorage ──────────────
+function wlSyncFromData(){
+  const server=(D.custom_symbols||[]).map(s=>s.includes('/')?s:s+'/USDT')
+  let changed=false
+  server.forEach(s=>{ if(!WL_CUSTOM.includes(s)){ WL_CUSTOM.push(s); changed=true } })
+  if(changed) wlSave()
+}
+
 function wlSave(){localStorage.setItem('wl_custom',JSON.stringify(WL_CUSTOM))}
 
 // ── fetch ราคาจาก OKX public API สำหรับ custom symbols ที่ไม่อยู่ใน scanner ──
