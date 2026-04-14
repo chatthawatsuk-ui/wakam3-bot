@@ -17,7 +17,7 @@ PnL: Fixed Risk $10 ต่อ trade
   - Timeout        : proportional to exit price
 
 Usage:
-  py backtest_live.py                        # 10 symbols, 90 days, 30m/1H/2H/4H/1D
+  py backtest_live.py                        # 10 symbols, 90 days, 15m/30m/1H/4H/1D
   py backtest_live.py --fast                 # 3 symbols, 60 days, 1H/4H (เร็วสุด)
   py backtest_live.py --days 30              # ย้อนหลัง 30 วัน
   py backtest_live.py --days 180 --tf 1H 4H  # 6 เดือน เฉพาะ 1H + 4H
@@ -57,15 +57,15 @@ FAST_SYMBOLS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
 
 # primary OKX tf, htf OKX tf, นาทีต่อ candle, warmup candles
 TF_CONFIGS = {
+    # primary/htf ต้องเป็น lowercase เสมอ (ccxt OKX format)
     "15m": dict(primary="15m", htf="1h",  resample="15min", mins=15,   warmup=400),
     "30m": dict(primary="30m", htf="2h",  resample="30min", mins=30,   warmup=200),
     "1H":  dict(primary="1h",  htf="4h",  resample="1h",    mins=60,   warmup=200),
-    "2H":  dict(primary="2h",  htf="6h",  resample="2h",    mins=120,  warmup=200),
     "4H":  dict(primary="4h",  htf="1d",  resample="4h",    mins=240,  warmup=200),
     "1D":  dict(primary="1d",  htf="1w",  resample="1D",    mins=1440, warmup=200),
 }
-# Default TFs สำหรับ weekly run (ตัด 15m — ช้าเกินไปสำหรับ 90 วัน)
-DEFAULT_TFS = ["30m", "1H", "2H", "4H", "1D"]
+# 5 TFs เท่านั้น: 15m / 30m / 1H / 4H / 1D
+DEFAULT_TFS = ["15m", "30m", "1H", "4H", "1D"]
 FAST_TFS    = ["1H", "4H"]
 
 TIMEOUT_H  = 48    # ชั่วโมงก่อน timeout
