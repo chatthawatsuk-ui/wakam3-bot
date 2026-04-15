@@ -1018,16 +1018,21 @@ def load_live_performance():
 
         if er == "SL_BE":   return "SL_BE"
         if er == "TP2":     return "TP2"
-        if er == "TP1":     return "TP1"
         if er == "TIMEOUT": return "TIMEOUT"
+        if er == "TP1":
+            # เก่า: ปิดที่ TP1 = WIN ปกติ
+            # edge case: tp1_hit=1 + outcome=LOSS → ราคากลับมา BE = SL_BE
+            if row.get("tp1_hit") and row.get("outcome") == "LOSS":
+                return "SL_BE"
+            return "TP1"
         if er == "SL":
-            # trades เก่า: SL + tp1_hit=1 = SL_BE (exit_reason ยังไม่แยกแยะ)
+            # SL + tp1_hit=1 = ราคากลับมาหลัง TP1 hit → SL_BE
             return "SL_BE" if row.get("tp1_hit") else "SL"
 
         # ไม่มี exit_reason (trades เก่ามาก) → infer จาก outcome + tp1_hit
-        if row["outcome"] == "WIN":
+        if row.get("outcome") == "WIN":
             return "SL_BE" if row.get("tp1_hit") else "TP2"
-        if row["outcome"] == "LOSS":
+        if row.get("outcome") == "LOSS":
             return "SL_BE" if row.get("tp1_hit") else "SL"
         return "TIMEOUT"
 
