@@ -223,6 +223,22 @@ def check_correlation(conn, sym: str, side: str) -> tuple:
     return True, ""   # ไม่อยู่ในกลุ่มใด
 
 
+# ── SHADOW CLEANUP — ลบ resolved trades เก่ากว่า 7 วัน ──────────────────────
+def cleanup_shadow_trades(conn):
+    """
+    ลบ shadow_trades ที่ outcome=WIN/LOSS และ resolved_at เก่ากว่า 7 วัน
+    PENDING trades ทั้งหมดคงสถานะไว้ (ไม่ลบ)
+    """
+    result = conn.execute("""
+        DELETE FROM shadow_trades
+        WHERE outcome IN ('WIN','LOSS')
+          AND resolved_at < datetime('now', '-7 days')
+    """)
+    if result.rowcount:
+        conn.commit()
+        print(f"  [SHADOW] cleanup: ลบ {result.rowcount} resolved trades เก่ากว่า 7 วัน")
+
+
 # ── SHADOW TRADE OUTCOME CHECKER ──────────────────────────────────────────────
 def check_shadow_trades(conn):
     """
@@ -711,6 +727,7 @@ def main():
         print(f"  Daily PnL: ${daily_pnl:+.2f} (cap: -${DAILY_LOSS_CAP})")
 
     print("\n[0c] Shadow Trade outcomes...")
+    cleanup_shadow_trades(conn)
     check_shadow_trades(conn)
 
     print("\n[1] เช็ค Open Trades...")
