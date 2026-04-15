@@ -2,23 +2,24 @@
   {
     "symbol": "BTC/USDT",
     "market_type": "FUTURES",
-    "status": "IDLE",
+    "status": "REJECTED",
     "side": "LONG",
-    "score_long": 4,
+    "score_long": 12,
     "score_short": 2,
-    "best_score": 4,
-    "score_pct": 12.9,
-    "price": 74668.6,
+    "best_score": 12,
+    "score_pct": 38.7,
+    "price": 74853.6,
     "rsi": 63.4,
     "htf_bull": true,
     "in_kz": false,
-    "score_trend": 0,
+    "score_trend": 8,
     "score_smc": 2,
     "score_osc": 2,
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:15:44.905767+00:00"
+    "ts": "2026-04-15T20:30:46.058696+00:00",
+    "claude_reason": "RANGING regime with score 12 < 15; backtest WR 46.5% insufficient"
   },
   {
     "symbol": "ETH/USDT",
@@ -29,7 +30,7 @@
     "score_short": 7,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 2361.9,
+    "price": 2363.39,
     "rsi": 66.4,
     "htf_bull": true,
     "in_kz": false,
@@ -39,8 +40,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:15:45.790134+00:00",
-    "claude_reason": "RANGING regime with score 12 fails hard rule: RANGING+score<12 threshold. WR 46.5% insufficient."
+    "ts": "2026-04-15T20:30:48.612133+00:00",
+    "claude_reason": "RANGING regime with score 12/31 fails hard rule: RANGING noise threshold requires score >= 12 AND regime trending. WR 46"
   },
   {
     "symbol": "BNB/USDT",
@@ -51,7 +52,7 @@
     "score_short": 5,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 623.0,
+    "price": 623.6,
     "rsi": 68.5,
     "htf_bull": true,
     "in_kz": false,
@@ -61,11 +62,11 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:15:48.370318+00:00",
-    "entry_price": 623.0,
+    "ts": "2026-04-15T20:30:50.567020+00:00",
+    "entry_price": 623.6,
     "sl_price": 610.7,
-    "tp_price": 637.76,
-    "tp2_price": 647.6
+    "tp_price": 639.08,
+    "tp2_price": 649.4
   },
   {
     "symbol": "XRP/USDT",
@@ -76,7 +77,7 @@
     "score_short": 5,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 1.3911,
+    "price": 1.3902,
     "rsi": 74.7,
     "htf_bull": true,
     "in_kz": false,
@@ -86,8 +87,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:15:50.051495+00:00",
-    "claude_reason": "LONG signal with RSI 74.7 > 75 threshold. Overbought entry risk."
+    "ts": "2026-04-15T20:30:53.014208+00:00",
+    "claude_reason": "LONG signal with RSI 74.7 > 75 threshold indicates overbought entry risk"
   },
   {
     "symbol": "SOL/USDT",
@@ -98,7 +99,7 @@
     "score_short": 2,
     "best_score": 2,
     "score_pct": 6.5,
-    "price": 84.95,
+    "price": 84.98,
     "rsi": 66.4,
     "htf_bull": true,
     "in_kz": false,
@@ -108,7 +109,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:15:51.873699+00:00"
+    "ts": "2026-04-15T20:30:54.983046+00:00"
   },
   {
     "symbol": "TRX/USDT",
@@ -119,7 +120,7 @@
     "score_short": 5,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 0.3277,
+    "price": 0.3279,
     "rsi": 68.7,
     "htf_bull": true,
     "in_kz": false,
@@ -129,8 +130,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:15:52.776103+00:00",
-    "claude_reason": "LONG signal with RSI 68.7 > 75 threshold approaching overbought entry risk"
+    "ts": "2026-04-15T20:30:56.037862+00:00",
+    "claude_reason": "RSI 68.7 approaching overbought (>75 threshold); weak SMC score (2/10) insufficient for entry confirmation"
   },
   {
     "symbol": "DOGE/USDT",
@@ -141,7 +142,7 @@
     "score_short": 7,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 0.09565,
+    "price": 0.09568,
     "rsi": 70.3,
     "htf_bull": true,
     "in_kz": false,
@@ -151,8 +152,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:15:54.524970+00:00",
-    "claude_reason": "LONG signal with RSI 70.3 > 75 threshold violated; overbought entry risk"
+    "ts": "2026-04-15T20:30:58.181275+00:00",
+    "claude_reason": "LONG signal with RSI 70.3 > 75 threshold violates overbought entry rule"
   },
   {
     "symbol": "ADA/USDT",
@@ -163,7 +164,7 @@
     "score_short": 5,
     "best_score": 5,
     "score_pct": 16.1,
-    "price": 0.2479,
+    "price": 0.2486,
     "rsi": 72.0,
     "htf_bull": false,
     "in_kz": false,
@@ -173,7 +174,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:15:56.243461+00:00"
+    "ts": "2026-04-15T20:31:00.259989+00:00"
   },
   {
     "symbol": "BCH/USDT",
@@ -184,7 +185,7 @@
     "score_short": 6,
     "best_score": 11,
     "score_pct": 35.5,
-    "price": 440.9,
+    "price": 441.1,
     "rsi": 65.0,
     "htf_bull": true,
     "in_kz": false,
@@ -194,7 +195,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:15:57.112385+00:00",
+    "ts": "2026-04-15T20:31:01.395260+00:00",
     "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
   },
   {
@@ -216,8 +217,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:15:57.994402+00:00",
-    "claude_reason": "LONG signal with RSI 70.5 > 75 threshold approaching overbought entry risk"
+    "ts": "2026-04-15T20:31:02.437051+00:00",
+    "claude_reason": "RSI 70.5 > 75 threshold for LONG entry indicates overbought conditions"
   },
   {
     "symbol": "LINK/USDT",
@@ -228,7 +229,7 @@
     "score_short": 5,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 9.29,
+    "price": 9.299,
     "rsi": 69.3,
     "htf_bull": true,
     "in_kz": false,
@@ -238,29 +239,30 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:15:59.763869+00:00",
-    "claude_reason": "RSI 69.3 approaching overbought (>75 threshold); entry risk too high despite TRENDING regime and adequate SL"
+    "ts": "2026-04-15T20:31:04.181271+00:00",
+    "claude_reason": "RSI 69.3 near overbought (>75 threshold); weak Osc score 0/9 signals weak momentum confirmation"
   },
   {
     "symbol": "AVAX/USDT",
     "market_type": "FUTURES",
-    "status": "WATCH",
-    "side": "SHORT",
-    "score_long": 4,
+    "status": "REJECTED",
+    "side": "LONG",
+    "score_long": 12,
     "score_short": 5,
-    "best_score": 5,
-    "score_pct": 16.1,
-    "price": 9.479,
+    "best_score": 12,
+    "score_pct": 38.7,
+    "price": 9.511,
     "rsi": 61.3,
     "htf_bull": true,
     "in_kz": false,
-    "score_trend": 0,
-    "score_smc": 0,
-    "score_osc": 4,
+    "score_trend": 8,
+    "score_smc": 4,
+    "score_osc": 0,
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:01.859476+00:00"
+    "ts": "2026-04-15T20:31:06.085846+00:00",
+    "claude_reason": "RANGING regime with score 12 fails hard rule 2: WR 46.5% insufficient for SL risk"
   },
   {
     "symbol": "SUI/USDT",
@@ -271,7 +273,7 @@
     "score_short": 5,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 0.9643,
+    "price": 0.968,
     "rsi": 67.8,
     "htf_bull": true,
     "in_kz": false,
@@ -281,8 +283,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:02.732406+00:00",
-    "claude_reason": "RANGING regime with score 12 below threshold. WR 46.5% insufficient for SL risk."
+    "ts": "2026-04-15T20:31:07.992362+00:00",
+    "claude_reason": "RANGING regime with score 12 fails hard rule #2: WR 46.5% insufficient for SL risk profile"
   },
   {
     "symbol": "TON/USDT",
@@ -303,7 +305,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:04.391696+00:00"
+    "ts": "2026-04-15T20:31:10.093244+00:00"
   },
   {
     "symbol": "DOT/USDT",
@@ -314,7 +316,7 @@
     "score_short": 6,
     "best_score": 6,
     "score_pct": 19.4,
-    "price": 1.187,
+    "price": 1.186,
     "rsi": 63.1,
     "htf_bull": false,
     "in_kz": false,
@@ -324,7 +326,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:05.270156+00:00"
+    "ts": "2026-04-15T20:31:11.140283+00:00"
   },
   {
     "symbol": "SHIB/USDT",
@@ -335,7 +337,7 @@
     "score_short": 7,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 5.974e-06,
+    "price": 5.985e-06,
     "rsi": 65.6,
     "htf_bull": true,
     "in_kz": false,
@@ -345,8 +347,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:06.138972+00:00",
-    "claude_reason": "RANGING regime with score 12 < threshold for noise avoidance; WR 46.5% insufficient"
+    "ts": "2026-04-15T20:31:12.190267+00:00",
+    "claude_reason": "RANGING regime with score 12 fails hard rule 2: WR 46.5% unacceptable risk/reward"
   },
   {
     "symbol": "HBAR/USDT",
@@ -357,7 +359,7 @@
     "score_short": 2,
     "best_score": 4,
     "score_pct": 12.9,
-    "price": 0.08668,
+    "price": 0.0864,
     "rsi": 62.8,
     "htf_bull": false,
     "in_kz": false,
@@ -367,7 +369,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:07.939951+00:00"
+    "ts": "2026-04-15T20:31:14.305298+00:00"
   },
   {
     "symbol": "XLM/USDT",
@@ -378,7 +380,7 @@
     "score_short": 3,
     "best_score": 5,
     "score_pct": 16.1,
-    "price": 0.1576,
+    "price": 0.1579,
     "rsi": 63.5,
     "htf_bull": true,
     "in_kz": false,
@@ -388,7 +390,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:08.825889+00:00"
+    "ts": "2026-04-15T20:31:15.331742+00:00"
   },
   {
     "symbol": "UNI/USDT",
@@ -399,7 +401,7 @@
     "score_short": 5,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 3.224,
+    "price": 3.23,
     "rsi": 67.1,
     "htf_bull": true,
     "in_kz": false,
@@ -409,11 +411,11 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:09.701176+00:00",
-    "entry_price": 3.224,
+    "ts": "2026-04-15T20:31:16.410377+00:00",
+    "entry_price": 3.23,
     "sl_price": 3.116,
-    "tp_price": 3.3536,
-    "tp2_price": 3.44
+    "tp_price": 3.3668,
+    "tp2_price": 3.458
   },
   {
     "symbol": "NEAR/USDT",
@@ -424,7 +426,7 @@
     "score_short": 2,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 1.408,
+    "price": 1.409,
     "rsi": 67.1,
     "htf_bull": true,
     "in_kz": false,
@@ -434,11 +436,11 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:11.648764+00:00",
-    "entry_price": 1.408,
+    "ts": "2026-04-15T20:31:18.665138+00:00",
+    "entry_price": 1.409,
     "sl_price": 1.343,
-    "tp_price": 1.486,
-    "tp2_price": 1.538
+    "tp_price": 1.4882,
+    "tp2_price": 1.541
   },
   {
     "symbol": "TAO/USDT",
@@ -456,7 +458,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:13.054440+00:00"
+    "ts": "2026-04-15T20:31:20.086656+00:00"
   },
   {
     "symbol": "MNT/USDT",
@@ -474,7 +476,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:13.054788+00:00"
+    "ts": "2026-04-15T20:31:20.087051+00:00"
   },
   {
     "symbol": "PEPE/USDT",
@@ -485,7 +487,7 @@
     "score_short": 2,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 3.737e-06,
+    "price": 3.746e-06,
     "rsi": 70.4,
     "htf_bull": true,
     "in_kz": false,
@@ -495,8 +497,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:13.589642+00:00",
-    "claude_reason": "RANGING regime with score 12 < threshold for RANGING (need >=12 with strong confluence). RSI 70.4 approaching overbought"
+    "ts": "2026-04-15T20:31:20.771626+00:00",
+    "claude_reason": "RANGING regime with score 12 fails hard rule 2 threshold (12 not >12). WR 46.5% inadequate."
   },
   {
     "symbol": "AAVE/USDT",
@@ -507,7 +509,7 @@
     "score_short": 2,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 106.93,
+    "price": 106.68,
     "rsi": 71.6,
     "htf_bull": true,
     "in_kz": false,
@@ -517,8 +519,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:16.054606+00:00",
-    "claude_reason": "LONG signal with RSI 71.6 > 75 threshold approaching overbought entry risk"
+    "ts": "2026-04-15T20:31:23.184228+00:00",
+    "claude_reason": "RSI 71.6 > 75 threshold approaching overbought entry risk on LONG signal"
   },
   {
     "symbol": "ICP/USDT",
@@ -529,7 +531,7 @@
     "score_short": 2,
     "best_score": 2,
     "score_pct": 6.5,
-    "price": 2.493,
+    "price": 2.504,
     "rsi": 65.4,
     "htf_bull": false,
     "in_kz": false,
@@ -539,7 +541,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:18.090216+00:00"
+    "ts": "2026-04-15T20:31:25.036992+00:00"
   },
   {
     "symbol": "ETC/USDT",
@@ -550,7 +552,7 @@
     "score_short": 4,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 8.48,
+    "price": 8.493,
     "rsi": 64.0,
     "htf_bull": true,
     "in_kz": false,
@@ -560,8 +562,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:19.048453+00:00",
-    "claude_reason": "RANGING regime with score 12 fails hard rule 2 threshold (needs ≥12 for RANGING, has exactly 12 but WR 46.5% unreliable)"
+    "ts": "2026-04-15T20:31:26.066744+00:00",
+    "claude_reason": "RANGING regime with score 12 fails hard rule 2: WR 46.5% insufficient for risk/reward"
   },
   {
     "symbol": "RENDER/USDT",
@@ -572,7 +574,7 @@
     "score_short": 3,
     "best_score": 3,
     "score_pct": 9.7,
-    "price": 1.891,
+    "price": 1.899,
     "rsi": 57.8,
     "htf_bull": false,
     "in_kz": false,
@@ -582,7 +584,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:22.402014+00:00"
+    "ts": "2026-04-15T20:31:28.470581+00:00"
   },
   {
     "symbol": "ALGO/USDT",
@@ -593,7 +595,7 @@
     "score_short": 4,
     "best_score": 8,
     "score_pct": 25.8,
-    "price": 0.1132,
+    "price": 0.1137,
     "rsi": 64.2,
     "htf_bull": true,
     "in_kz": false,
@@ -603,7 +605,7 @@
     "in_discount": false,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:23.381100+00:00"
+    "ts": "2026-04-15T20:31:29.513272+00:00"
   },
   {
     "symbol": "POL/USDT",
@@ -614,7 +616,7 @@
     "score_short": 5,
     "best_score": 5,
     "score_pct": 16.1,
-    "price": 0.0858,
+    "price": 0.08584,
     "rsi": 71.8,
     "htf_bull": false,
     "in_kz": false,
@@ -624,7 +626,7 @@
     "in_discount": false,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:24.251477+00:00"
+    "ts": "2026-04-15T20:31:30.565330+00:00"
   },
   {
     "symbol": "ATOM/USDT",
@@ -635,7 +637,7 @@
     "score_short": 0,
     "best_score": 2,
     "score_pct": 6.5,
-    "price": 1.77,
+    "price": 1.776,
     "rsi": 57.5,
     "htf_bull": false,
     "in_kz": false,
@@ -645,7 +647,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:25.196447+00:00"
+    "ts": "2026-04-15T20:31:31.602776+00:00"
   },
   {
     "symbol": "WLD/USDT",
@@ -656,7 +658,7 @@
     "score_short": 0,
     "best_score": 6,
     "score_pct": 19.4,
-    "price": 0.302,
+    "price": 0.3036,
     "rsi": 53.8,
     "htf_bull": true,
     "in_kz": false,
@@ -666,7 +668,7 @@
     "in_discount": true,
     "trail_bull": false,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:26.137980+00:00"
+    "ts": "2026-04-15T20:31:32.661014+00:00"
   },
   {
     "symbol": "ENA/USDT",
@@ -677,7 +679,7 @@
     "score_short": 2,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 0.0997,
+    "price": 0.1003,
     "rsi": 67.4,
     "htf_bull": true,
     "in_kz": false,
@@ -687,7 +689,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:27.030670+00:00",
+    "ts": "2026-04-15T20:31:33.709267+00:00",
     "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)"
   },
   {
@@ -699,7 +701,7 @@
     "score_short": 2,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 0.9155,
+    "price": 0.9193,
     "rsi": 62.9,
     "htf_bull": true,
     "in_kz": false,
@@ -709,11 +711,11 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:27.912364+00:00",
-    "entry_price": 0.9155,
+    "ts": "2026-04-15T20:31:34.867136+00:00",
+    "entry_price": 0.9193,
     "sl_price": 0.8792,
-    "tp_price": 0.9591,
-    "tp2_price": 0.9881
+    "tp_price": 0.9674,
+    "tp2_price": 0.9995
   },
   {
     "symbol": "APT/USDT",
@@ -724,7 +726,7 @@
     "score_short": 2,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 0.8935,
+    "price": 0.8958,
     "rsi": 64.1,
     "htf_bull": true,
     "in_kz": false,
@@ -734,11 +736,11 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:29.723661+00:00",
-    "entry_price": 0.8935,
+    "ts": "2026-04-15T20:31:37.602577+00:00",
+    "entry_price": 0.8958,
     "sl_price": 0.853,
-    "tp_price": 0.9421,
-    "tp2_price": 0.9745
+    "tp_price": 0.9472,
+    "tp2_price": 0.9814
   },
   {
     "symbol": "VET/USDT",
@@ -756,7 +758,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:31.087334+00:00"
+    "ts": "2026-04-15T20:31:39.524555+00:00"
   },
   {
     "symbol": "CRO/USDT",
@@ -767,7 +769,7 @@
     "score_short": 4,
     "best_score": 4,
     "score_pct": 12.9,
-    "price": 0.06926,
+    "price": 0.06927,
     "rsi": 55.8,
     "htf_bull": false,
     "in_kz": false,
@@ -777,7 +779,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:31.750771+00:00"
+    "ts": "2026-04-15T20:31:40.342862+00:00"
   },
   {
     "symbol": "TRUMP/USDT",
@@ -788,7 +790,7 @@
     "score_short": 3,
     "best_score": 5,
     "score_pct": 16.1,
-    "price": 2.867,
+    "price": 2.873,
     "rsi": 63.2,
     "htf_bull": false,
     "in_kz": false,
@@ -798,7 +800,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:32.714251+00:00"
+    "ts": "2026-04-15T20:31:41.390741+00:00"
   },
   {
     "symbol": "ONDO/USDT",
@@ -809,7 +811,7 @@
     "score_short": 4,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 0.2575,
+    "price": 0.2583,
     "rsi": 63.3,
     "htf_bull": true,
     "in_kz": false,
@@ -819,8 +821,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:33.589808+00:00",
-    "claude_reason": "RANGING regime with score 12 fails hard rule #2 threshold (score must be ≥12 AND regime TRENDING)"
+    "ts": "2026-04-15T20:31:42.445516+00:00",
+    "claude_reason": "RANGING regime with score 12 fails rule 2 threshold; WR 46.5% unacceptable"
   },
   {
     "symbol": "HYPE/USDT",
@@ -831,7 +833,7 @@
     "score_short": 2,
     "best_score": 12,
     "score_pct": 38.7,
-    "price": 44.51,
+    "price": 44.62,
     "rsi": 65.6,
     "htf_bull": true,
     "in_kz": false,
@@ -841,8 +843,8 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:35.349866+00:00",
-    "claude_reason": "RANGING regime with score 12 fails hard rule: RANGING+score<12 threshold violated by regime context"
+    "ts": "2026-04-15T20:31:44.678593+00:00",
+    "claude_reason": "RANGING regime with score 12 fails hard rule 2: WR 46.5% insufficient for SL risk"
   },
   {
     "symbol": "DEXE/USDT",
@@ -860,7 +862,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:36.902384+00:00"
+    "ts": "2026-04-15T20:31:46.162259+00:00"
   },
   {
     "symbol": "RAVE/USDT",
@@ -878,7 +880,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:36.902750+00:00"
+    "ts": "2026-04-15T20:31:46.162671+00:00"
   },
   {
     "symbol": "MORPHO/USDT",
@@ -889,7 +891,7 @@
     "score_short": 5,
     "best_score": 10,
     "score_pct": 32.3,
-    "price": 1.8582,
+    "price": 1.8562,
     "rsi": 78.3,
     "htf_bull": true,
     "in_kz": false,
@@ -899,7 +901,7 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:38.687093+00:00",
+    "ts": "2026-04-15T20:31:48.237507+00:00",
     "claude_reason": "LONG RSI 78.3 overbought (>75)"
   },
   {
@@ -918,7 +920,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:39.036043+00:00"
+    "ts": "2026-04-15T20:31:48.586090+00:00"
   },
   {
     "symbol": "QNT/USDT",
@@ -936,7 +938,7 @@
     "in_kz": false,
     "in_discount": false,
     "trail_bull": false,
-    "ts": "2026-04-15T20:16:39.036404+00:00"
+    "ts": "2026-04-15T20:31:48.586469+00:00"
   },
   {
     "symbol": "ZEC/USDT",
@@ -947,7 +949,7 @@
     "score_short": 4,
     "best_score": 4,
     "score_pct": 12.9,
-    "price": 351.2,
+    "price": 349.93,
     "rsi": 51.9,
     "htf_bull": true,
     "in_kz": false,
@@ -957,7 +959,7 @@
     "in_discount": false,
     "trail_bull": false,
     "regime": "RANGING",
-    "ts": "2026-04-15T20:16:39.558590+00:00"
+    "ts": "2026-04-15T20:31:49.265253+00:00"
   },
   {
     "symbol": "FLR/USDT",
@@ -968,7 +970,7 @@
     "score_short": 5,
     "best_score": 5,
     "score_pct": 16.1,
-    "price": 0.008109,
+    "price": 0.008085,
     "rsi": 62.7,
     "htf_bull": true,
     "in_kz": false,
@@ -978,6 +980,6 @@
     "in_discount": true,
     "trail_bull": true,
     "regime": "TRENDING",
-    "ts": "2026-04-15T20:16:40.504569+00:00"
+    "ts": "2026-04-15T20:31:50.290493+00:00"
   }
 ]
