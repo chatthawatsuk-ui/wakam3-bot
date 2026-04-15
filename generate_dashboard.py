@@ -682,7 +682,12 @@ def _bt_metrics(df):
     """คำนวณ summary metrics จาก dataframe — ใช้ร่วมกันทั้ง 2 ฟังก์ชัน"""
     if df is None or len(df) < 2:
         return None
-    wins  = df["outcome"] == "WIN"
+    # SL_BE = TP1 hit แล้ว SL กลับมา breakeven → นับเป็น WIN เสมอ
+    # แก้ WR% ให้ถูกทั้ง historical data เก่า (outcome=LOSS) และ data ใหม่
+    if "exit_type" in df.columns:
+        wins = (df["outcome"] == "WIN") | (df["exit_type"] == "SL_BE")
+    else:
+        wins = df["outcome"] == "WIN"
     wr    = round(wins.mean() * 100, 1)
     tp1r  = round(df["tp1_hit"].mean() * 100, 1) if "tp1_hit" in df else 0
     total = round(df["pnl"].sum(), 2)

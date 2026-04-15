@@ -3816,7 +3816,15 @@ function renderBTTrades(){
     const isWin = t.outcome==='WIN'
     const pnlC = (t.pnl||0)>=0?'up':'dn'
     const et = t.exit_type||''
-    const etC = et==='TP2'?'b-win':et.startsWith('SL')?'b-los':'b-stale'
+    // SL_BE = partial WIN (TP1 hit → SL moved to BE) → สีเหลือง ไม่ใช่แดง
+    const etC = et==='TP2'?'b-win':et==='SL_BE'?'b-stale':et==='SL'?'b-los':'b-stale'
+    // OUTCOME badge: WIN=green, SL_BE เก่า(LOSS+tp1_hit)=yellow, LOSS=red
+    const isSLBE   = et==='SL_BE'
+    const outcomeBadge = isWin
+      ? '<span class="bdg b-win">WIN</span>'
+      : isSLBE
+        ? '<span class="bdg b-stale" title="TP1 hit แล้ว SL กลับมา BE">BE+</span>'
+        : '<span class="bdg b-los">LOSS</span>'
     return`<tr>
       <td class="t2">${trades.length-i}</td>
       <td style="font-weight:700;font-family:var(--mono)">${base}</td>
@@ -3826,8 +3834,8 @@ function renderBTTrades(){
       <td>${numFmt(t.exit_px)}</td>
       <td><span class="bdg ${etC}">${et}</span></td>
       <td>${t.tp1_hit?'<span class="up">✓</span>':'<span class="t2">—</span>'}</td>
-      <td><span class="bdg ${isWin?'b-win':'b-los'}">${t.outcome}</span></td>
-      <td class="${pnlC}" style="font-weight:600">${(t.pnl||0)>=0?'+':''}$${(t.pnl||0).toFixed(2)}</td>
+      <td>${outcomeBadge}</td>
+      <td class="${pnlC}" style="font-weight:600">${(t.pnl||0)>=0?'+':''}$${Math.abs(t.pnl||0).toFixed(2)}</td>
       <td class="t2" style="font-size:10px">${t.regime||'—'}</td>
     </tr>`
   }).join('')
