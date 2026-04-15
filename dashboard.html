@@ -1585,13 +1585,13 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:0">
           <div class="stat-card"><div class="stat-lbl">TOTAL REJECTED</div><div class="stat-val" id="sh-total">0</div></div>
           <div class="stat-card"><div class="stat-lbl">PENDING</div><div class="stat-val yl" id="sh-pending">0</div></div>
-          <div class="stat-card"><div class="stat-lbl">SHADOW WIN</div><div class="stat-val up" id="sh-win">0</div></div>
-          <div class="stat-card"><div class="stat-lbl">SHADOW LOSS</div><div class="stat-val dn" id="sh-loss">0</div></div>
+          <div class="stat-card"><div class="stat-lbl">WIN (all-time)</div><div class="stat-val up" id="sh-win">0</div><div class="stat-sub" id="sh-win-sub" style="font-size:9px;color:var(--t2)"></div></div>
+          <div class="stat-card"><div class="stat-lbl">LOSS (all-time)</div><div class="stat-val dn" id="sh-loss">0</div></div>
           <div class="stat-card"><div class="stat-lbl">WIN RATE (if opened)</div><div class="stat-val" id="sh-wr">0%</div></div>
         </div>
       </div>
       <div class="card">
-        <div class="card-h"><div class="card-title">Recent Rejected Signals</div></div>
+        <div class="card-h"><div class="card-title">Recent Rejected Signals</div><div class="card-meta" id="sh-recent-meta"></div></div>
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:11px">
             <thead>
@@ -1603,6 +1603,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
                 <th style="padding:6px 10px;text-align:left">Regime</th>
                 <th style="padding:6px 10px;text-align:left">Claude Reason</th>
                 <th style="padding:6px 10px;text-align:center">Outcome</th>
+                <th style="padding:6px 10px;text-align:center">Exit</th>
                 <th style="padding:6px 10px;text-align:left">Date</th>
               </tr>
             </thead>
@@ -4102,32 +4103,61 @@ function drawBTEquity(eq){
 // ═══════════════════════════════════════════════════════════
 function renderShadow(){
   const sh = D.shadow_stats || {}
-  const total   = sh.total   || 0
-  const pending = sh.pending || 0
-  const win     = sh.win     || 0
-  const loss    = sh.loss    || 0
-  const wr      = sh.win_rate || 0
-  const recent  = sh.recent  || []
+  const total      = sh.total      || 0
+  const pending    = sh.pending    || 0
+  const win        = sh.win        || 0
+  const loss       = sh.loss       || 0
+  const wr         = sh.win_rate   || 0
+  const recent     = sh.recent     || []
+  const recentWin  = sh.recent_win  || 0
+  const recentLoss = sh.recent_loss || 0
+
+  const winTp2  = sh.win_tp2  || 0
+  const winSlbe = sh.win_slbe || 0
+  const lossSl  = sh.loss_sl  || 0
+  const timeout = sh.timeout  || 0
 
   setText('sh-total',   total)
   setText('sh-pending', pending)
   setText('sh-win',     win)
   setText('sh-loss',    loss)
   setText('sh-wr',      wr + '%')
-  setText('sh-meta',    total + ' rejected signals | filter accuracy: ' +
+  // WIN sub-breakdown
+  const winSub = document.getElementById('sh-win-sub')
+  if(winSub && win > 0) winSub.textContent = `TP:${winTp2} BE+:${winSlbe}`
+  setText('sh-meta',    total + ' rejected signals (all-time) | filter accuracy: ' +
     (total > 0 ? (loss / Math.max(win+loss,1) * 100).toFixed(0) + '%' : '—'))
+  setText('sh-recent-meta',
+    `แสดงล่าสุด ${recent.length} รายการ — ในนั้น WIN ${recentWin} / LOSS ${recentLoss}`)
 
   const tb = document.getElementById('sh-tb')
   if(!tb) return
   if(!recent.length){
-    tb.innerHTML = '<tr><td colspan="8" style="padding:20px;text-align:center;color:var(--t2)">ยังไม่มีข้อมูล — รอ Claude Reject signal แรก</td></tr>'
+    tb.innerHTML = '<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--t2)">ยังไม่มีข้อมูล — รอ Claude Reject signal แรก</td></tr>'
     return
   }
   tb.innerHTML = recent.map(r => {
-    const outCol = r.outcome === 'WIN' ? 'var(--green)' :
-                   r.outcome === 'LOSS'? 'var(--red)'   : 'var(--t2)'
-    const outTxt = r.outcome === 'WIN' ? '✅ WIN (over-filter!)' :
-                   r.outcome === 'LOSS'? '❌ LOSS (correct reject)' : '⏳ Pending'
+    const er = (r.exit_reason||'').toUpperCase()
+    // Outcome badge
+    let outBadge
+    if(r.outcome==='WIN'){
+      outBadge = er==='SL_BE'
+        ? '<span class="bdg b-stale" title="TP1 hit แล้ว SL BE">BE+</span>'
+        : '<span class="bdg b-win">WIN</span>'
+    } else if(r.outcome==='LOSS'){
+      outBadge = '<span class="bdg b-los">LOSS</span>'
+    } else {
+      outBadge = '<span class="bdg b-stale">PEND</span>'
+    }
+    // Exit reason badge
+    const exitBadge = er==='TP2'    ? '<span class="bdg b-win"  style="font-size:9px">TP2</span>'   :
+                      er==='TP1'    ? '<span class="bdg b-win"  style="font-size:9px">TP1</span>'   :
+                      er==='SL_BE'  ? '<span class="bdg b-stale"style="font-size:9px">SL_BE</span>' :
+                      er==='SL'     ? '<span class="bdg b-los"  style="font-size:9px">SL</span>'    :
+                      er==='TIMEOUT'? '<span class="bdg b-stale"style="font-size:9px">TIME</span>'  : '—'
+    // over-filter label
+    const label = r.outcome==='WIN' ? '<span style="color:var(--yellow);font-size:9px"> over-filter</span>' :
+                  r.outcome==='LOSS'? '<span style="color:var(--t2);font-size:9px"> correct</span>' : ''
     const dt = r.created_at ? new Date(r.created_at.endsWith('Z')||r.created_at.includes('+') ? r.created_at : r.created_at+'Z').toLocaleString('th-TH',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).replace(',','') : '—'
     return `<tr style="border-bottom:1px solid var(--border)">
       <td style="padding:6px 10px;font-weight:600">${r.symbol||'—'}</td>
@@ -4135,8 +4165,9 @@ function renderShadow(){
       <td style="padding:6px 10px;text-align:right">${r.score||0}/31</td>
       <td style="padding:6px 10px;text-align:right">${(r.sl_pct||0).toFixed(2)}%</td>
       <td style="padding:6px 10px;color:var(--t2)">${r.regime||'—'}</td>
-      <td style="padding:6px 10px;color:var(--t2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.claude_reason||'—'}</td>
-      <td style="padding:6px 10px;text-align:center;color:${outCol}">${outTxt}</td>
+      <td style="padding:6px 10px;color:var(--t2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.claude_reason||'—'}</td>
+      <td style="padding:6px 10px;text-align:center">${outBadge}${label}</td>
+      <td style="padding:6px 10px;text-align:center">${exitBadge}</td>
       <td style="padding:6px 10px;color:var(--t2)">${dt}</td>
     </tr>`
   }).join('')

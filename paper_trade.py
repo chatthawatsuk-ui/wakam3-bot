@@ -80,31 +80,36 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS trades (
-            id           INTEGER PRIMARY KEY AUTOINCREMENT,
-            symbol       TEXT,
-            side         TEXT,
-            score        INTEGER,
-            entry_px     REAL,
-            sl_px        REAL,
-            tp1_px       REAL,
-            tp2_px       REAL,
-            sl_pct       REAL,
-            rsi          REAL,
-            qty          REAL    DEFAULT 0,
-            notional_usd REAL    DEFAULT 0,
-            leverage     REAL    DEFAULT 1,
-            margin_usd   REAL    DEFAULT 0,
-            risk_usd     REAL    DEFAULT 0,
-            status       TEXT    DEFAULT 'OPEN',
-            tp1_hit      INTEGER DEFAULT 0,
-            exit_px      REAL,
-            outcome      TEXT,
-            pnl_usd      REAL,
-            opened_at    TEXT,
-            closed_at    TEXT,
-            score_trend  INTEGER DEFAULT 0,
-            score_smc    INTEGER DEFAULT 0,
-            score_osc    INTEGER DEFAULT 0
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol         TEXT,
+            side           TEXT,
+            score          INTEGER,
+            entry_px       REAL,
+            sl_px          REAL,
+            tp1_px         REAL,
+            tp2_px         REAL,
+            sl_pct         REAL,
+            rsi            REAL,
+            qty            REAL    DEFAULT 0,
+            notional_usd   REAL    DEFAULT 0,
+            leverage       REAL    DEFAULT 1,
+            margin_usd     REAL    DEFAULT 0,
+            risk_usd       REAL    DEFAULT 0,
+            status         TEXT    DEFAULT 'OPEN',
+            tp1_hit        INTEGER DEFAULT 0,
+            exit_px        REAL,
+            outcome        TEXT,
+            pnl_usd        REAL,
+            opened_at      TEXT,
+            closed_at      TEXT,
+            score_trend    INTEGER DEFAULT 0,
+            score_smc      INTEGER DEFAULT 0,
+            score_osc      INTEGER DEFAULT 0,
+            exit_reason    TEXT,
+            regime         TEXT    DEFAULT 'UNKNOWN',
+            claude_approved INTEGER DEFAULT 1,
+            claude_reason  TEXT    DEFAULT '',
+            tf             TEXT    DEFAULT '1H'
         )
     """)
     # migrate: เพิ่ม columns ที่อาจไม่มีใน DB เก่า
@@ -121,6 +126,7 @@ def init_db():
         ("regime",           "TEXT DEFAULT 'UNKNOWN'"),
         ("claude_approved",  "INTEGER DEFAULT 1"),   # 1=approved, 0=rejected (shouldn't reach here if 0)
         ("claude_reason",    "TEXT DEFAULT ''"),
+        ("tf",               "TEXT DEFAULT '1H'"),
     ]
     for col, definition in new_cols:
         try:
@@ -153,9 +159,17 @@ def init_db():
             created_at    TEXT,
             outcome       TEXT  DEFAULT 'PENDING',
             exit_px       REAL,
-            resolved_at   TEXT
+            resolved_at   TEXT,
+            tp1_hit       INTEGER DEFAULT 0,
+            exit_reason   TEXT
         )
     """)
+    # migrate shadow_trades: เพิ่ม columns ที่อาจไม่มีใน DB เก่า
+    for sh_col, sh_def in [("tp1_hit", "INTEGER DEFAULT 0"), ("exit_reason", "TEXT")]:
+        try:
+            conn.execute(f"ALTER TABLE shadow_trades ADD COLUMN {sh_col} {sh_def}")
+        except Exception:
+            pass
     cur = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()
     if cur[0] == 0:
         conn.execute("INSERT INTO portfolio VALUES (1, ?, ?)",
@@ -212,11 +226,13 @@ def check_correlation(conn, sym: str, side: str) -> tuple:
 # ── SHADOW TRADE OUTCOME CHECKER ──────────────────────────────────────────────
 def check_shadow_trades(conn):
     """
-    ตรวจ shadow trades ที่ยังค้าง PENDING — ดูว่าถ้าเปิดจริงจะ WIN/LOSS
-    resolve เมื่อ TP1 hit, SL hit, หรือ timeout 48h
+    ตรวจ shadow trades PENDING — track full lifecycle เหมือน real trade:
+      Stage 1 (tp1_hit=0): SL hit → LOSS/SL  |  TP1 hit → move SL to BE, set tp1_hit=1
+      Stage 2 (tp1_hit=1): SL(BE) hit → WIN/SL_BE  |  TP2 hit → WIN/TP2
+      Timeout 48h: WIN/LOSS ตาม price vs entry
     """
     rows = conn.execute("""
-        SELECT id, symbol, side, entry_px, sl_px, tp1_px, created_at
+        SELECT id, symbol, side, entry_px, sl_px, tp1_px, tp2_px, created_at, tp1_hit
         FROM shadow_trades WHERE outcome='PENDING'
     """).fetchall()
 
@@ -226,7 +242,7 @@ def check_shadow_trades(conn):
     now = datetime.now(timezone.utc)
     resolved = 0
     for row in rows:
-        sid, sym, side, ep, sl, tp1, created_at = row
+        sid, sym, side, ep, sl, tp1, tp2, created_at, tp1_hit = row
         px = get_price(sym)
         if not px:
             continue
@@ -239,26 +255,70 @@ def check_shadow_trades(conn):
         except Exception:
             hours = 0
 
-        hit_tp1 = tp1 and ((side == "LONG" and px >= tp1) or (side == "SHORT" and px <= tp1))
-        hit_sl  = sl  and ((side == "LONG" and px <= sl)  or (side == "SHORT" and px >= sl))
         timed_out = hours >= TRADE_TIMEOUT_HRS
 
-        if hit_tp1:
-            outcome = "WIN"
-        elif hit_sl:
-            outcome = "LOSS"
-        elif timed_out:
-            if ep and ep > 0:
-                outcome = "WIN" if ((side == "LONG" and px > ep) or (side == "SHORT" and px < ep)) else "LOSS"
-            else:
-                outcome = "TIMEOUT"
-        else:
-            continue
+        if not tp1_hit:
+            # ── Stage 1: ยังไม่ hit TP1 ──────────────────────────────────────
+            hit_sl  = sl  and ((side == "LONG" and px <= sl)  or (side == "SHORT" and px >= sl))
+            hit_tp1 = tp1 and ((side == "LONG" and px >= tp1) or (side == "SHORT" and px <= tp1))
 
-        conn.execute("""
-            UPDATE shadow_trades SET outcome=?, exit_px=?, resolved_at=? WHERE id=?
-        """, (outcome, round(px, 8), now.isoformat(), sid))
-        resolved += 1
+            if hit_sl:
+                # SL โดนก่อน TP1 → LOSS
+                conn.execute("""
+                    UPDATE shadow_trades
+                    SET outcome='LOSS', exit_reason='SL', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+            elif hit_tp1:
+                # TP1 hit → ย้าย SL มา BE (entry_px), ตั้ง tp1_hit=1 รอ Stage 2
+                conn.execute("""
+                    UPDATE shadow_trades
+                    SET tp1_hit=1, sl_px=?
+                    WHERE id=?
+                """, (ep, sid))   # sl_px = entry_px (BE)
+
+            elif timed_out:
+                outcome = "WIN" if ((side == "LONG" and px > ep) or (side == "SHORT" and px < ep)) else "LOSS"
+                conn.execute("""
+                    UPDATE shadow_trades
+                    SET outcome=?, exit_reason='TIMEOUT', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (outcome, round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+        else:
+            # ── Stage 2: TP1 hit แล้ว SL อยู่ที่ BE ────────────────────────
+            # sl ตอนนี้ = entry_px (BE) — ถูก update ใน Stage 1 แล้ว
+            hit_sl_be = sl and ((side == "LONG" and px <= sl) or (side == "SHORT" and px >= sl))
+            hit_tp2   = tp2 and ((side == "LONG" and px >= tp2) or (side == "SHORT" and px <= tp2))
+
+            if hit_tp2:
+                conn.execute("""
+                    UPDATE shadow_trades
+                    SET outcome='WIN', exit_reason='TP2', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+            elif hit_sl_be:
+                # SL_BE = กลับมาที่ entry → WIN (ไม่ขาดทุน TP1 คุ้มแล้ว)
+                conn.execute("""
+                    UPDATE shadow_trades
+                    SET outcome='WIN', exit_reason='SL_BE', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+            elif timed_out:
+                outcome = "WIN" if ((side == "LONG" and px > ep) or (side == "SHORT" and px < ep)) else "LOSS"
+                conn.execute("""
+                    UPDATE shadow_trades
+                    SET outcome=?, exit_reason='TIMEOUT', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (outcome, round(px, 8), now.isoformat(), sid))
+                resolved += 1
 
     if resolved:
         conn.commit()

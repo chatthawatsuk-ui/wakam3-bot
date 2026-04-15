@@ -673,8 +673,8 @@ def calc_dynamic_weights(specialist_wr):
     return weights
 
 
-BT3Y_DATE_FROM = "2023-03-01"
-BT3Y_DATE_TO   = "2026-03-01"
+BT3Y_DATE_FROM = "2023-01-01"
+BT3Y_DATE_TO   = datetime.now(timezone.utc).strftime("%Y-%m-%d")  # always current
 LIVE_PERF_DAYS = 30   # rolling window สำหรับ live performance
 
 
@@ -1344,21 +1344,55 @@ def main():
 
     # ── Shadow Mode Stats ────────────────────────────────────────────────────
     shadow_stats = {"total": 0, "pending": 0, "win": 0, "loss": 0,
-                    "win_rate": 0, "recent": []}
+                    "win_rate": 0, "recent": [], "recent_win": 0, "recent_loss": 0}
     try:
+        # All-time counts (no LIMIT — for accurate stats card)
+        sh_agg = conn.execute("""
+            SELECT
+                COUNT(*)                                              AS total,
+                SUM(CASE WHEN outcome='WIN'     THEN 1 ELSE 0 END)   AS wins,
+                SUM(CASE WHEN outcome='LOSS'    THEN 1 ELSE 0 END)   AS losses,
+                SUM(CASE WHEN outcome='PENDING' THEN 1 ELSE 0 END)   AS pending
+            FROM shadow_trades
+        """).fetchone()
+        all_total   = sh_agg["total"]   or 0
+        all_wins    = sh_agg["wins"]    or 0
+        all_losses  = sh_agg["losses"]  or 0
+        all_pending = sh_agg["pending"] or 0
+        all_resolved = all_wins + all_losses
+
+        # All-time breakdown by exit_reason (WIN subtypes)
+        sh_by_exit = conn.execute("""
+            SELECT
+                SUM(CASE WHEN outcome='WIN' AND exit_reason IN ('TP1','TP2') THEN 1 ELSE 0 END) AS win_tp2,
+                SUM(CASE WHEN outcome='WIN' AND exit_reason='SL_BE'          THEN 1 ELSE 0 END) AS win_slbe,
+                SUM(CASE WHEN outcome='LOSS'AND exit_reason='SL'             THEN 1 ELSE 0 END) AS loss_sl,
+                SUM(CASE WHEN outcome IN ('WIN','LOSS') AND exit_reason='TIMEOUT' THEN 1 ELSE 0 END) AS timeout
+            FROM shadow_trades
+        """).fetchone()
+
+        # Recent 20 rows for the display table
         sh_rows = conn.execute("""
             SELECT symbol, side, score, entry_px, sl_pct, regime,
-                   claude_reason, outcome, exit_px, created_at, resolved_at
-            FROM shadow_trades ORDER BY id DESC LIMIT 50
+                   claude_reason, outcome, exit_px, exit_reason, tp1_hit,
+                   created_at, resolved_at
+            FROM shadow_trades ORDER BY id DESC LIMIT 20
         """).fetchall()
-        resolved = [r for r in sh_rows if r["outcome"] != "PENDING"]
-        wins_sh  = sum(1 for r in resolved if r["outcome"] == "WIN")
+        recent_win  = sum(1 for r in sh_rows if r["outcome"] == "WIN")
+        recent_loss = sum(1 for r in sh_rows if r["outcome"] == "LOSS")
+
         shadow_stats = {
-            "total":    len(sh_rows),
-            "pending":  sum(1 for r in sh_rows if r["outcome"] == "PENDING"),
-            "win":      wins_sh,
-            "loss":     sum(1 for r in resolved if r["outcome"] == "LOSS"),
-            "win_rate": round(wins_sh / len(resolved) * 100, 1) if resolved else 0,
+            "total":       all_total,
+            "pending":     all_pending,
+            "win":         all_wins,
+            "loss":        all_losses,
+            "win_rate":    round(all_wins / all_resolved * 100, 1) if all_resolved else 0,
+            "recent_win":  recent_win,
+            "recent_loss": recent_loss,
+            "win_tp2":     sh_by_exit["win_tp2"]  or 0,
+            "win_slbe":    sh_by_exit["win_slbe"] or 0,
+            "loss_sl":     sh_by_exit["loss_sl"]  or 0,
+            "timeout":     sh_by_exit["timeout"]  or 0,
             "recent":   [{
                 "symbol":        dict(r)["symbol"],
                 "side":          dict(r)["side"],
@@ -1367,8 +1401,10 @@ def main():
                 "regime":        dict(r)["regime"],
                 "claude_reason": dict(r)["claude_reason"],
                 "outcome":       dict(r)["outcome"],
+                "exit_reason":   dict(r)["exit_reason"] or "",
+                "tp1_hit":       dict(r)["tp1_hit"] or 0,
                 "created_at":    dict(r)["created_at"],
-            } for r in sh_rows[:20]],
+            } for r in sh_rows],
         }
     except Exception as e:
         print(f"  [WARN] shadow_stats: {e}")
