@@ -417,27 +417,33 @@ def check_open_trades(conn):
         hit_tp2 = tp1_hit and (
             (side == "LONG"  and px >= tp2) or (side == "SHORT" and px <= tp2))
 
-        # ── คำนวณ PnL จาก qty จริง (B) ────────────────────────
-        # fallback → fixed risk_usd ถ้า qty=0 (trades เก่า)
+        # ── คำนวณ PnL จาก qty จริง ────────────────────────────
+        # ใช้ signed difference (tp1-ep, tp2-ep, sl-ep) ไม่ใช่ abs()
+        # pnl_from_qty จัดการ LONG/SHORT direction อัตโนมัติ
+        #
+        # LONG:  tp1>ep → (tp1-ep)>0 → profit ✓   sl<ep → (sl-ep)<0 → loss ✓
+        # SHORT: tp1<ep → (tp1-ep)<0 → pnl flipped → profit ✓
+        #        sl>ep  → (sl-ep)>0  → pnl flipped → loss ✓
         if qty and qty > 0 and ep and ep > 0:
-            dist_tp1 = abs(tp1 - ep) if tp1 else 0
-            dist_tp2 = abs(tp2 - ep) if tp2 else 0
-            dist_sl  = abs(ep  - sl) if sl  else 0
+            sgn_tp1 = (tp1 - ep) if tp1 else 0   # negative for SHORT (tp1 < ep)
+            sgn_tp2 = (tp2 - ep) if tp2 else 0   # negative for SHORT
+            sgn_sl  = (sl  - ep) if sl  else 0   # negative for LONG, positive for SHORT
 
             def pnl_from_qty(units, price_diff):
                 return units * price_diff if side == "LONG" else -units * price_diff
 
-            pnl_full_tp2 = (pnl_from_qty(qty * 0.5, dist_tp1) +
-                            pnl_from_qty(qty * 0.5, dist_tp2))
-            pnl_full_sl  = pnl_from_qty(qty, -dist_sl)
-            pnl_sl_after_tp1 = (pnl_from_qty(qty * 0.5, dist_tp1) +
-                                 pnl_from_qty(qty * 0.5, -dist_sl))
+            pnl_full_tp2     = (pnl_from_qty(qty * 0.5, sgn_tp1) +
+                                 pnl_from_qty(qty * 0.5, sgn_tp2))
+            pnl_full_sl      = pnl_from_qty(qty, sgn_sl)
+            # SL_BE: SL ย้ายมา entry → sl=ep → sgn_sl=0 → half at TP1 + half at 0
+            pnl_sl_after_tp1 = (pnl_from_qty(qty * 0.5, sgn_tp1) +
+                                 pnl_from_qty(qty * 0.5, sgn_sl))
         else:
-            # trades เก่า: ใช้ fixed risk_usd เหมือนเดิม
+            # trades เก่า: ใช้ fixed risk_usd (ไม่ขึ้นกับ LONG/SHORT direction)
             r = risk_usd if risk_usd else balance * RISK_PCT
             pnl_full_tp2      =  r * 0.5 * TP1_R + r * 0.5 * TP2_R
             pnl_full_sl       = -r
-            pnl_sl_after_tp1  =  r * 0.5 * TP1_R - r * 0.5
+            pnl_sl_after_tp1  =  r * 0.5 * TP1_R   # half at TP1 profit, half at BE (0)
 
         if hit_tp1:
             # ── Trailing Stop: ขยับ SL → Breakeven (entry_px) ──
@@ -455,9 +461,10 @@ def check_open_trades(conn):
 
         elif hit_sl:
             if tp1_hit:
-                outcome = "WIN" if pnl_sl_after_tp1 > 0 else "LOSS"
-                _close(conn, tid, px, outcome, pnl_sl_after_tp1, reason="SL (หลัง TP1)")
-                closed.append((tid, sym, outcome, pnl_sl_after_tp1))
+                # SL_BE = TP1 hit แล้ว SL ย้ายมา entry → เสมอตัว + กำไรจาก TP1 half
+                # pnl_sl_after_tp1 guaranteed > 0 เพราะ sgn_tp1 ทำกำไรทั้ง LONG/SHORT
+                _close(conn, tid, px, "WIN", pnl_sl_after_tp1, reason="SL_BE")
+                closed.append((tid, sym, "WIN", pnl_sl_after_tp1))
             else:
                 _close(conn, tid, px, "LOSS", pnl_full_sl, reason="SL ❌")
                 closed.append((tid, sym, "LOSS", pnl_full_sl))
@@ -470,12 +477,14 @@ def _close(conn, trade_id, exit_px, outcome, pnl, reason=""):
     r_low = reason.lower()
     if "tp2" in r_low or "tp 2" in r_low:
         exit_reason = "TP2"
+    elif "sl_be" in r_low:          # ต้องเช็ค SL_BE ก่อน tp1 เพราะ "sl_be" ไม่มี "tp"
+        exit_reason = "SL_BE"
     elif "tp1" in r_low or "tp 1" in r_low:
         exit_reason = "TP1"
     elif "timeout" in r_low:
         exit_reason = "TIMEOUT"
     elif "maxpos" in r_low or "max_pos" in r_low or "forced" in r_low:
-        exit_reason = "TIMEOUT"   # force-close ที่ราคาตลาด
+        exit_reason = "TIMEOUT"
     else:
         exit_reason = "SL"
 

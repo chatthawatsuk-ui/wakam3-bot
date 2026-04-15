@@ -982,7 +982,8 @@ def load_live_performance():
                    closed_at,
                    {_col('tf')},
                    {_col('score')},
-                   {_col('regime')}
+                   {_col('regime')},
+                   {_col('exit_reason')}
             FROM trades
             WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
             ORDER BY closed_at ASC
@@ -996,7 +997,7 @@ def load_live_performance():
                 "error": "ยังไม่มี trade ที่ปิดในสัปดาห์นี้"}
 
     cols = ["sym","side","ep","xp","outcome","pnl",
-            "tp1_hit","entry_ts","closed_at","tf","score","regime"]
+            "tp1_hit","entry_ts","closed_at","tf","score","regime","exit_reason"]
     df = pd.DataFrame(rows, columns=cols)
     df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
     df["tp1_hit"] = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
@@ -1005,13 +1006,26 @@ def load_live_performance():
     if "in_kz" not in df.columns:
         df["in_kz"] = False
 
-    # infer exit_type ให้ตรงกับชื่อใน backtest CSV: SL / SL_BE / TP2 / TIMEOUT
+    # exit_type: ใช้ exit_reason จาก DB โดยตรง (ถูกต้องสำหรับ trades ใหม่)
+    # fallback inference สำหรับ trades เก่าที่ไม่มี exit_reason หรือมีค่าผิด
     def _exit_type(row):
+        er = (row.get("exit_reason") or "").strip().upper()
+
+        if er == "SL_BE":   return "SL_BE"
+        if er == "TP2":     return "TP2"
+        if er == "TP1":     return "TP1"
+        if er == "TIMEOUT": return "TIMEOUT"
+        if er == "SL":
+            # trades เก่า: SL + tp1_hit=1 = SL_BE (exit_reason ยังไม่แยกแยะ)
+            return "SL_BE" if row.get("tp1_hit") else "SL"
+
+        # ไม่มี exit_reason (trades เก่ามาก) → infer จาก outcome + tp1_hit
         if row["outcome"] == "WIN":
-            return "TP2"           # WIN = TP hit (TP1 → TP2 หรือ TP1 เดียว)
-        elif row["outcome"] == "LOSS":
-            return "SL_BE" if row["pnl"] > 0 else "SL"   # pnl > 0 = SL ย้ายมาแดนบวก
-        return "TIMEOUT"           # VOID / อื่นๆ = time exit
+            return "SL_BE" if row.get("tp1_hit") else "TP2"
+        if row["outcome"] == "LOSS":
+            return "SL_BE" if row.get("tp1_hit") else "SL"
+        return "TIMEOUT"
+
     df["exit_type"] = df.apply(_exit_type, axis=1)
 
     try:
