@@ -1371,40 +1371,52 @@ def main():
             FROM shadow_trades
         """).fetchone()
 
-        # Recent 20 rows for the display table
-        sh_rows = conn.execute("""
+        def _sh_row(r):
+            d = dict(r)
+            return {
+                "symbol":        d["symbol"],
+                "side":          d["side"],
+                "score":         d["score"],
+                "entry_px":      d["entry_px"],
+                "sl_pct":        d["sl_pct"],
+                "regime":        d["regime"],
+                "claude_reason": d["claude_reason"],
+                "outcome":       d["outcome"],
+                "exit_px":       d["exit_px"],
+                "exit_reason":   d["exit_reason"] or "",
+                "tp1_hit":       d["tp1_hit"] or 0,
+                "created_at":    d["created_at"],
+                "resolved_at":   d["resolved_at"],
+            }
+
+        # Pending signals — ทั้งหมด, เรียงใหม่สุดก่อน
+        pending_rows = conn.execute("""
             SELECT symbol, side, score, entry_px, sl_pct, regime,
                    claude_reason, outcome, exit_px, exit_reason, tp1_hit,
                    created_at, resolved_at
-            FROM shadow_trades ORDER BY id DESC LIMIT 20
+            FROM shadow_trades WHERE outcome='PENDING' ORDER BY id DESC
         """).fetchall()
-        recent_win  = sum(1 for r in sh_rows if r["outcome"] == "WIN")
-        recent_loss = sum(1 for r in sh_rows if r["outcome"] == "LOSS")
+
+        # Resolved signals (WIN/LOSS) — ทั้งหมด, เรียง resolved ล่าสุดก่อน
+        resolved_rows = conn.execute("""
+            SELECT symbol, side, score, entry_px, sl_pct, regime,
+                   claude_reason, outcome, exit_px, exit_reason, tp1_hit,
+                   created_at, resolved_at
+            FROM shadow_trades WHERE outcome IN ('WIN','LOSS') ORDER BY resolved_at DESC
+        """).fetchall()
 
         shadow_stats = {
-            "total":       all_total,
-            "pending":     all_pending,
-            "win":         all_wins,
-            "loss":        all_losses,
-            "win_rate":    round(all_wins / all_resolved * 100, 1) if all_resolved else 0,
-            "recent_win":  recent_win,
-            "recent_loss": recent_loss,
-            "win_tp2":     sh_by_exit["win_tp2"]  or 0,
-            "win_slbe":    sh_by_exit["win_slbe"] or 0,
-            "loss_sl":     sh_by_exit["loss_sl"]  or 0,
-            "timeout":     sh_by_exit["timeout"]  or 0,
-            "recent":   [{
-                "symbol":        dict(r)["symbol"],
-                "side":          dict(r)["side"],
-                "score":         dict(r)["score"],
-                "sl_pct":        dict(r)["sl_pct"],
-                "regime":        dict(r)["regime"],
-                "claude_reason": dict(r)["claude_reason"],
-                "outcome":       dict(r)["outcome"],
-                "exit_reason":   dict(r)["exit_reason"] or "",
-                "tp1_hit":       dict(r)["tp1_hit"] or 0,
-                "created_at":    dict(r)["created_at"],
-            } for r in sh_rows],
+            "total":          all_total,
+            "pending":        all_pending,
+            "win":            all_wins,
+            "loss":           all_losses,
+            "win_rate":       round(all_wins / all_resolved * 100, 1) if all_resolved else 0,
+            "win_tp2":        sh_by_exit["win_tp2"]  or 0,
+            "win_slbe":       sh_by_exit["win_slbe"] or 0,
+            "loss_sl":        sh_by_exit["loss_sl"]  or 0,
+            "timeout":        sh_by_exit["timeout"]  or 0,
+            "pending_trades": [_sh_row(r) for r in pending_rows],
+            "resolved_trades":[_sh_row(r) for r in resolved_rows],
         }
     except Exception as e:
         print(f"  [WARN] shadow_stats: {e}")
