@@ -49,7 +49,7 @@ DEFAULT_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
 ]
 EXTENDED_SYMBOLS = DEFAULT_SYMBOLS + [
-    "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT", "SUI/USDT",
+    "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT",
 ]
 
 # ── MULTI-TF CONFIG ───────────────────────────────────────────────────────────
@@ -163,7 +163,8 @@ def calc_pnl(side, ep, sl_orig, tp1_px, exit_px, tp1_was_hit):
 
 # ── WALK-FORWARD BACKTEST (generic TF) ───────────────────────────────────────
 def backtest_symbol(sym, df_primary, df_htf,
-                    warmup, window, timeout_candles, scan_step, tf_label):
+                    warmup, window, timeout_candles, scan_step, tf_label,
+                    df_1d=None):
     """
     sym         — symbol เช่น BTC/USDT
     df_primary  — OHLCV ของ TF หลัก (ใช้สแกน + วัดผล)
@@ -173,6 +174,7 @@ def backtest_symbol(sym, df_primary, df_htf,
     timeout_c   — max candles ก่อน timeout (แทน 48h fixed)
     scan_step   — scan ทุก N candles
     tf_label    — "1h", "15m" ฯลฯ สำหรับบันทึกใน CSV
+    df_1d       — OHLCV รายวัน สำหรับ daily Stochastic filter (เหมือน live)
     """
     trades       = []
     in_trade     = False
@@ -244,12 +246,13 @@ def backtest_symbol(sym, df_primary, df_htf,
             slice_pri  = df_primary.iloc[win_start:i]
             last_ts    = slice_pri.index[-1]
             slice_htf  = df_htf[df_htf.index <= last_ts].iloc[-500:]
+            slice_1d   = df_1d[df_1d.index <= last_ts].iloc[-50:] if df_1d is not None and not df_1d.empty else None
 
             if len(slice_pri) < warmup:
                 continue
 
             try:
-                sig, _ = SCANNER.scan_symbol(sym, slice_pri, slice_htf, "FUTURES")
+                sig, _ = SCANNER.scan_symbol(sym, slice_pri, slice_htf, "FUTURES", slice_1d)
             except Exception:
                 sig = None
 
@@ -530,21 +533,29 @@ def main():
 
             df_pri = fetch_paginated(sym, pri_tf, args.years)
             df_htf = fetch_paginated(sym, htf_tf, args.years)
+            df_1d  = fetch_paginated(sym, "1d",   args.years)
 
             src_p = "[cache]" if _load_cache(sym, pri_tf, args.years) is not None else "[API]"
             src_h = "[cache]" if _load_cache(sym, htf_tf, args.years) is not None else "[API]"
+            src_d = "[cache]" if _load_cache(sym, "1d",   args.years) is not None else "[API]"
             print(f"{pri_tf}:{len(df_pri)}{src_p}  {htf_tf}:{len(df_htf)}{src_h}  "
-                  f"({time_mod.time()-t_fetch:.1f}s)")
+                  f"1d:{len(df_1d)}{src_d}  ({time_mod.time()-t_fetch:.1f}s)")
 
             if df_pri.empty or len(df_pri) < warmup + 10:
-                print(f"  ข้อมูลไม่พอ — ข้าม")
+                print(f"  primary data insufficient — skip")
                 continue
+            if df_htf.empty:
+                print(f"  HTF ({htf_tf}) no data — skip")
+                continue
+            # df_1d ว่าง → ใช้ None (scanner จะข้าม daily Stoch filter)
+            df_1d_arg = df_1d if not df_1d.empty else None
 
             t0 = time_mod.time()
             trades_df, scanned = backtest_symbol(
                 sym, df_pri, df_htf,
                 warmup, window, timeout_c, step,
-                pri_tf   # tf_label
+                pri_tf,   # tf_label
+                df_1d_arg,
             )
             elapsed = time_mod.time() - t0
             tf_scans    += scanned

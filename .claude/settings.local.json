@@ -101,7 +101,15 @@
       "Bash(py -3 -c \"import ast; ast.parse\\(open\\('backtest_3y.py', encoding='utf-8'\\).read\\(\\)\\); print\\('backtest_3y.py OK'\\)\")",
       "Bash(py -3 -c \"import ast; ast.parse\\(open\\('backtest_live.py', encoding='utf-8'\\).read\\(\\)\\); print\\('backtest_live.py OK'\\)\")",
       "Bash(py -3 -c \"import ast; ast.parse\\(open\\('download_history.py', encoding='utf-8'\\).read\\(\\)\\); print\\('download_history.py OK'\\)\")",
-      "Bash(dir \"C:\\\\Users\\\\chatt\\\\OneDrive - STEEL FRAME BUILDING CO.,LTD\\\\Desktop\\\\ai-trade\\\\historical_data\")"
+      "Bash(dir \"C:\\\\Users\\\\chatt\\\\OneDrive - STEEL FRAME BUILDING CO.,LTD\\\\Desktop\\\\ai-trade\\\\historical_data\")",
+      "Bash(py -c \"import ast; [print\\('OK:',f\\) or None for f in ['generate_dashboard.py','dashboard.html'] if not ast.parse\\(open\\(f,encoding='utf-8'\\).read\\(\\)\\)]\")",
+      "Bash(ls -la *.py *.db *.json *.csv)",
+      "Bash(grep -E \"\\\\.db$|backtest_3y\")",
+      "Bash(py -3 -c \"import requests; print\\('requests ok'\\)\")",
+      "Bash(py -3 backtest_3y.py --extended)",
+      "Bash(py -3 generate_dashboard.py)",
+      "Bash(ls -la backtest_3y*.csv)",
+      "Bash(py -3)"
     ]
   }
 }

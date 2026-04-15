@@ -372,9 +372,17 @@ def save_shadow_signal(signal: dict):
                 created_at    TEXT,
                 outcome       TEXT DEFAULT 'PENDING',
                 exit_px       REAL,
-                resolved_at   TEXT
+                resolved_at   TEXT,
+                tp1_hit       INTEGER DEFAULT 0,
+                exit_reason   TEXT
             )
         """)
+        # migrate: เพิ่ม columns ใน shadow_trades ที่อาจไม่มีใน DB เก่า
+        for _col, _def in [("tp1_hit", "INTEGER DEFAULT 0"), ("exit_reason", "TEXT")]:
+            try:
+                cur.execute(f"ALTER TABLE shadow_trades ADD COLUMN {_col} {_def}")
+            except Exception:
+                pass
         # ถ้า symbol เดิมยัง PENDING อยู่ → ไม่บันทึกซ้ำ
         existing = cur.execute(
             "SELECT id FROM shadow_trades WHERE symbol=? AND side=? AND outcome='PENDING'",
