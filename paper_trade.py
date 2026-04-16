@@ -14,8 +14,8 @@ except ImportError:
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 DB_PATH       = "paper_trades.db"
 PORT_SIZE     = 1000.0   # ยอดเริ่มต้น USD
-RISK_PCT      = 0.01     # A: 1% ของ balance คงเหลือ (dynamic)
-MAX_LEVERAGE  = 5        # B: leverage สูงสุด (cap)
+RISK_PCT      = 0.01     # A: 1% ของ balance คงเหลือ ณ เวลาปัจจุบัน (dynamic)
+MAX_LEVERAGE  = 20       # B: leverage 20x ทุก position
 MAX_OPEN           = 10   # จำนวน position เปิดพร้อมกันสูงสุด
 TRADE_TIMEOUT_HRS  = 48   # ปิด trade อัตโนมัติถ้าค้างเกิน N ชั่วโมง
 TP1_R         = 1.2
@@ -48,10 +48,10 @@ exchange = ccxt.okx({"enableRateLimit": True})
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
     """
-    Position Sizing — margin 1% ของ Available × 5x leverage
+    Position Sizing — margin 1% ของ Available × 20x leverage
       margin_usd  = balance × RISK_PCT  (e.g. $1054 × 1% = $10.54)
-      leverage    = MAX_LEVERAGE = 5x
-      notional    = margin × leverage   (e.g. $10.54 × 5 = $52.73)
+      leverage    = MAX_LEVERAGE = 20x
+      notional    = margin × leverage   (e.g. $10.54 × 20 = $210.80)
       qty         = notional / entry_px
       actual_risk = notional × sl_dist%  (ขาดทุนถ้าโดน SL — จุด SL กำหนดโดย agent)
 
@@ -60,9 +60,9 @@ def calc_position(balance, entry_px, sl_px):
     sl_dist = abs(entry_px - sl_px) / entry_px
     sl_dist = max(sl_dist, 0.001)
 
-    margin_usd  = balance * RISK_PCT          # 1% ของยอดเงิน
-    leverage    = float(MAX_LEVERAGE)         # 5x
-    notional    = margin_usd * leverage       # margin × 5
+    margin_usd  = balance * RISK_PCT          # 1% ของยอดเงิน ณ เวลาปัจจุบัน
+    leverage    = float(MAX_LEVERAGE)         # 20x
+    notional    = margin_usd * leverage       # margin × 20
     qty         = notional / entry_px
     actual_risk = notional * sl_dist          # risk จริงถ้าโดน SL
 
@@ -168,6 +168,43 @@ def init_db():
     for sh_col, sh_def in [("tp1_hit", "INTEGER DEFAULT 0"), ("exit_reason", "TEXT")]:
         try:
             conn.execute(f"ALTER TABLE shadow_trades ADD COLUMN {sh_col} {sh_def}")
+        except Exception:
+            pass
+
+    # ── Signal Log — บันทึกทุก signal (ไม่ว่าจะเทรดหรือ skip) เพื่อวิเคราะห์ ──
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS signal_log (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol              TEXT,
+            side                TEXT,
+            score               INTEGER,
+            entry_px            REAL,
+            sl_px               REAL,
+            tp1_px              REAL,
+            tp2_px              REAL,
+            regime              TEXT    DEFAULT 'UNKNOWN',
+            tf                  TEXT    DEFAULT '1H',
+            was_traded          INTEGER DEFAULT 0,
+            skip_reason         TEXT    DEFAULT '',
+            tp1_hit             INTEGER DEFAULT 0,
+            outcome             TEXT    DEFAULT 'PENDING',
+            exit_reason         TEXT,
+            exit_px             REAL,
+            logged_at           TEXT,
+            resolved_at         TEXT,
+            balance_at_signal   REAL    DEFAULT 1000.0
+        )
+    """)
+    # migrate signal_log: เผื่อ DB เก่า
+    for sl_col, sl_def in [
+        ("tf",                 "TEXT DEFAULT '1H'"),
+        ("tp1_hit",            "INTEGER DEFAULT 0"),
+        ("exit_reason",        "TEXT"),
+        ("resolved_at",        "TEXT"),
+        ("balance_at_signal",  "REAL DEFAULT 1000.0"),
+    ]:
+        try:
+            conn.execute(f"ALTER TABLE signal_log ADD COLUMN {sl_col} {sl_def}")
         except Exception:
             pass
     cur = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()
@@ -341,18 +378,178 @@ def check_shadow_trades(conn):
         print(f"  [SHADOW] resolved {resolved} shadow trade(s)")
 
 
+# ── SIGNAL LOG — บันทึกทุก signal ────────────────────────────────────────────
+def log_signal(conn, sig: dict, was_traded: bool, skip_reason: str = "",
+               balance: float = None):
+    """
+    บันทึกทุก signal ลง signal_log (ไม่ว่าจะเทรดหรือ skip)
+    เก็บ balance ณ ตอนนั้น เพื่อคำนวณ PnL แบบ 1% risk จริง
+
+    Dedup logic:
+    - ถ้ามี PENDING entry เดิม symbol+side ใน 4h ล่าสุด:
+        → ถ้า was_traded=True: UPDATE entry เดิมเป็น was_traded=1 (signal ที่เคย skip ตอนนี้เทรดได้แล้ว)
+        → ถ้า was_traded=False: ข้าม (ไม่ต้องล็อกซ้ำ)
+    """
+    # อ่าน balance ถ้าไม่ได้ส่งมา
+    if balance is None:
+        try:
+            balance = get_balance(conn)
+        except Exception:
+            balance = PORT_SIZE
+
+    # ตรวจ PENDING entry เดิมใน 4h ล่าสุด
+    dup = conn.execute("""
+        SELECT id FROM signal_log
+        WHERE symbol=? AND side=?
+          AND outcome='PENDING'
+          AND logged_at >= datetime('now', '-4 hours')
+        LIMIT 1
+    """, (sig["symbol"], sig["side"])).fetchone()
+
+    if dup:
+        if was_traded:
+            # CRITICAL FIX: signal เคย skip แต่ run นี้เทรดได้ → UPDATE was_traded=1
+            conn.execute("""
+                UPDATE signal_log
+                SET was_traded=1, skip_reason='', balance_at_signal=?
+                WHERE id=?
+            """, (round(balance, 2), dup[0]))
+            conn.commit()
+            print(f"  [SIGLOG] Updated {sig['symbol']} {sig['side']} → was_traded=1 (was skipped before)")
+        # ถ้า was_traded=False → ไม่ต้องทำอะไร (มี entry อยู่แล้ว)
+        return
+
+    conn.execute("""
+        INSERT INTO signal_log
+        (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
+         regime, tf, was_traded, skip_reason, logged_at, balance_at_signal)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (
+        sig["symbol"], sig["side"], sig.get("score", 0),
+        sig.get("price", 0), sig.get("sl", 0),
+        sig.get("tp1", 0),   sig.get("tp2", 0),
+        sig.get("regime", "UNKNOWN"),
+        sig.get("tf", "1H"),
+        1 if was_traded else 0,
+        skip_reason,
+        datetime.now(timezone.utc).isoformat(),
+        round(balance, 2)
+    ))
+    conn.commit()
+
+
+def check_signal_log(conn):
+    """
+    ตรวจ signal_log PENDING — track outcome เหมือน shadow_trades:
+      Stage 1 (tp1_hit=0): SL hit → LOSS  |  TP1 hit → move SL to BE, tp1_hit=1
+      Stage 2 (tp1_hit=1): SL(BE) hit → WIN/SL_BE  |  TP2 hit → WIN/TP2
+      Timeout 48h: WIN/LOSS ตาม price vs entry
+    """
+    rows = conn.execute("""
+        SELECT id, symbol, side, entry_px, sl_px, tp1_px, tp2_px, logged_at, tp1_hit
+        FROM signal_log WHERE outcome='PENDING'
+    """).fetchall()
+
+    if not rows:
+        return
+
+    now = datetime.now(timezone.utc)
+    resolved = 0
+
+    for row in rows:
+        sid, sym, side, ep, sl, tp1, tp2, logged_at, tp1_hit = row
+        px = get_price(sym)
+        if not px:
+            continue
+
+        try:
+            logged_dt = datetime.fromisoformat(logged_at)
+            if logged_dt.tzinfo is None:
+                logged_dt = logged_dt.replace(tzinfo=timezone.utc)
+            hours = (now - logged_dt).total_seconds() / 3600
+        except Exception:
+            hours = 0
+
+        timed_out = hours >= TRADE_TIMEOUT_HRS
+
+        if not tp1_hit:
+            hit_sl  = sl  and ((side == "LONG" and px <= sl)  or (side == "SHORT" and px >= sl))
+            hit_tp1 = tp1 and ((side == "LONG" and px >= tp1) or (side == "SHORT" and px <= tp1))
+
+            if hit_sl:
+                conn.execute("""
+                    UPDATE signal_log
+                    SET outcome='LOSS', exit_reason='SL', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+            elif hit_tp1:
+                conn.execute("""
+                    UPDATE signal_log SET tp1_hit=1, sl_px=? WHERE id=?
+                """, (ep, sid))   # sl_px = entry_px (BE)
+
+            elif timed_out:
+                outcome = "WIN" if ((side == "LONG" and px > ep) or (side == "SHORT" and px < ep)) else "LOSS"
+                conn.execute("""
+                    UPDATE signal_log
+                    SET outcome=?, exit_reason='TIMEOUT', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (outcome, round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+        else:
+            # Stage 2: TP1 hit แล้ว SL อยู่ที่ BE
+            hit_sl_be = sl and ((side == "LONG" and px <= sl) or (side == "SHORT" and px >= sl))
+            hit_tp2   = tp2 and ((side == "LONG" and px >= tp2) or (side == "SHORT" and px <= tp2))
+
+            if hit_tp2:
+                conn.execute("""
+                    UPDATE signal_log
+                    SET outcome='WIN', exit_reason='TP2', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+            elif hit_sl_be:
+                conn.execute("""
+                    UPDATE signal_log
+                    SET outcome='WIN', exit_reason='SL_BE', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+            elif timed_out:
+                outcome = "WIN" if ((side == "LONG" and px > ep) or (side == "SHORT" and px < ep)) else "LOSS"
+                conn.execute("""
+                    UPDATE signal_log
+                    SET outcome=?, exit_reason='TIMEOUT', exit_px=?, resolved_at=?
+                    WHERE id=?
+                """, (outcome, round(px, 8), now.isoformat(), sid))
+                resolved += 1
+
+    if resolved:
+        conn.commit()
+        print(f"  [SIGLOG] resolved {resolved} signal(s)")
+
+
 # ── OPEN TRADE ────────────────────────────────────────────────────────────────
 def open_trade(conn, sig):
+    # อ่าน balance ครั้งเดียว ใช้ร่วมกันทุก log call ในฟังก์ชันนี้
+    balance = get_balance(conn)
+
     # ── Guardrail 1: Daily Loss Cap ─────────────────────────────────────────
     daily_pnl = get_daily_pnl(conn)
     if daily_pnl < -DAILY_LOSS_CAP:
         print(f"  [GUARD] Daily loss cap: ${daily_pnl:.2f} < -${DAILY_LOSS_CAP} — หยุดเปิดทั้งวัน")
+        log_signal(conn, sig, was_traded=False, skip_reason="DAILY_CAP", balance=balance)
         return None
 
     # ── Guardrail 2: Correlation Check ──────────────────────────────────────
     corr_ok, corr_reason = check_correlation(conn, sig["symbol"], sig["side"])
     if not corr_ok:
         print(f"  [GUARD] {sig['symbol']} — {corr_reason}")
+        log_signal(conn, sig, was_traded=False, skip_reason="CORR_LIMIT", balance=balance)
         return None
 
     # ── ตรวจ symbol ซ้ำ ─────────────────────────────────────────────────────
@@ -361,6 +558,7 @@ def open_trade(conn, sig):
         (sig["symbol"],)).fetchone()
     if existing:
         print(f"  [SKIP] {sig['symbol']} มี trade เปิดอยู่แล้ว")
+        log_signal(conn, sig, was_traded=False, skip_reason="DUPLICATE", balance=balance)
         return None
 
     # ตรวจ max open positions
@@ -368,11 +566,11 @@ def open_trade(conn, sig):
         "SELECT COUNT(*) FROM trades WHERE status='OPEN'").fetchone()[0]
     if open_count >= MAX_OPEN:
         print(f"  [SKIP] {sig['symbol']} — เปิดครบ {MAX_OPEN} positions แล้ว")
+        log_signal(conn, sig, was_traded=False, skip_reason="MAX_OPEN", balance=balance)
         return None
 
     entry_px = sig["price"]
     sl_px    = sig["sl"]
-    balance  = get_balance(conn)
 
     if entry_px > 0 and sl_px > 0 and abs(entry_px - sl_px) / entry_px >= 0.001:
         qty, notional, leverage, margin, risk = calc_position(balance, entry_px, sl_px)
@@ -406,6 +604,9 @@ def open_trade(conn, sig):
     print(f"  ✅ เปิด #{trade_id} {sig['symbol']} {sig['side']} "
           f"@ {sig['price']} | qty={qty:.4f} notional=${notional:.0f} "
           f"lev={leverage:.1f}x risk=${risk:.2f}")
+
+    # ── บันทึก signal_log (was_traded=1) ─────────────────────────────────────
+    log_signal(conn, sig, was_traded=True, skip_reason="", balance=balance)
 
     # แจ้ง Telegram: Order Limit Hit
     _append_order_limit_hit(sig)
@@ -729,6 +930,9 @@ def main():
     print("\n[0c] Shadow Trade outcomes...")
     cleanup_shadow_trades(conn)
     check_shadow_trades(conn)
+
+    print("\n[0d] Signal Log outcomes...")
+    check_signal_log(conn)
 
     print("\n[1] เช็ค Open Trades...")
     closed = check_open_trades(conn)

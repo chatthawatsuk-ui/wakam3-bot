@@ -1,4 +1,4 @@
-import sys, os, json
+import sys, os, json, sqlite3
 from datetime import datetime, timezone, timedelta
 
 try:
@@ -343,14 +343,61 @@ def notify_closed_trades():
         print(f"[NOTIFY] closed_results error: {e}")
 
 
+# ── ตรวจว่า signal นี้ถูกเปิดเทรดจริงหรือเปล่า ────────────────────────────────
+DB_PATH = "paper_trades.db"
+
+def get_traded_symbols(window_minutes: int = 60) -> set:
+    """
+    คืน set ของ (symbol, side) ที่ถูกเปิดเทรดจริงใน N นาทีล่าสุด
+    ใช้ signal_log.was_traded=1 เป็น source หลัก (แม่นยำกว่า trades table)
+    Fallback ไป trades table ถ้า signal_log ยังไม่มี
+    """
+    if not os.path.exists(DB_PATH):
+        return set()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).isoformat()
+
+        # ── วิธีที่ 1: ใช้ signal_log (แม่นที่สุด) ─────────────────────────────
+        tables = {r[0] for r in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table'"
+        ).fetchall()}
+
+        if "signal_log" in tables:
+            rows = conn.execute("""
+                SELECT symbol, side FROM signal_log
+                WHERE was_traded = 1 AND logged_at >= ?
+            """, (cutoff,)).fetchall()
+            if rows:
+                conn.close()
+                result = {(r[0], r[1]) for r in rows}
+                print(f"  [DB] signal_log traded: {result}")
+                return result
+            print("  [DB] signal_log ไม่มี was_traded=1 ใน window นี้ — fallback trades table")
+
+        # ── วิธีที่ 2: fallback trades table ─────────────────────────────────────
+        rows = conn.execute("""
+            SELECT symbol, side FROM trades
+            WHERE opened_at >= ?
+        """, (cutoff,)).fetchall()
+        conn.close()
+        result = {(r[0], r[1]) for r in rows}
+        print(f"  [DB] trades fallback: {result}")
+        return result
+
+    except Exception as e:
+        print(f"[NOTIFY] DB check error: {e}")
+        return set()
+
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     # 1. ส่งผล closed trades ก่อน (TP/SL hit)
     print("[1] เช็ค Closed Trade Results...")
     notify_closed_trades()
 
-    # 2. ส่ง new signals (dedup)
-    print("[2] เช็ค New Signals...")
+    # 2. ส่ง new signals — เฉพาะที่ถูกเทรดจริงเท่านั้น
+    print("[2] เช็ค New Signals (traded only)...")
     if not os.path.exists("latest_signals.json"):
         print("  ไม่มี latest_signals.json")
         sys.exit(0)
@@ -362,11 +409,32 @@ if __name__ == "__main__":
         print("  ไม่มี signal")
         sys.exit(0)
 
-    new_count = 0
+    # ดึง set ของ (symbol, side) ที่เพิ่งเปิด trade จริงใน 60 นาทีล่าสุด
+    # → ใช้ signal_log.was_traded=1 เป็นหลัก, fallback trades table
+    traded = get_traded_symbols(window_minutes=60)
+    print(f"  Signals ใน JSON: {len(signals)} | เทรดจริง (DB): {len(traded)}")
+
+    # debug: แสดง symbols ที่จะส่ง vs ที่ skip
+    sig_list = [(s["symbol"], s["side"]) for s in signals]
+    print(f"  Signals: {sig_list}")
+    print(f"  Traded : {sorted(traded)}")
+
+    new_count  = 0
+    skip_count = 0
     for sig in signals:
-        if is_already_notified(sig):
-            print(f"  [SKIP] {sig['symbol']} {sig['side']} — ส่งไปแล้ว")
+        sym_side = (sig["symbol"], sig["side"])
+
+        # ── กรอง: ส่งเฉพาะที่มี trade จริงใน DB ───────────────────────────
+        if sym_side not in traded:
+            print(f"  [NOT TRADED] {sig['symbol']} {sig['side']} — skip")
+            skip_count += 1
             continue
+
+        if is_already_notified(sig):
+            print(f"  [DEDUP] {sig['symbol']} {sig['side']} — ส่งไปแล้วใน 6h")
+            skip_count += 1
+            continue
+
         msg = signal_msg(sig)
         ok  = send(msg)
         if ok:
@@ -375,4 +443,4 @@ if __name__ == "__main__":
         status = "✅ ส่งแล้ว" if ok else "❌ ส่งไม่ได้"
         print(f"  {sig['symbol']} {sig['side']} — {status}")
 
-    print(f"  ส่ง {new_count} signals ใหม่ (skip {len(signals)-new_count} ที่ส่งไปแล้ว)")
+    print(f"  ✅ ส่ง {new_count} signals ใหม่ | ⏭ skip {skip_count} (ไม่ได้เทรด/ส่งแล้ว)")

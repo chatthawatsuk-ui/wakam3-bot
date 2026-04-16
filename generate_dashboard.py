@@ -960,11 +960,16 @@ def _load_custom_symbols():
 
 def load_live_performance():
     """
-    📡 Weekly Performance — paper trades จริงใน 7 วันล่าสุด จาก paper_trades.db
+    📡 Weekly Performance — วิเคราะห์ทุก Signal ที่ระบบออก (ไม่ใช่แค่ที่เทรด)
+    อ่านจาก signal_log (Claude-approved ทุกตัว ไม่ว่าจะถูก skip หรือเทรด)
+    fallback → paper_trades หากยังไม่มี signal_log
     """
     import pandas as pd
     from datetime import timedelta
 
+    # ใช้ sizing เดียวกับ paper_trade.py: margin=1% ของ balance × 20x leverage
+    RISK_PCT   = 0.01   # 1% ของ balance ณ เวลาปัจจุบัน
+    LEVERAGE   = 20.0   # leverage 20x ทุก position
     CUTOFF = datetime.now(timezone.utc) - timedelta(days=7)
 
     if not os.path.exists(DB_PATH):
@@ -973,73 +978,154 @@ def load_live_performance():
 
     try:
         conn = sqlite3.connect(DB_PATH)
-        cur  = conn.execute("PRAGMA table_info(trades)")
-        db_cols = {r[1] for r in cur.fetchall()}
-        def _col(name, alias=None):
-            a = alias or name
-            return name if name in db_cols else f"NULL AS {name}"
-        rows = conn.execute(f"""
-            SELECT symbol AS sym, side,
-                   entry_px AS ep, exit_px AS xp,
-                   outcome, pnl_usd AS pnl,
-                   {_col('tp1_hit')},
-                   opened_at AS entry_ts,
-                   closed_at,
-                   {_col('tf')},
-                   {_col('score')},
-                   {_col('regime')},
-                   {_col('exit_reason')}
-            FROM trades
-            WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
-            ORDER BY closed_at ASC
-        """, (CUTOFF.isoformat(),)).fetchall()
-        conn.close()
+        conn.row_factory = sqlite3.Row
+
+        # ── ตรวจว่ามี signal_log table หรือเปล่า ─────────────────────────
+        has_siglog = conn.execute("""
+            SELECT name FROM sqlite_master WHERE type='table' AND name='signal_log'
+        """).fetchone() is not None
+
+        if has_siglog:
+            # ── อ่านจาก signal_log (ทุก signal ที่ resolved ใน 7 วัน) ─────
+            rows_sig = conn.execute("""
+                SELECT symbol AS sym, side,
+                       entry_px AS ep, exit_px AS xp,
+                       sl_px, outcome, tp1_hit,
+                       exit_reason, regime,
+                       COALESCE(tf,'1H') AS tf,
+                       score,
+                       was_traded, skip_reason,
+                       logged_at AS entry_ts,
+                       COALESCE(balance_at_signal, 1000.0) AS balance_at_signal
+                FROM signal_log
+                WHERE outcome != 'PENDING'
+                  AND logged_at >= ?
+                ORDER BY logged_at ASC
+            """, (CUTOFF.isoformat(),)).fetchall()
+
+            # ── อ่าน pnl_usd จาก trades สำหรับ signals ที่ was_traded=1 ───
+            # (ใช้ราคาจริงจาก paper trade แทนการประมาณ)
+            traded_pnl = {}
+            rows_tp = conn.execute("""
+                SELECT symbol, side, pnl_usd, opened_at
+                FROM trades
+                WHERE status='CLOSED' AND pnl_usd IS NOT NULL AND opened_at >= ?
+            """, (CUTOFF.isoformat(),)).fetchall()
+            for r in rows_tp:
+                key = (r["symbol"], r["side"])
+                traded_pnl.setdefault(key, []).append(r["pnl_usd"] or 0)
+
+            conn.close()
+
+            if not rows_sig:
+                return {"available": False, "label": "live_perf",
+                        "error": "ยังไม่มี signal ที่ resolve ใน 7 วันล่าสุด (รอ 48h หลัง signal ออก)"}
+
+            # ── สร้าง DataFrame ─────────────────────────────────────────────
+            cols_sig = ["sym","side","ep","xp","sl_px","outcome","tp1_hit",
+                        "exit_reason","regime","tf","score","was_traded","skip_reason",
+                        "entry_ts","balance_at_signal"]
+            df = pd.DataFrame([dict(r) for r in rows_sig], columns=cols_sig)
+            df["ep"]                = pd.to_numeric(df["ep"],                errors="coerce").fillna(0)
+            df["xp"]                = pd.to_numeric(df["xp"],                errors="coerce").fillna(0)
+            df["sl_px"]             = pd.to_numeric(df["sl_px"],             errors="coerce").fillna(0)
+            df["tp1_hit"]           = pd.to_numeric(df["tp1_hit"],           errors="coerce").fillna(0)
+            df["score"]             = pd.to_numeric(df["score"],             errors="coerce").fillna(0)
+            df["balance_at_signal"] = pd.to_numeric(df["balance_at_signal"], errors="coerce").fillna(PORT_SIZE)
+            df["outcome"]  = df["outcome"].fillna("LOSS")
+            df["tf"]       = df["tf"].fillna("1H")
+            df["regime"]   = df["regime"].fillna("UNKNOWN")
+            df["in_kz"]    = False
+
+            # ── คำนวณ PnL per signal — 1% balance × 20x leverage (เหมือน paper_trade.py) ──
+            # margin   = balance × 1%
+            # notional = margin × 20x
+            # pnl      = notional × (exit - entry) / entry   (LONG)
+            # pnl      = notional × (entry - exit) / entry   (SHORT)
+            def _calc_pnl(row):
+                ep, xp = row["ep"], row["xp"]
+                side   = row["side"]
+                bal    = row["balance_at_signal"] or PORT_SIZE
+                if ep <= 0 or xp <= 0:
+                    return 0.0
+                margin   = bal * RISK_PCT          # 1% ของ balance
+                notional = margin * LEVERAGE        # × 20x
+                if side == "LONG":
+                    return round(notional * (xp - ep) / ep, 2)
+                else:
+                    return round(notional * (ep - xp) / ep, 2)
+
+            df["pnl"] = df.apply(_calc_pnl, axis=1)
+
+            # exit_type
+            df["exit_type"] = df["exit_reason"].fillna("TIMEOUT")
+
+            # ── stats breakdown by was_traded ──────────────────────────────
+            total_sig   = len(df)
+            traded_df   = df[df["was_traded"] == 1]
+            skipped_df  = df[df["was_traded"] == 0]
+
+            skip_breakdown = {}
+            if len(skipped_df) > 0:
+                for reason, grp in skipped_df.groupby("skip_reason"):
+                    skip_breakdown[reason or "OTHER"] = {
+                        "n":  len(grp),
+                        "wr": round((grp["outcome"] == "WIN").mean() * 100, 1),
+                        "avg_pnl": round(grp["pnl"].mean(), 2),
+                    }
+
+        else:
+            # ── fallback: อ่านจาก paper_trades เหมือนเดิม ──────────────────
+            print("  [INFO] signal_log ยังไม่มี — fallback ไป paper_trades")
+            cur  = conn.execute("PRAGMA table_info(trades)")
+            db_cols = {r[1] for r in cur.fetchall()}
+            def _col(name):
+                return name if name in db_cols else f"NULL AS {name}"
+            rows_fb = conn.execute(f"""
+                SELECT symbol AS sym, side,
+                       entry_px AS ep, exit_px AS xp,
+                       outcome, pnl_usd AS pnl,
+                       {_col('tp1_hit')},
+                       opened_at AS entry_ts,
+                       {_col('tf')},
+                       {_col('score')},
+                       {_col('regime')},
+                       {_col('exit_reason')}
+                FROM trades
+                WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
+                ORDER BY closed_at ASC
+            """, (CUTOFF.isoformat(),)).fetchall()
+            conn.close()
+
+            if not rows_fb:
+                return {"available": False, "label": "live_perf",
+                        "error": "ยังไม่มี trade ที่ปิดในสัปดาห์นี้"}
+
+            cols_fb = ["sym","side","ep","xp","outcome","pnl",
+                       "tp1_hit","entry_ts","tf","score","regime","exit_reason"]
+            df = pd.DataFrame(rows_fb, columns=cols_fb)
+            df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
+            df["tp1_hit"] = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
+            df["outcome"] = df["outcome"].fillna("LOSS")
+            df["tf"]      = df["tf"].fillna("—")
+            df["in_kz"]   = False
+            df["was_traded"]  = 1
+            df["skip_reason"] = ""
+            df["exit_type"]   = df["exit_reason"].fillna("TIMEOUT")
+            total_sig    = len(df)
+            traded_df    = df
+            skipped_df   = df.iloc[0:0]
+            skip_breakdown = {}
+
     except Exception as e:
         return {"available": False, "label": "live_perf", "error": str(e)}
 
-    if not rows:
-        return {"available": False, "label": "live_perf",
-                "error": "ยังไม่มี trade ที่ปิดในสัปดาห์นี้"}
-
-    cols = ["sym","side","ep","xp","outcome","pnl",
-            "tp1_hit","entry_ts","closed_at","tf","score","regime","exit_reason"]
-    df = pd.DataFrame(rows, columns=cols)
-    df["pnl"]     = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
-    df["tp1_hit"] = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
-    df["outcome"] = df["outcome"].fillna("LOSS")
-    df["tf"]      = df["tf"].fillna("—")
-    if "in_kz" not in df.columns:
-        df["in_kz"] = False
-
-    # exit_type: ใช้ exit_reason จาก DB โดยตรง (ถูกต้องสำหรับ trades ใหม่)
-    # fallback inference สำหรับ trades เก่าที่ไม่มี exit_reason หรือมีค่าผิด
-    def _exit_type(row):
-        er = (row.get("exit_reason") or "").strip().upper()
-
-        if er == "SL_BE":   return "SL_BE"
-        if er == "TP2":     return "TP2"
-        if er == "TIMEOUT": return "TIMEOUT"
-        if er == "TP1":
-            # เก่า: ปิดที่ TP1 = WIN ปกติ
-            # edge case: tp1_hit=1 + outcome=LOSS → ราคากลับมา BE = SL_BE
-            if row.get("tp1_hit") and row.get("outcome") == "LOSS":
-                return "SL_BE"
-            return "TP1"
-        if er == "SL":
-            # SL + tp1_hit=1 = ราคากลับมาหลัง TP1 hit → SL_BE
-            return "SL_BE" if row.get("tp1_hit") else "SL"
-
-        # ไม่มี exit_reason (trades เก่ามาก) → infer จาก outcome + tp1_hit
-        if row.get("outcome") == "WIN":
-            return "SL_BE" if row.get("tp1_hit") else "TP2"
-        if row.get("outcome") == "LOSS":
-            return "SL_BE" if row.get("tp1_hit") else "SL"
-        return "TIMEOUT"
-
-    df["exit_type"] = df.apply(_exit_type, axis=1)
-
     try:
-        summary   = _bt_metrics(df)
+        # ── metrics ทั้งหมด (all signals) ──────────────────────────────────
+        summary_all     = _bt_metrics(df)
+        summary_traded  = _bt_metrics(traded_df)  if len(traded_df)  >= 2 else None
+        summary_skipped = _bt_metrics(skipped_df) if len(skipped_df) >= 2 else None
+
         breakdown = _bt_breakdowns(df, source="live")
 
         date_from = date_to = None
@@ -1048,16 +1134,45 @@ def load_live_performance():
             date_from = ts2.min().strftime("%Y-%m-%d")
             date_to   = ts2.max().strftime("%Y-%m-%d")
 
+        n_traded  = int(df["was_traded"].sum()) if "was_traded" in df.columns else total_sig
+        n_skipped = total_sig - n_traded
+
+        # ── Trade Log rows (ทุก signal พร้อม was_traded flag) ──────────────
+        trade_rows = []
+        for _, row in df.sort_values("entry_ts", ascending=False).head(200).iterrows():
+            trade_rows.append({
+                "sym":         row.get("sym", ""),
+                "side":        row.get("side", ""),
+                "score":       int(row.get("score", 0) or 0),
+                "ep":          row.get("ep", 0),
+                "exit_px":     row.get("xp", 0),
+                "exit_type":   row.get("exit_type", "—"),
+                "tp1_hit":     int(row.get("tp1_hit", 0) or 0),
+                "outcome":     row.get("outcome", "—"),
+                "pnl":         round(float(row.get("pnl", 0) or 0), 2),
+                "regime":      row.get("regime", "—"),
+                "tf":          row.get("tf", "—"),
+                "was_traded":  int(row.get("was_traded", 1) or 1),
+                "skip_reason": row.get("skip_reason", "") or "",
+                "open_time":   row.get("entry_ts", ""),
+            })
+
         return {
-            "available":  True,
-            "label":      "live_perf",
-            "source":     "paper_trades",
-            "generated":  datetime.now(timezone.utc).isoformat(),
-            "date_from":  date_from,
-            "date_to":    date_to,
-            "period":     f"Paper Trades · 7d ({date_from or '?'} → {date_to or 'now'})",
-            "total_rows": len(df),
-            "summary":    summary,
+            "available":       True,
+            "label":           "live_perf",
+            "source":          "signal_log" if has_siglog else "paper_trades",
+            "generated":       datetime.now(timezone.utc).isoformat(),
+            "date_from":       date_from,
+            "date_to":         date_to,
+            "period":          f"All Signals · 7d ({date_from or '?'} → {date_to or 'now'})",
+            "total_rows":      total_sig,
+            "n_traded":        n_traded,
+            "n_skipped":       n_skipped,
+            "skip_breakdown":  skip_breakdown,
+            "summary":         summary_all,
+            "summary_traded":  summary_traded,
+            "summary_skipped": summary_skipped,
+            "trades":          trade_rows,
             **breakdown,
         }
     except Exception as e:
@@ -1207,9 +1322,10 @@ def main():
     balance = PORT_SIZE + float(total_pnl_row[0])
 
     closed_rows = conn.execute("""
-        SELECT id, symbol, side, entry_px, exit_px, outcome, pnl_usd,
+        SELECT id, symbol, side, score, entry_px, exit_px, outcome, pnl_usd,
                sl_px, tp1_px, tp1_hit, opened_at, closed_at,
-               notional_usd, leverage, risk_usd
+               notional_usd, leverage, risk_usd,
+               exit_reason, regime
         FROM trades WHERE status='CLOSED' ORDER BY id
     """).fetchall()
 
@@ -1232,10 +1348,12 @@ def main():
             "id":          r["id"],
             "symbol":      r["symbol"],
             "side":        r["side"],
+            "score":       r["score"]       or 0,
             "entry_price": ep,
             "exit_price":  xp,
             "sl_price":    r["sl_px"],
             "tp_price":    r["tp1_px"],
+            "tp1_hit":     r["tp1_hit"]     or 0,
             "outcome":     r["outcome"],
             "pnl":         pnl,
             "pnl_pct":     pnl_pct,
@@ -1243,6 +1361,8 @@ def main():
             "notional":    notional,
             "open_time":   r["opened_at"],
             "close_time":  r["closed_at"],
+            "exit_type":   r["exit_reason"] or "—",
+            "regime":      r["regime"]      or "—",
         })
 
     # นับเฉพาะ WIN/LOSS (ไม่รวม VOID) สำหรับ stats หลัก

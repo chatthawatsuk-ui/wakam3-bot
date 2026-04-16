@@ -1442,6 +1442,41 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <!-- summary stats -->
         <div class="stat-grid" style="grid-template-columns:repeat(8,1fr);margin-bottom:12px" id="bt-stats"></div>
 
+        <!-- ALL SIGNALS vs TRADED (live tab only) -->
+        <div id="bt-signal-compare" style="display:none;margin-bottom:12px">
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title">
+                <span class="icon">📡</span> Signal Performance Breakdown
+                <span style="font-size:9px;font-weight:400;color:var(--t2);margin-left:8px">วิเคราะห์ทุก signal ที่ออก (Claude-approved) ไม่ใช่เฉพาะที่เทรด</span>
+              </div>
+              <div id="bt-sig-source" class="card-meta"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 13px">
+
+              <!-- ALL SIGNALS -->
+              <div style="background:var(--s3);border-radius:8px;padding:12px;border:1px solid var(--border)">
+                <div style="font-size:9px;color:var(--blue);letter-spacing:.12em;font-weight:700;margin-bottom:8px">⚡ ALL SIGNALS</div>
+                <div id="bt-sig-all" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px"></div>
+              </div>
+
+              <!-- TRADED ONLY -->
+              <div style="background:var(--s3);border-radius:8px;padding:12px;border:1px solid rgba(34,197,94,.2)">
+                <div style="font-size:9px;color:var(--green);letter-spacing:.12em;font-weight:700;margin-bottom:8px">✅ TRADED</div>
+                <div id="bt-sig-traded" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px"></div>
+              </div>
+
+              <!-- SKIPPED -->
+              <div style="background:var(--s3);border-radius:8px;padding:12px;border:1px solid rgba(234,179,8,.15)">
+                <div style="font-size:9px;color:var(--yellow);letter-spacing:.12em;font-weight:700;margin-bottom:8px">⏭️ SKIPPED (ไม่เทรด)</div>
+                <div id="bt-sig-skipped" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px"></div>
+                <div id="bt-sig-skip-reasons" style="margin-top:8px;font-size:10px;color:var(--t2)"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
         <!-- tabs -->
         <div class="tabs">
           <button class="tab active" onclick="btTab('summary')" id="btt-summary">Summary</button>
@@ -1559,10 +1594,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <span class="card-title">Recent Trades <span class="card-meta" id="bt-trade-cnt"></span></span>
             </div>
             <div class="tw"><table>
-              <thead><tr>
+              <thead id="bt-trade-thead"><tr>
                 <th>#</th><th>Symbol</th><th>Side</th><th>Score</th>
                 <th>Entry</th><th>Exit</th><th>Exit Type</th>
-                <th>TP1?</th><th>Outcome</th><th>PnL</th><th>Regime</th>
+                <th>TP1?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th>
               </tr></thead>
               <tbody id="bt-trade-tb"></tbody>
             </table></div>
@@ -1580,14 +1615,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="card-meta" id="sh-meta">—</div>
         </div>
         <div style="font-size:11px;color:var(--t2);padding:8px 16px 10px">
-          Signals ที่ Claude Reject — ถ้า WIN แสดงว่า over-filter, ถ้า LOSS แสดงว่า filter ถูกต้อง
+          Signals ที่ Claude Reject — <span style="color:var(--green)">CORRECT</span> = filter ถูก (signal นั้นจะ LOSS) &nbsp;|&nbsp; <span style="color:var(--red)">WRONG</span> = filter ผิด (signal นั้นจะ WIN)
         </div>
         <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:0">
           <div class="stat-card"><div class="stat-lbl">TOTAL REJECTED</div><div class="stat-val" id="sh-total">0</div></div>
           <div class="stat-card"><div class="stat-lbl">PENDING</div><div class="stat-val yl" id="sh-pending">0</div></div>
-          <div class="stat-card"><div class="stat-lbl">WIN (all-time)</div><div class="stat-val up" id="sh-win">0</div><div class="stat-sub" id="sh-win-sub" style="font-size:9px;color:var(--t2)"></div></div>
-          <div class="stat-card"><div class="stat-lbl">LOSS (all-time)</div><div class="stat-val dn" id="sh-loss">0</div></div>
-          <div class="stat-card"><div class="stat-lbl">WIN RATE (if opened)</div><div class="stat-val" id="sh-wr">0%</div></div>
+          <div class="stat-card"><div class="stat-lbl">CORRECT (all-time)</div><div class="stat-val up" id="sh-loss">0</div></div>
+          <div class="stat-card"><div class="stat-lbl">WRONG (all-time)</div><div class="stat-val dn" id="sh-win">0</div><div class="stat-sub" id="sh-win-sub" style="font-size:9px;color:var(--t2)"></div></div>
+          <div class="stat-card"><div class="stat-lbl">ACCURACY</div><div class="stat-val" id="sh-wr">0%</div></div>
         </div>
       </div>
       <!-- Shadow sub-tabs -->
@@ -1598,7 +1633,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </button>
         <button id="sh-tab-resolved" onclick="shTab('resolved')"
           style="padding:6px 18px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--t1);cursor:pointer;font-size:12px">
-          Results (WIN/LOSS) <span id="sh-tab-resolved-n" style="opacity:.6"></span>
+          Results (CORRECT/WRONG) <span id="sh-tab-resolved-n" style="opacity:.6"></span>
         </button>
       </div>
 
@@ -1629,7 +1664,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <!-- Resolved table -->
       <div id="sh-pane-resolved" class="card" style="display:none">
         <div class="card-h">
-          <div class="card-title">Results — WIN / LOSS</div>
+          <div class="card-title">Results — CORRECT / WRONG</div>
           <div class="card-meta" id="sh-resolved-meta"></div>
         </div>
         <div style="overflow-x:auto">
@@ -3014,28 +3049,46 @@ function renderPositions(){
       </tr>`
     }).join('')
   } else {
-    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&L %</th><th>P&L $</th><th>Outcome</th><th>Duration</th></tr>'
-    if(closed.length===0){tb.innerHTML='<tr><td colspan="8"><div class="empty">No closed trades</div></td></tr>'}
+    if(thead) thead.innerHTML='<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th></tr>'
+    if(closed.length===0){tb.innerHTML='<tr><td colspan="13"><div class="empty">No closed trades</div></td></tr>'}
     else{
       const sorted=[...closed].sort((a,b)=>new Date(b.close_time||0)-new Date(a.close_time||0))
-      tb.innerHTML=sorted.slice(0,100).map(t=>{
+      tb.innerHTML=sorted.slice(0,100).map((t,i)=>{
         const pnlPct=t.pnl_pct||0
         const pnl=t.pnl||0
         const fut=isFutures(t.symbol)
         const base=t.symbol?.replace('/USDT','')||'?'
         const url=tvUrl(t.symbol)
+        const et=t.exit_type||'—'
+        const etC=et==='TP2'?'b-win':et==='SL_BE'?'b-stale':et==='SL'?'b-los':'b-stale'
+        const isSLBE=et==='SL_BE'
+        const tp1Hit=t.tp1_hit
+        const outcomeBadge=t.outcome==='WIN'
+          ?'<span class="bdg b-win">WIN</span>'
+          :t.outcome==='VOID'
+            ?'<span class="bdg" style="background:#444;color:#aaa">VOID</span>'
+            :isSLBE
+              ?'<span class="bdg b-stale" title="TP1 hit แล้ว SL กลับมา BE">BE+</span>'
+              :'<span class="bdg b-los">LOSS</span>'
+        const regime=t.regime||'—'
+        const regC=regime==='TRENDING'?'up':regime==='RANGING'?'yl':'t2'
         return`<tr>
+          <td class="t2">${sorted.length-i}</td>
           <td class="txt">
             <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
               ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
             </a>
           </td>
           <td>${sideBadge(t.side)}</td>
+          <td><span style="color:var(--yellow);font-weight:600">${t.score||0}</span></td>
           <td style="font-family:var(--mono)">${pxFmt(t.entry_price)}</td>
           <td style="font-family:var(--mono)">${pxFmt(t.exit_price)}</td>
+          <td><span class="bdg ${etC}">${et}</span></td>
+          <td>${tp1Hit?'<span class="up">✓</span>':'<span class="t2">—</span>'}</td>
+          <td>${outcomeBadge}</td>
+          <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')}$${Math.abs(pnl).toFixed(2)}</td>
           <td class="${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
-          <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')+pnl.toFixed(2)}</td>
-          <td>${t.outcome==='WIN'?'<span class="bdg b-win">WIN</span>':t.outcome==='VOID'?'<span class="bdg" style="background:#444;color:#aaa">VOID</span>':'<span class="bdg b-los">LOSS</span>'}</td>
+          <td class="${regC}" style="font-size:10px">${regime}</td>
           <td class="t2">${timeAgo(t.close_time)}</td>
         </tr>`
       }).join('')
@@ -3700,10 +3753,10 @@ function renderBacktest(){
     const nodataT = nodata.querySelector('.coming-soon-t')
     const nodataS = nodata.querySelector('.coming-soon-s')
     if(nodataT) nodataT.textContent = _btCurrentSub==='live'
-      ? 'ยังไม่มี Paper Trade ใน 30 วันที่ผ่านมา'
+      ? 'ยังไม่มี Signal ที่ resolve ใน 7 วันที่ผ่านมา'
       : 'ยังไม่มีข้อมูล Backtest 3Y'
     if(nodataS) nodataS.innerHTML = _btCurrentSub==='live'
-      ? 'ระบบจะแสดงผลเมื่อมี closed trade จาก paper trading'
+      ? 'Signals จะถูกบันทึกและวิเคราะห์ผลภายใน 48h หลังจากออก signal'
       : 'รัน <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py backtest_mtf.py</code> แล้ว <code style="background:var(--s3);padding:2px 6px;border-radius:3px">py generate_dashboard.py</code>'
     return
   }
@@ -3719,7 +3772,7 @@ function renderBacktest(){
     const src = bt.source || 'live'
     const isMTF = src === 'mtf'
     const isLive = _btCurrentSub === 'live'
-    srcBadge.textContent = isLive ? 'PAPER 7D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
+    srcBadge.textContent = isLive ? 'ALL SIGNALS 7D' : isMTF ? 'MULTI-TF 3Y' : '3-YEAR'
     srcBadge.style.cssText = isLive
       ? 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)'
       : 'font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.06em;background:rgba(99,102,241,.15);color:var(--blue);border:1px solid rgba(99,102,241,.3)'
@@ -3729,7 +3782,7 @@ function renderBacktest(){
   const drEl = document.getElementById('bt-date-range')
   if(drEl){
     const periodLabel = bt.period || `${bt.date_from} → ${bt.date_to}`
-    const sourceLabel = _btCurrentSub==='live' ? 'Paper Trades · 7d' : 'Walk-Forward · 3-Agent System'
+    const sourceLabel = _btCurrentSub==='live' ? 'All Signals · Claude-approved · 7d' : 'Walk-Forward · 3-Agent System'
     drEl.textContent = `${periodLabel} · ${sourceLabel}`
   }
 
@@ -3760,8 +3813,9 @@ function renderBacktest(){
     const n=s.n||0
     const nw=s.n_win!=null?s.n_win:Math.round(n*(s.wr||0)/100)
     const nl=n-nw
+    const nLabel = _btCurrentSub==='live' ? 'SIGNALS' : 'TRADES'
     statsEl.innerHTML=[
-      ['TRADES',    n,                           '', ''],
+      [nLabel,      n,                           '', ''],
       ['WIN',       nw,                          '', 'up'],
       ['LOSE',      nl,                          '', 'dn'],
       ['WIN RATE',  (s.wr||0)+'%',               '', s.wr>=55?'up':s.wr>=48?'yl':'dn'],
@@ -3775,6 +3829,76 @@ function renderBacktest(){
         <div class="stat-val ${cls}" style="font-size:14px">${val}</div>
         ${sub?`<div class="stat-sub">${sub}</div>`:''}
       </div>`).join('')
+  }
+
+  // ── Signal Compare panel (live tab only) ────────────────────────────────────
+  const sigCompare = document.getElementById('bt-signal-compare')
+  if(sigCompare){
+    const isLiveTab = _btCurrentSub === 'live'
+    sigCompare.style.display = isLiveTab ? 'block' : 'none'
+
+    if(isLiveTab){
+      const sigSrc = document.getElementById('bt-sig-source')
+      if(sigSrc) sigSrc.textContent = bt.source==='signal_log'
+        ? `${bt.n_traded||0} traded · ${bt.n_skipped||0} skipped`
+        : 'fallback: paper_trades'
+
+      function _sigMiniCard(sm, noDataTxt){
+        if(!sm) return `<div style="color:var(--t2);font-size:10px;grid-column:1/-1">${noDataTxt||'ยังไม่มีข้อมูล'}</div>`
+        const rows = [
+          ['Signals',   sm.n||0,                       ''],
+          ['Win Rate',  (sm.wr||0)+'%',                sm.wr>=55?'color:var(--green)':sm.wr>=48?'color:var(--yellow)':'color:var(--red)'],
+          ['W/L',       `${sm.n_win||0}/${sm.n_lose||0}`, ''],
+          ['Total PnL', `$${(sm.total_pnl||0).toFixed(1)}`, (sm.total_pnl||0)>=0?'color:var(--green)':'color:var(--red)'],
+          ['Avg PnL',   `$${(sm.avg_pnl||0).toFixed(2)}`, (sm.avg_pnl||0)>=0?'color:var(--green)':'color:var(--red)'],
+          ['Sharpe',    sm.sharpe||0,                   sm.sharpe>=1?'color:var(--green)':sm.sharpe>=0?'color:var(--yellow)':'color:var(--red)'],
+        ]
+        return rows.map(([lbl,val,style])=>`
+          <div style="color:var(--t2);white-space:nowrap">${lbl}</div>
+          <div style="font-weight:600;text-align:right;${style}">${val}</div>
+        `).join('')
+      }
+
+      // ALL signals
+      const allEl = document.getElementById('bt-sig-all')
+      if(allEl) allEl.innerHTML = _sigMiniCard(bt.summary, 'ยังไม่มี signal ที่ resolve')
+
+      // TRADED only
+      const tradedEl = document.getElementById('bt-sig-traded')
+      if(tradedEl) tradedEl.innerHTML = _sigMiniCard(bt.summary_traded, 'ยังไม่มี traded signals')
+
+      // SKIPPED
+      const skippedEl = document.getElementById('bt-sig-skipped')
+      if(skippedEl) skippedEl.innerHTML = _sigMiniCard(bt.summary_skipped, 'ไม่มี skipped signals')
+
+      // skip reasons breakdown
+      const reasonEl = document.getElementById('bt-sig-skip-reasons')
+      if(reasonEl){
+        const sb = bt.skip_breakdown || {}
+        const keys = Object.keys(sb)
+        const REASON_LABEL = {
+          MAX_OPEN:  'เต็ม positions',
+          CORR_LIMIT:'Correlation limit',
+          DAILY_CAP: 'Daily loss cap',
+          DUPLICATE: 'Symbol ซ้ำ',
+          OTHER:     'อื่นๆ',
+        }
+        if(!keys.length){
+          reasonEl.textContent = ''
+        } else {
+          reasonEl.innerHTML = '<div style="font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:4px">SKIP REASONS</div>'
+            + keys.map(k=>{
+                const r = sb[k]
+                const lbl = REASON_LABEL[k] || k
+                const wrC = r.wr>=55?'color:var(--green)':r.wr>=48?'color:var(--yellow)':'color:var(--red)'
+                return `<div style="display:flex;justify-content:space-between;margin-bottom:2px">
+                  <span>${lbl}</span>
+                  <span><b>${r.n}</b> · <span style="${wrC}">${r.wr}%</span></span>
+                </div>`
+              }).join('')
+        }
+      }
+    }
   }
 
   // exit type table
@@ -3846,27 +3970,57 @@ function renderBacktest(){
 }
 
 function renderBTTrades(){
-  const trades = (_btCurrentData()).trades || []
-  const tb = document.getElementById('bt-trade-tb')
+  const bt = _btCurrentData()
+  const trades = bt.trades || []
+  const isLive = _btCurrentSub === 'live'
+  const tb    = document.getElementById('bt-trade-tb')
+  const thead = document.getElementById('bt-trade-thead')
   const cntEl = document.getElementById('bt-trade-cnt')
-  if(cntEl) cntEl.textContent = `(${trades.length} trades)`
+  if(cntEl) cntEl.textContent = isLive
+    ? `(${trades.length} signals · ${bt.n_traded||0} traded · ${bt.n_skipped||0} skipped)`
+    : `(${trades.length} trades)`
+  // header: เพิ่ม "Traded?" เมื่อ live tab
+  if(thead){
+    const extraTh = isLive ? '<th>Traded?</th>' : ''
+    const cols = isLive ? 14 : 13
+    thead.innerHTML = `<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th>${extraTh}</tr>`
+  }
+  const COLS = isLive ? 14 : 13
   if(!tb) return
-  if(!trades.length){ tb.innerHTML='<tr><td colspan="11"><div class="empty">ยังไม่มี trades</div></td></tr>'; return }
+  if(!trades.length){ tb.innerHTML=`<tr><td colspan="${COLS}"><div class="empty">ยังไม่มี trades</div></td></tr>`; return }
   tb.innerHTML = trades.map((t,i)=>{
     const base = (t.sym||'').replace('/USDT','')
     const isWin = t.outcome==='WIN'
-    const pnlC = (t.pnl||0)>=0?'up':'dn'
-    const et = t.exit_type||''
+    const pnl = t.pnl||0
+    const pnlC = pnl>=0?'up':'dn'
+    const et = t.exit_type||'—'
     // SL_BE = partial WIN (TP1 hit → SL moved to BE) → สีเหลือง ไม่ใช่แดง
     const etC = et==='TP2'?'b-win':et==='SL_BE'?'b-stale':et==='SL'?'b-los':'b-stale'
     // OUTCOME badge: WIN=green, SL_BE เก่า(LOSS+tp1_hit)=yellow, LOSS=red
-    const isSLBE   = et==='SL_BE'
+    const isSLBE = et==='SL_BE'
     const outcomeBadge = isWin
       ? '<span class="bdg b-win">WIN</span>'
       : isSLBE
         ? '<span class="bdg b-stale" title="TP1 hit แล้ว SL กลับมา BE">BE+</span>'
         : '<span class="bdg b-los">LOSS</span>'
-    return`<tr>
+    // PnL% — backtest data อาจเก็บใน t.pnl_pct หรือคำนวณจาก risk
+    const pnlPct = t.pnl_pct!=null ? t.pnl_pct : (t.risk_usd>0 ? Math.round(pnl/t.risk_usd*100)/100 : null)
+    const pnlPctStr = pnlPct!=null ? (pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%' : '—'
+    const pnlPctC = pnlPct!=null ? (pnlPct>=0?'up':'dn') : 't2'
+    const regime = t.regime||'—'
+    const regC = regime==='TRENDING'?'up':regime==='RANGING'?'yl':'t2'
+    // Duration
+    const durStr = t.open_time ? timeAgo(t.open_time) : '—'
+    // Traded? column (live tab only)
+    const SKIP_LABEL = {MAX_OPEN:'เต็ม pos',CORR_LIMIT:'Corr',DAILY_CAP:'Daily cap',DUPLICATE:'ซ้ำ',OTHER:'อื่นๆ'}
+    const tradedCell = isLive
+      ? (t.was_traded
+          ? '<td><span class="bdg b-win" style="font-size:9px">✅ TRADED</span></td>'
+          : `<td><span class="bdg b-stale" style="font-size:9px" title="${t.skip_reason||''}">${SKIP_LABEL[t.skip_reason]||t.skip_reason||'SKIP'}</span></td>`)
+      : ''
+    // row background: skipped signals slightly dimmed
+    const rowBg = isLive && !t.was_traded ? 'opacity:.55' : ''
+    return`<tr style="${rowBg}">
       <td class="t2">${trades.length-i}</td>
       <td style="font-weight:700;font-family:var(--mono)">${base}</td>
       <td>${sideBadge(t.side)}</td>
@@ -3876,8 +4030,11 @@ function renderBTTrades(){
       <td><span class="bdg ${etC}">${et}</span></td>
       <td>${t.tp1_hit?'<span class="up">✓</span>':'<span class="t2">—</span>'}</td>
       <td>${outcomeBadge}</td>
-      <td class="${pnlC}" style="font-weight:600">${(t.pnl||0)>=0?'+':''}$${Math.abs(t.pnl||0).toFixed(2)}</td>
-      <td class="t2" style="font-size:10px">${t.regime||'—'}</td>
+      <td class="${pnlC}" style="font-weight:600">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</td>
+      <td class="${pnlPctC}">${pnlPctStr}</td>
+      <td class="${regC}" style="font-size:10px">${regime}</td>
+      <td class="t2">${durStr}</td>
+      ${tradedCell}
     </tr>`
   }).join('')
 }
@@ -4182,21 +4339,26 @@ function renderShadow(){
   const pendingTrades  = sh.pending_trades  || []
   const resolvedTrades = sh.resolved_trades || []
 
+  // CORRECT = outcome LOSS (filter ถูก) | WRONG = outcome WIN (filter ผิด)
+  const correct  = loss
+  const wrong    = win
+  const accuracy = (win + loss) > 0 ? (correct / (correct + wrong) * 100).toFixed(0) : 0
+
   setText('sh-total',   total)
   setText('sh-pending', pending)
-  setText('sh-win',     win)
-  setText('sh-loss',    loss)
-  setText('sh-wr',      wr + '%')
+  setText('sh-win',     wrong)   // WRONG card (id=sh-win) แสดง win count
+  setText('sh-loss',    correct) // CORRECT card (id=sh-loss) แสดง loss count
+  setText('sh-wr',      accuracy + '%')
   const winSub = document.getElementById('sh-win-sub')
-  if(winSub && win > 0) winSub.textContent = `TP:${winTp2} BE+:${winSlbe}`
+  if(winSub && wrong > 0) winSub.textContent = `TP2:${winTp2} BE+:${winSlbe}`
   setText('sh-meta', total + ' rejected signals (all-time) | filter accuracy: ' +
-    (total > 0 ? (loss / Math.max(win+loss,1) * 100).toFixed(0) + '%' : '—'))
+    ((win+loss) > 0 ? accuracy + '%' : '—'))
 
   // tab badge counts
   setText('sh-tab-pending-n',  `(${pendingTrades.length})`)
   setText('sh-tab-resolved-n', `(${resolvedTrades.length})`)
   setText('sh-pending-meta',  `${pendingTrades.length} signals รอผล`)
-  setText('sh-resolved-meta', `WIN ${win} / LOSS ${loss}`)
+  setText('sh-resolved-meta', `✅ CORRECT ${correct} / ❌ WRONG ${wrong}`)
 
   // ── Pending table ────────────────────────────────────────────
   const tbP = document.getElementById('sh-tb-pending')
@@ -4225,27 +4387,31 @@ function renderShadow(){
     } else {
       tbR.innerHTML = resolvedTrades.map(r => {
         const er = (r.exit_reason||'').toUpperCase()
-        const outBadge = r.outcome==='WIN'
-          ? (er==='SL_BE'
-              ? '<span class="bdg b-stale">BE+</span>'
-              : '<span class="bdg b-win">WIN</span>')
-          : '<span class="bdg b-los">LOSS</span>'
-        const label = r.outcome==='WIN'
-          ? '<span style="color:var(--yellow);font-size:9px"> over-filter</span>'
-          : '<span style="color:var(--t2);font-size:9px"> correct</span>'
+        // CORRECT = Claude reject ถูก (signal นั้นเป็น LOSS) → green
+        // WRONG   = Claude reject ผิด (signal นั้นเป็น WIN)  → red
+        const isWrong = r.outcome === 'WIN'
+        const outBadge = isWrong
+          ? '<span class="bdg b-los" style="font-weight:700">WRONG</span>'
+          : '<span class="bdg b-win" style="font-weight:700">CORRECT</span>'
+        const subLabel = isWrong
+          ? `<div style="font-size:9px;color:var(--red);margin-top:2px">${er==='SL_BE'?'would BE+':'over-filter'}</div>`
+          : '<div style="font-size:9px;color:var(--t2);margin-top:2px">filter ok</div>'
         const exitBadge = er==='TP2'    ? '<span class="bdg b-win"  style="font-size:9px">TP2</span>'   :
                           er==='TP1'    ? '<span class="bdg b-win"  style="font-size:9px">TP1</span>'   :
                           er==='SL_BE'  ? '<span class="bdg b-stale"style="font-size:9px">SL_BE</span>' :
                           er==='SL'     ? '<span class="bdg b-los"  style="font-size:9px">SL</span>'    :
                           er==='TIMEOUT'? '<span class="bdg b-stale"style="font-size:9px">TIME</span>'  : '—'
-        return `<tr style="border-bottom:1px solid var(--border)">
+        const rowStyle = isWrong
+          ? 'border-bottom:1px solid var(--border);background:rgba(244,63,94,.03)'
+          : 'border-bottom:1px solid var(--border)'
+        return `<tr style="${rowStyle}">
           <td style="padding:6px 10px;font-weight:600">${r.symbol||'—'}</td>
           <td style="padding:6px 10px">${_sideBadge(r.side)}</td>
           <td style="padding:6px 10px;text-align:right">${r.score||0}/31</td>
           <td style="padding:6px 10px;text-align:right">${(r.sl_pct||0).toFixed(2)}%</td>
           <td style="padding:6px 10px;color:var(--t2)">${r.regime||'—'}</td>
           <td style="padding:6px 10px;color:var(--t2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.claude_reason||'—'}</td>
-          <td style="padding:6px 10px;text-align:center">${outBadge}${label}</td>
+          <td style="padding:6px 10px;text-align:center">${outBadge}${subLabel}</td>
           <td style="padding:6px 10px;text-align:center">${exitBadge}</td>
           <td style="padding:6px 10px;color:var(--t2)">${_fmtDate(r.resolved_at)}</td>
         </tr>`
