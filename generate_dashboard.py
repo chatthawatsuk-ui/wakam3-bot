@@ -1015,27 +1015,68 @@ def load_live_performance():
                 key = (r["symbol"], r["side"])
                 traded_pnl.setdefault(key, []).append(r["pnl_usd"] or 0)
 
-            conn.close()
-
             if not rows_sig:
-                return {"available": False, "label": "live_perf",
-                        "error": "ยังไม่มี signal ที่ resolve ใน 7 วันล่าสุด (รอ 48h หลัง signal ออก)"}
+                # signal_log มีแต่ PENDING → fallback ไป trades table
+                print("  [INFO] signal_log ยังไม่มี resolved signal — fallback ไป trades table")
+                cur = conn.execute("PRAGMA table_info(trades)")
+                db_cols = {r[1] for r in cur.fetchall()}
+                def _col(name):
+                    return name if name in db_cols else f"NULL AS {name}"
+                rows_fb = conn.execute(f"""
+                    SELECT symbol AS sym, side,
+                           entry_px AS ep, exit_px AS xp,
+                           outcome, pnl_usd AS pnl,
+                           {_col('tp1_hit')},
+                           opened_at AS entry_ts,
+                           {_col('tf')},
+                           {_col('score')},
+                           {_col('regime')},
+                           {_col('exit_reason')}
+                    FROM trades
+                    WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
+                    ORDER BY closed_at ASC
+                """, (CUTOFF.isoformat(),)).fetchall()
+                conn.close()
 
-            # ── สร้าง DataFrame ─────────────────────────────────────────────
-            cols_sig = ["sym","side","ep","xp","sl_px","outcome","tp1_hit",
-                        "exit_reason","regime","tf","score","was_traded","skip_reason",
-                        "entry_ts","balance_at_signal"]
-            df = pd.DataFrame([dict(r) for r in rows_sig], columns=cols_sig)
-            df["ep"]                = pd.to_numeric(df["ep"],                errors="coerce").fillna(0)
-            df["xp"]                = pd.to_numeric(df["xp"],                errors="coerce").fillna(0)
-            df["sl_px"]             = pd.to_numeric(df["sl_px"],             errors="coerce").fillna(0)
-            df["tp1_hit"]           = pd.to_numeric(df["tp1_hit"],           errors="coerce").fillna(0)
-            df["score"]             = pd.to_numeric(df["score"],             errors="coerce").fillna(0)
-            df["balance_at_signal"] = pd.to_numeric(df["balance_at_signal"], errors="coerce").fillna(PORT_SIZE)
-            df["outcome"]  = df["outcome"].fillna("LOSS")
-            df["tf"]       = df["tf"].fillna("1H")
-            df["regime"]   = df["regime"].fillna("UNKNOWN")
-            df["in_kz"]    = False
+                if not rows_fb:
+                    return {"available": False, "label": "live_perf",
+                            "error": "ยังไม่มี signal ที่ resolve ใน 7 วันล่าสุด — signal_log กำลังสะสมข้อมูล (รอ 48h)"}
+
+                cols_fb = ["sym","side","ep","xp","outcome","pnl",
+                           "tp1_hit","entry_ts","tf","score","regime","exit_reason"]
+                df = pd.DataFrame(rows_fb, columns=cols_fb)
+                df["pnl"]         = pd.to_numeric(df["pnl"],     errors="coerce").fillna(0)
+                df["tp1_hit"]     = pd.to_numeric(df["tp1_hit"], errors="coerce").fillna(0)
+                df["outcome"]     = df["outcome"].fillna("LOSS")
+                df["tf"]          = df["tf"].fillna("—")
+                df["in_kz"]       = False
+                df["was_traded"]  = 1
+                df["skip_reason"] = ""
+                df["exit_type"]   = df["exit_reason"].fillna("TIMEOUT")
+                df["balance_at_signal"] = PORT_SIZE
+                total_sig    = len(df)
+                traded_df    = df
+                skipped_df   = df.iloc[0:0]
+                skip_breakdown = {}
+                has_siglog   = False   # ใช้ source label ถูกต้อง
+            else:
+                conn.close()
+
+                # ── สร้าง DataFrame จาก signal_log ─────────────────────────
+                cols_sig = ["sym","side","ep","xp","sl_px","outcome","tp1_hit",
+                            "exit_reason","regime","tf","score","was_traded","skip_reason",
+                            "entry_ts","balance_at_signal"]
+                df = pd.DataFrame([dict(r) for r in rows_sig], columns=cols_sig)
+                df["ep"]                = pd.to_numeric(df["ep"],                errors="coerce").fillna(0)
+                df["xp"]                = pd.to_numeric(df["xp"],                errors="coerce").fillna(0)
+                df["sl_px"]             = pd.to_numeric(df["sl_px"],             errors="coerce").fillna(0)
+                df["tp1_hit"]           = pd.to_numeric(df["tp1_hit"],           errors="coerce").fillna(0)
+                df["score"]             = pd.to_numeric(df["score"],             errors="coerce").fillna(0)
+                df["balance_at_signal"] = pd.to_numeric(df["balance_at_signal"], errors="coerce").fillna(PORT_SIZE)
+                df["outcome"]  = df["outcome"].fillna("LOSS")
+                df["tf"]       = df["tf"].fillna("1H")
+                df["regime"]   = df["regime"].fillna("UNKNOWN")
+                df["in_kz"]    = False
 
             # ── คำนวณ PnL per signal — 1% balance × 20x leverage (เหมือน paper_trade.py) ──
             # margin   = balance × 1%
