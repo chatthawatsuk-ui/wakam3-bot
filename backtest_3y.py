@@ -66,11 +66,14 @@ TF_CONFIGS = {
 }
 ALL_TFS    = ["15m", "30m", "1h", "2h", "4h", "1d"]
 
-TP1_R      = 1.2
-TP2_R      = 2.0
-RISK_USD   = 10.0
-OUTPUT_CSV = "backtest_3y.csv"
-TF_CSV     = "backtest_3y_tf.csv"
+TP1_R            = 1.2
+TP2_R            = 2.0
+INITIAL_BALANCE  = 1000.0   # ยอดเริ่มต้น USD (เหมือน paper_trade.py)
+RISK_PCT         = 0.01     # 1% ของ balance ณ เวลาเปิด trade (dynamic)
+MAX_LEVERAGE     = 20       # 20x leverage (เหมือน paper_trade.py)
+CLAUDE_MIN_SCORE = 8        # Score threshold แทน Claude filter (≥8 = APPROVE)
+OUTPUT_CSV       = "backtest_3y.csv"
+TF_CSV           = "backtest_3y_tf.csv"
 API_LIMIT  = 300
 CACHE_DIR  = "historical_data"
 
@@ -143,28 +146,43 @@ def fetch_paginated(symbol, tf, years=3):
 
 
 # ── PnL ───────────────────────────────────────────────────────────────────────
-def calc_pnl(side, ep, sl_orig, tp1_px, exit_px, tp1_was_hit):
+def calc_pnl(side, ep, sl_orig, tp1_px, exit_px, tp1_was_hit, balance):
+    """
+    คำนวณ PnL แบบเดียวกับ paper_trade.py:
+      margin   = balance × RISK_PCT  (1% ของยอดเงิน)
+      notional = margin × MAX_LEVERAGE  (× 20x)
+      pnl      = notional × (exit - entry) / entry  (LONG)
+               = notional × (entry - exit) / entry  (SHORT)
+    ถ้า TP1 hit → half at TP1, half at final exit
+    """
     dist_sl = abs(ep - sl_orig)
     if dist_sl < ep * 0.0001:
-        return 0.0, "VOID"
+        return 0.0, "VOID", 0.0, 0.0
 
-    def to_r(px):
-        return (px - ep) / dist_sl if side == "LONG" else (ep - px) / dist_sl
+    margin   = balance * RISK_PCT
+    notional = margin * MAX_LEVERAGE
+
+    def _pnl_usd(ex):
+        if side == "LONG":
+            return notional * (ex - ep) / ep
+        else:
+            return notional * (ep - ex) / ep
 
     if tp1_was_hit:
-        r = 0.5 * to_r(tp1_px) + 0.5 * to_r(exit_px)
+        raw = 0.5 * _pnl_usd(tp1_px) + 0.5 * _pnl_usd(exit_px)
     else:
-        r = to_r(exit_px)
+        raw = _pnl_usd(exit_px)
 
-    pnl     = round(RISK_USD * r, 2)
+    pnl     = round(raw, 2)
+    pnl_pct = round(raw / notional * 100, 2) if notional > 0 else 0.0
     outcome = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "BE")
-    return pnl, outcome
+    return pnl, outcome, round(notional, 2), pnl_pct
 
 
 # ── WALK-FORWARD BACKTEST (generic TF) ───────────────────────────────────────
 def backtest_symbol(sym, df_primary, df_htf,
                     warmup, window, timeout_candles, scan_step, tf_label,
-                    df_1d=None):
+                    df_1d=None, balance=None):
     """
     sym         — symbol เช่น BTC/USDT
     df_primary  — OHLCV ของ TF หลัก (ใช้สแกน + วัดผล)
@@ -175,7 +193,9 @@ def backtest_symbol(sym, df_primary, df_htf,
     scan_step   — scan ทุก N candles
     tf_label    — "1h", "15m" ฯลฯ สำหรับบันทึกใน CSV
     df_1d       — OHLCV รายวัน สำหรับ daily Stochastic filter (เหมือน live)
+    balance     — ยอดเริ่มต้น USD (dynamic sizing)
     """
+    balance      = balance if balance is not None else INITIAL_BALANCE
     trades       = []
     in_trade     = False
     entry_data   = {}
@@ -215,25 +235,31 @@ def backtest_symbol(sym, df_primary, df_htf,
                 continue
 
             if hit_tp2:
-                pnl, outcome = calc_pnl(side, ep, sl, tp1, tp2, True)
-                _record(trades, entry_data, i, df_primary, tp2, "TP2", outcome, pnl, tf_label)
+                pnl, outcome, notional, pnl_pct = calc_pnl(side, ep, sl, tp1, tp2, True, entry_data["balance_at_entry"])
+                _record(trades, entry_data, i, df_primary, tp2, "TP2", outcome, pnl, pnl_pct, notional, tf_label)
+                balance += pnl
+                balance = max(balance, 1.0)
                 in_trade = False
 
             elif hit_sl:
                 exit_px = active_sl
                 if tp1h:
-                    pnl, outcome = calc_pnl(side, ep, sl, tp1, exit_px, True)
+                    pnl, outcome, notional, pnl_pct = calc_pnl(side, ep, sl, tp1, exit_px, True, entry_data["balance_at_entry"])
                     exit_type = "SL_BE"
                 else:
-                    pnl, outcome = -RISK_USD, "LOSS"
+                    pnl, outcome, notional, pnl_pct = calc_pnl(side, ep, sl, tp1, active_sl, False, entry_data["balance_at_entry"])
                     exit_type = "SL"
-                _record(trades, entry_data, i, df_primary, exit_px, exit_type, outcome, pnl, tf_label)
+                _record(trades, entry_data, i, df_primary, exit_px, exit_type, outcome, pnl, pnl_pct, notional, tf_label)
+                balance += pnl
+                balance = max(balance, 1.0)
                 in_trade = False
 
             elif timeout:
                 exit_px = row["close"]
-                pnl, outcome = calc_pnl(side, ep, sl, tp1, exit_px, tp1h)
-                _record(trades, entry_data, i, df_primary, exit_px, "TIMEOUT", outcome, pnl, tf_label)
+                pnl, outcome, notional, pnl_pct = calc_pnl(side, ep, sl, tp1, exit_px, tp1h, entry_data["balance_at_entry"])
+                _record(trades, entry_data, i, df_primary, exit_px, "TIMEOUT", outcome, pnl, pnl_pct, notional, tf_label)
+                balance += pnl
+                balance = max(balance, 1.0)
                 in_trade = False
 
             candles_open += 1
@@ -258,57 +284,61 @@ def backtest_symbol(sym, df_primary, df_htf,
 
             scanned += 1
 
-            if sig and abs(sig["price"] - sig["sl"]) > sig["price"] * 0.0001:
+            if sig and sig["score"] >= CLAUDE_MIN_SCORE and abs(sig["price"] - sig["sl"]) > sig["price"] * 0.0001:
                 entry_data = {
-                    "sym":         sym,
-                    "tf":          tf_label,
-                    "side":        sig["side"],
-                    "score":       sig["score"],
-                    "score_trend": sig.get("score_trend", 0),
-                    "score_smc":   sig.get("score_smc",   0),
-                    "score_osc":   sig.get("score_osc",   0),
-                    "ep":          sig["price"],
-                    "sl_orig":     sig["sl"],
-                    "tp1":         sig["tp1"],
-                    "tp2":         sig["tp2"],
-                    "sl_pct":      sig["sl_pct"],
-                    "rsi":         sig["rsi"],
-                    "in_kz":       sig["in_kz"],
-                    "regime":      sig.get("regime", ""),
-                    "entry_i":     i,
-                    "entry_ts":    str(df_primary.index[i - 1]),
-                    "tp1_hit":     False,
+                    "sym":              sym,
+                    "tf":               tf_label,
+                    "side":             sig["side"],
+                    "score":            sig["score"],
+                    "score_trend":      sig.get("score_trend", 0),
+                    "score_smc":        sig.get("score_smc",   0),
+                    "score_osc":        sig.get("score_osc",   0),
+                    "ep":               sig["price"],
+                    "sl_orig":          sig["sl"],
+                    "tp1":              sig["tp1"],
+                    "tp2":              sig["tp2"],
+                    "sl_pct":           sig["sl_pct"],
+                    "rsi":              sig["rsi"],
+                    "in_kz":            sig["in_kz"],
+                    "regime":           sig.get("regime", ""),
+                    "entry_i":          i,
+                    "entry_ts":         str(df_primary.index[i - 1]),
+                    "balance_at_entry": round(balance, 2),
+                    "tp1_hit":          False,
                 }
                 in_trade     = True
                 candles_open = 0
 
-    return pd.DataFrame(trades), scanned
+    return pd.DataFrame(trades), scanned, round(balance, 2)
 
 
-def _record(trades, ed, i, df_primary, exit_px, exit_type, outcome, pnl, tf_label):
+def _record(trades, ed, i, df_primary, exit_px, exit_type, outcome, pnl, pnl_pct, notional, tf_label):
     trades.append({
-        "sym":         ed["sym"],
-        "tf":          tf_label,
-        "side":        ed["side"],
-        "score":       ed["score"],
-        "score_trend": ed["score_trend"],
-        "score_smc":   ed["score_smc"],
-        "score_osc":   ed["score_osc"],
-        "ep":          ed["ep"],
-        "sl":          ed["sl_orig"],
-        "tp1":         ed["tp1"],
-        "tp2":         ed["tp2"],
-        "sl_pct":      ed["sl_pct"],
-        "rsi":         ed["rsi"],
-        "in_kz":       ed["in_kz"],
-        "regime":      ed["regime"],
-        "entry_ts":    ed["entry_ts"],
-        "exit_ts":     str(df_primary.index[i]),
-        "exit_px":     round(exit_px, 8),
-        "exit_type":   exit_type,
-        "tp1_hit":     ed["tp1_hit"],
-        "outcome":     outcome,
-        "pnl":         pnl,
+        "sym":              ed["sym"],
+        "tf":               tf_label,
+        "side":             ed["side"],
+        "score":            ed["score"],
+        "score_trend":      ed["score_trend"],
+        "score_smc":        ed["score_smc"],
+        "score_osc":        ed["score_osc"],
+        "ep":               ed["ep"],
+        "sl":               ed["sl_orig"],
+        "tp1":              ed["tp1"],
+        "tp2":              ed["tp2"],
+        "sl_pct":           ed["sl_pct"],
+        "rsi":              ed["rsi"],
+        "in_kz":            ed["in_kz"],
+        "regime":           ed["regime"],
+        "entry_ts":         ed["entry_ts"],
+        "exit_ts":          str(df_primary.index[i]),
+        "exit_px":          round(exit_px, 8),
+        "exit_type":        exit_type,
+        "tp1_hit":          ed["tp1_hit"],
+        "outcome":          outcome,
+        "pnl":              pnl,
+        "pnl_pct":          pnl_pct,
+        "notional":         notional,
+        "balance_at_entry": ed["balance_at_entry"],
     })
 
 
@@ -486,8 +516,9 @@ def main():
 
     print("=" * 60)
     print("  AI TRADE — Multi-TF Walk-Forward Backtest (3-Year)")
-    print(f"  Signal Scanner + 3 Agents | MIN_SCORE={SCANNER.MIN_SCORE}")
-    print(f"  TP1=RR{TP1_R} | TP2=RR{TP2_R} | Risk=${RISK_USD}/trade")
+    print(f"  Signal Scanner + 3 Agents | MIN_SCORE={SCANNER.MIN_SCORE} | Claude filter: score≥{CLAUDE_MIN_SCORE}")
+    print(f"  Sizing: 1% balance × {MAX_LEVERAGE}x leverage | Start balance: ${INITIAL_BALANCE:,.0f}")
+    print(f"  TP1=RR{TP1_R} | TP2=RR{TP2_R}")
     print(f"  Period  : {args.years} years")
     print(f"  Symbols : {', '.join(s.replace('/USDT','') for s in symbols)}")
     print(f"  TFs     : {', '.join(tfs)}")
@@ -551,18 +582,19 @@ def main():
             df_1d_arg = df_1d if not df_1d.empty else None
 
             t0 = time_mod.time()
-            trades_df, scanned = backtest_symbol(
+            trades_df, scanned, balance_final = backtest_symbol(
                 sym, df_pri, df_htf,
                 warmup, window, timeout_c, step,
-                pri_tf,   # tf_label
+                pri_tf,
                 df_1d_arg,
+                balance=INITIAL_BALANCE,
             )
             elapsed = time_mod.time() - t0
             tf_scans    += scanned
             total_scans += scanned
 
             n_t = len(trades_df)
-            print(f"  scanned {scanned:,} windows → {n_t} trades  ({elapsed:.1f}s)")
+            print(f"  scanned {scanned:,} windows → {n_t} trades  balance: ${INITIAL_BALANCE:,.0f} → ${balance_final:,.0f}  ({elapsed:.1f}s)")
 
             if not trades_df.empty:
                 m = metrics(trades_df)
