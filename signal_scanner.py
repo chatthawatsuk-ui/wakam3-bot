@@ -1,11 +1,21 @@
 """
-🔍 Signal Scanner — หัวหน้าที่รับ reports จาก 3 Pine Specialists
+🔍 Signal Scanner — หัวหน้าที่รับ reports จาก 5 Specialists
 แล้วชั่งน้ำหนัก → SIGNAL / WATCH / IDLE → ส่งต่อให้ Paper Trader
 
 Flow:
-  🎯 agent_trend  ──┐
-  🏦 agent_smc    ──┼──▶ 🔍 Signal Scanner ──▶ 🤖 Paper Trader
-  📈 agent_osc    ──┘
+  🎯 agent_trend     ──┐
+  🏦 agent_smc       ──┤
+  📈 agent_osc       ──┼──▶ 🔍 Signal Scanner ──▶ 🤖 Paper Trader
+  💧 agent_liquidity ──┤
+  💰 agent_funding   ──┘
+
+Score System:
+  Core (Trend+SMC+Osc) normalized → /31
+  Liquidity bonus: up to +8 direct pts
+  Funding bonus:   up to +6 direct pts
+  Total MAX = 45
+
+DISABLE_FUNDING = True  → ข้าม agent_funding (ใช้ใน backtest ที่ไม่มี live funding data)
 """
 import os, json, sqlite3
 from datetime import datetime, timezone
@@ -14,22 +24,30 @@ import numpy as np
 from ta.trend      import ADXIndicator
 from ta.volatility import BollingerBands, AverageTrueRange
 
-import agent_trend as TREND
-import agent_smc   as SMC
-import agent_osc   as OSC
+import agent_trend     as TREND
+import agent_smc       as SMC
+import agent_osc       as OSC
+import agent_liquidity as LIQUIDITY
+import agent_funding   as FUNDING
 
-WEIGHTS_PATH = "weights.json"
-DB_PATH      = "paper_trades.db"
-MIN_SCORE    = 9
-TP1_R        = 1.2
-TP2_R        = 2.0
+WEIGHTS_PATH    = "weights.json"
+DB_PATH         = "paper_trades.db"
+MIN_SCORE       = 9    # total score (core + liq bonus + fund bonus)
+TP1_R           = 1.2
+TP2_R           = 2.0
+DISABLE_FUNDING = False  # set True ใน backtest เพื่อ skip live API call
+SCORE_MAX       = 45    # Trend(13)+SMC(10)+Osc(11) normalized→31 + Liq(8) + Fund(6)
 
 
 # ══════════════════════════════════════════════════════════════
 # DYNAMIC WEIGHTS — อ่านจาก weights.json ที่ generate_dashboard สร้าง
 # ══════════════════════════════════════════════════════════════
 def load_weights():
-    """อ่าน dynamic weights — fallback equal ถ้าไม่มีหรือยัง locked"""
+    """
+    อ่าน dynamic weights — fallback equal ถ้าไม่มีหรือยัง locked
+    คืน (W_TREND, W_SMC, W_OSC) สำหรับ core normalization
+    Liquidity และ Funding ใช้ direct bonus (ไม่ normalize)
+    """
     try:
         if os.path.exists(WEIGHTS_PATH):
             with open(WEIGHTS_PATH) as f:
@@ -61,16 +79,24 @@ def _fmt_price(px):
     return round(px, 2)
 
 
-def _weighted_score(trend_s, smc_s, osc_s, kz=False):
+def _weighted_score(trend_s, smc_s, osc_s, liq_s=0, fund_s=0):
     """
-    normalize แต่ละ specialist (÷ max) → weighted sum → ×31
-    max score = 31 — KZ ไม่ใช่ bonus แล้ว (ใช้เป็น context ใน claude_filter แทน)
-    Backtest 3Y พบว่า KZ bonus ดึงสัญญาณ WR 45.1% ผ่าน threshold โดยไม่จำเป็น
+    Core 3 agents: normalize (÷ new MAX_SCORE) → weighted sum → ×31
+      Trend MAX = 13 (ปรับจาก 11 → เพิ่ม ADX + BB squeeze)
+      SMC   MAX = 10 (เดิม)
+      Osc   MAX = 11 (ปรับจาก 9 → เพิ่ม OBV SMA20 + SMA50)
+
+    Bonus agents (direct add, ไม่ normalize):
+      Liquidity: up to +8  → total MAX = 31 + 8 = 39
+      Funding:   up to +6  → total MAX = 45
+
+    KZ ไม่ใช่ bonus แล้ว — ใช้เป็น context ใน claude_filter แทน
     """
-    combined = (trend_s / 11) * W_TREND + \
-               (smc_s   / 10) * W_SMC   + \
-               (osc_s   /  9) * W_OSC
-    return round(combined * 31)
+    combined = (trend_s / TREND.MAX_SCORE) * W_TREND + \
+               (smc_s   / SMC.MAX_SCORE)   * W_SMC   + \
+               (osc_s   / OSC.MAX_SCORE)   * W_OSC
+    core = round(combined * 31)
+    return core + int(liq_s) + int(fund_s)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -92,7 +118,7 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
             "rsi": 0, "price": 0, "htf_bull": False, "in_kz": False,
             "in_discount": False, "trail_bull": False, "ts": ts}
 
-    # ── รับ reports จาก 3 specialists ─────────────────────────
+    # ── รับ reports จาก 5 specialists ─────────────────────────
     try: t_rep = TREND.run(df_1h, df_4h, df_1d)
     except Exception: t_rep = None
 
@@ -101,6 +127,15 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
 
     try: o_rep = OSC.run(df_1h, df_4h)
     except Exception: o_rep = None
+
+    try: l_rep = LIQUIDITY.run(df_1h, df_4h)
+    except Exception: l_rep = None
+
+    # Funding: live API — ข้ามถ้า DISABLE_FUNDING หรือ error
+    f_rep = None
+    if not DISABLE_FUNDING:
+        try: f_rep = FUNDING.run(sym)
+        except Exception: f_rep = None
 
     if not t_rep or not s_rep or not o_rep:
         return None, _err
@@ -113,51 +148,80 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
     htf_sma  = t_rep["htf_sma"]
     kz       = o_rep["kz"]
 
-    # ── คะแนนแต่ละ specialist (Trend Agent กรอง HTF เองแล้ว) ──
+    # ── คะแนนแต่ละ specialist ──────────────────────────────────
     trend_l = t_rep["score_long"]
     trend_s = t_rep["score_short"]
     smc_l   = s_rep["score_long"]
     smc_s_  = s_rep["score_short"]
     osc_l   = o_rep["score_long"]
     osc_s_  = o_rep["score_short"]
+    liq_l   = l_rep["score_long"]  if l_rep else 0
+    liq_s_  = l_rep["score_short"] if l_rep else 0
+    fund_l  = f_rep["score_long"]  if f_rep else 0
+    fund_s_ = f_rep["score_short"] if f_rep else 0
 
-    # ── Signal Scanner ชั่งน้ำหนัก → total score ─────────────
-    sl = _weighted_score(trend_l, smc_l,  osc_l,  kz)
-    ss = _weighted_score(trend_s, smc_s_, osc_s_, kz)
+    # ── Signal Scanner ชั่งน้ำหนัก → total score (max 45) ───────
+    sl = _weighted_score(trend_l, smc_l,  osc_l,  liq_l,  fund_l)
+    ss = _weighted_score(trend_s, smc_s_, osc_s_, liq_s_, fund_s_)
 
     best      = max(sl, ss)
     best_side = "LONG" if sl >= ss else "SHORT"
     b_trend   = trend_l if best_side == "LONG" else trend_s
     b_smc     = smc_l   if best_side == "LONG" else smc_s_
     b_osc     = osc_l   if best_side == "LONG" else osc_s_
+    b_liq     = liq_l   if best_side == "LONG" else liq_s_
+    b_fund    = fund_l  if best_side == "LONG" else fund_s_
 
     status = "SIGNAL" if best >= MIN_SCORE else ("WATCH" if best >= 5 else "IDLE")
     px     = float(df_1h.iloc[-1]["close"])
 
+    # Funding rate สำหรับ display / claude_filter
+    funding_rate = f_rep.get("funding_rate") if f_rep else None
+
     scan_result = {
-        "symbol":      sym,
-        "market_type": market_type,
-        "status":      status,
-        "side":        best_side,
-        "score_long":  sl,
-        "score_short": ss,
-        "best_score":  best,
-        "score_pct":   round(best / 31 * 100, 1),
-        "price":       _fmt_price(px),
-        "rsi":         o_rep["rsi"],
-        "htf_bull":    htf_bull,
-        "in_kz":       kz,
-        "score_trend": b_trend,
-        "score_smc":   b_smc,
-        "score_osc":   b_osc,
-        "in_discount": s_rep["details"].get("in_discount", False),
-        "trail_bull":  t_rep["details"].get("trail_slow_bull", False),
-        "regime":      regime,
-        "ts":          ts,
+        "symbol":       sym,
+        "market_type":  market_type,
+        "status":       status,
+        "side":         best_side,
+        "score_long":   sl,
+        "score_short":  ss,
+        "best_score":   best,
+        "score_pct":    round(best / SCORE_MAX * 100, 1),
+        "price":        _fmt_price(px),
+        "rsi":          o_rep["rsi"],
+        "htf_bull":     htf_bull,
+        "in_kz":        kz,
+        "score_trend":  b_trend,
+        "score_smc":    b_smc,
+        "score_osc":    b_osc,
+        "score_liq":    b_liq,
+        "score_fund":   b_fund,
+        "in_discount":  s_rep["details"].get("in_discount", False),
+        "trail_bull":   t_rep["details"].get("trail_slow_bull", False),
+        "bull_sweep":   l_rep["bull_sweep"] if l_rep else False,
+        "bear_sweep":   l_rep["bear_sweep"] if l_rep else False,
+        "funding_rate": funding_rate,
+        "regime":       regime,
+        "ts":           ts,
     }
 
     if best < MIN_SCORE:
         return None, scan_result
+
+    # ── Funding Hard Reject (ก่อนส่ง Claude) ─────────────────
+    if f_rep and f_rep.get("available"):
+        if best_side == "LONG" and f_rep.get("hard_reject_long"):
+            fr = f_rep.get("funding_rate", "?")
+            scan_result["status"]        = "FUNDING_REJECT"
+            scan_result["claude_reason"] = f"Funding {fr}% > +0.15% — LONG over-crowded"
+            print(f"  🚫 [FUNDING] REJECT {sym} LONG — funding {fr}%")
+            return None, scan_result
+        if best_side == "SHORT" and f_rep.get("hard_reject_short"):
+            fr = f_rep.get("funding_rate", "?")
+            scan_result["status"]        = "FUNDING_REJECT"
+            scan_result["claude_reason"] = f"Funding {fr}% < -0.05% — SHORT over-crowded"
+            print(f"  🚫 [FUNDING] REJECT {sym} SHORT — funding {fr}%")
+            return None, scan_result
 
     # ── คำนวณ SL/TP (SMC swing levels + Trend ATR) ────────────
     atr  = t_rep["atr"]
@@ -175,21 +239,25 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
     tp2 = ep + dist * TP2_R if side == "LONG" else ep - dist * TP2_R
 
     signal = {
-        "symbol":      sym,
-        "side":        side,
-        "score":       sl if side == "LONG" else ss,
-        "price":       _fmt_price(ep),
-        "sl":          _fmt_price(sl_p),
-        "tp1":         _fmt_price(tp1),
-        "tp2":         _fmt_price(tp2),
-        "sl_pct":      round(dist / ep * 100, 3),
-        "rsi":         o_rep["rsi"],
-        "in_kz":       kz,
-        "regime":      regime,
-        "score_trend": b_trend,
-        "score_smc":   b_smc,
-        "score_osc":   b_osc,
-        "ts":          ts,
+        "symbol":       sym,
+        "side":         side,
+        "score":        sl if side == "LONG" else ss,
+        "price":        _fmt_price(ep),
+        "sl":           _fmt_price(sl_p),
+        "tp1":          _fmt_price(tp1),
+        "tp2":          _fmt_price(tp2),
+        "sl_pct":       round(dist / ep * 100, 3),
+        "rsi":          o_rep["rsi"],
+        "in_kz":        kz,
+        "regime":       regime,
+        "score_trend":  b_trend,
+        "score_smc":    b_smc,
+        "score_osc":    b_osc,
+        "score_liq":    b_liq,
+        "score_fund":   b_fund,
+        "funding_rate": funding_rate,
+        "bull_sweep":   l_rep["bull_sweep"] if l_rep else False,
+        "ts":           ts,
     }
 
     # ── Claude Final Filter — ตัวกรองสุดท้ายก่อน signal ยิง ──────────────────

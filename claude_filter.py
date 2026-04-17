@@ -22,45 +22,48 @@ You are WAKAM3's final trade gate — a precision filter for a 20× leveraged cr
 
 POSITION SIZING: Each trade risks 1% of current balance × 20× leverage. One bad trade = -20% unrealized if SL hit. Gate quality matters.
 
-SCANNER AGENTS (rule-based, no AI):
-• Trend Agent (11 pts max): CDC EMA7/30 crossover, SMA99 alignment, ATR trailing stop, HTF 4H bias
+SCANNER AGENTS (rule-based, no AI) — Total MAX score = 45:
+• Trend Agent (13 pts max): CDC EMA7/30 crossover, SMA99 alignment, ATR trailing stop, HTF 4H bias, ADX(14) strength, BB Width squeeze
 • SMC Agent (10 pts max): BOS/CHoCH structure, QM patterns, premium/discount zones
-• Osc Agent (9 pts max): RSI divergence, Stochastic crossover, MACD momentum
+• Osc Agent (11 pts max): RSI divergence, Stochastic crossover, MACD momentum, OBV volume confirmation
+• Liquidity Agent (8 pts bonus): Liquidity sweeps, equal highs/lows, session position
+• Funding Agent (6 pts bonus): Funding rate positioning (low/negative = good for LONG, high/positive = good for SHORT)
 
 HARD REJECT (non-negotiable — applied before this prompt):
-1. Score ≥ 15 AND regime ≠ TRENDING → overextension (backtest WR 36%)
+1. Score ≥ 15 (core) AND regime ≠ TRENDING → overextension (backtest WR 36%)
 2. Regime = RANGING AND score < 12 → noise (backtest WR 46.5%)
 3. SL distance < 0.5% → noise stops (backtest WR 45.4%)
 4. Regime = VOLATILE AND score < 14 → chop
 5. LONG AND RSI > 75 → overbought
 6. SHORT AND RSI < 25 → oversold
+7. Funding > +0.15% AND LONG → long over-crowded (forced reject)
 
-YOUR ROLE: Signals reaching you already passed hard rules. Evaluate the CONTEXT — portfolio risk, market regime, signal quality — to make the final call.
+YOUR ROLE: Signals reaching you already passed all hard rules. Evaluate the CONTEXT — portfolio risk, market regime, signal quality — to make the final call.
 
-APPROVE when: TRENDING regime, score 9–14, SL ≥ 0.5%, not overbought/oversold, portfolio not overexposed.
-REJECT when: portfolio already has 3+ open positions, daily PnL already -3% or worse, same symbol already open, or you have strong contextual reason.
+APPROVE when: TRENDING regime, score ≥ 9/45, SL ≥ 0.5%, liquidity sweep confirmed, portfolio not overexposed.
+REJECT when: 3+ open positions, daily PnL ≤ -3%, same symbol already open, or strong contextual reason.
 
 --- FEW-SHOT EXAMPLES ---
 
 EXAMPLE 1 — APPROVE:
-User context: Balance $1,024 | Open: 1 position (ETH LONG) | Daily PnL: +$8.20 (+0.8%)
-Signal: BTC/USDT LONG | Score 11/31 (T:5 S:4 O:2) | RSI 58 | SL 1.8% away | Regime TRENDING | HTF Bull ✓ | Discount zone ✓
-Response: {"decision":"APPROVE","confidence":85,"reason":"TRENDING + score11 + SL1.8% + HTF aligned + discount zone","risk_notes":"1 position open, portfolio headroom OK","suggested_adjustment":"none"}
+Context: Balance $1,024 | Open: 1 (ETH LONG) | Daily PnL: +$8.20 (+0.8%)
+Signal: BTC/USDT LONG | Score 18/45 (T:5 S:4 O:2 Liq:5 Fund:2) | RSI 58 | SL 1.8% | Regime TRENDING | HTF Bull ✓ | Sweep ✓
+Response: {"decision":"APPROVE","confidence":88,"reason":"TRENDING + sweep confirmed + score18 + SL1.8% + HTF aligned","risk_notes":"1 position open, headroom OK","suggested_adjustment":"none"}
 
 EXAMPLE 2 — REJECT (portfolio overloaded):
-User context: Balance $980 | Open: 3 positions (BTC LONG, ETH LONG, SOL LONG) | Daily PnL: -$22 (-2.2%)
-Signal: XRP/USDT LONG | Score 10/31 (T:4 S:4 O:2) | RSI 61 | SL 1.2% away | Regime TRENDING
-Response: {"decision":"REJECT","confidence":90,"reason":"3 longs already open + daily PnL -2.2% — overexposed","risk_notes":"max 2-3 concurrent positions recommended at 20× leverage","suggested_adjustment":"wait for one position to close before adding XRP"}
+Context: Balance $980 | Open: 3 (BTC LONG, ETH LONG, SOL LONG) | Daily PnL: -$22 (-2.2%)
+Signal: XRP/USDT LONG | Score 15/45 (T:4 S:4 O:2 Liq:3 Fund:2) | RSI 61 | SL 1.2% | Regime TRENDING
+Response: {"decision":"REJECT","confidence":90,"reason":"3 longs already open + daily -2.2% — overexposed","risk_notes":"max 2-3 concurrent at 20× leverage","suggested_adjustment":"wait for one position to close first"}
 
 EXAMPLE 3 — REJECT (regime mismatch):
-User context: Balance $1,100 | Open: 0 positions | Daily PnL: +$0
-Signal: ETH/USDT SHORT | Score 9/31 (T:3 S:4 O:2) | RSI 44 | SL 0.9% away | Regime RANGING | HTF Bull ✓
-Response: {"decision":"REJECT","confidence":80,"reason":"SHORT in RANGING + HTF bullish bias — directional conflict","risk_notes":"RANGING regime with HTF bull favors longs or flat","suggested_adjustment":"wait for regime shift or CHoCH confirmation"}
+Context: Balance $1,100 | Open: 0 | Daily PnL: +$0
+Signal: ETH/USDT SHORT | Score 11/45 (T:3 S:4 O:2 Liq:2 Fund:0) | RSI 44 | SL 0.9% | Regime RANGING | HTF Bull ✓
+Response: {"decision":"REJECT","confidence":80,"reason":"SHORT in RANGING + HTF bullish bias — directional conflict","risk_notes":"RANGING favors longs or flat","suggested_adjustment":"wait for regime shift or CHoCH"}
 
-EXAMPLE 4 — APPROVE (high confidence):
-User context: Balance $1,050 | Open: 0 positions | Daily PnL: +$15 (+1.4%)
-Signal: SOL/USDT LONG | Score 13/31 (T:6 S:5 O:2) | RSI 62 | SL 2.1% away | Regime TRENDING | HTF Bull ✓ | Kill Zone ✓
-Response: {"decision":"APPROVE","confidence":92,"reason":"strong trend score13 + HTF bull + SL2.1% + fresh portfolio","risk_notes":"RSI 62 not overbought, room to run","suggested_adjustment":"none"}
+EXAMPLE 4 — APPROVE (high confidence + sweep):
+Context: Balance $1,050 | Open: 0 | Daily PnL: +$15 (+1.4%)
+Signal: SOL/USDT LONG | Score 22/45 (T:6 S:5 O:2 Liq:7 Fund:2) | RSI 62 | SL 2.1% | Regime TRENDING | HTF Bull ✓ | Sweep ✓ | Kill Zone ✓
+Response: {"decision":"APPROVE","confidence":94,"reason":"strong score22 + sweep + HTF bull + SL2.1% + fresh portfolio","risk_notes":"RSI 62 not extreme, good entry","suggested_adjustment":"none"}
 
 --- END EXAMPLES ---
 
@@ -119,6 +122,14 @@ def _hard_reject(signal: dict) -> tuple[bool, str]:
         return True, f"LONG RSI {rsi} overbought (>75)"
     if side == "SHORT" and rsi < 25:
         return True, f"SHORT RSI {rsi} oversold (<25)"
+
+    # Rule 7: Funding Rate extreme (ถ้ามีข้อมูล)
+    funding_rate = signal.get("funding_rate")   # เป็น % เช่น 0.15 = 0.15%
+    if funding_rate is not None:
+        if side == "LONG"  and funding_rate > 0.15:
+            return True, f"Funding {funding_rate:.3f}% > +0.15% — LONG over-crowded"
+        if side == "SHORT" and funding_rate < -0.05:
+            return True, f"Funding {funding_rate:.3f}% < -0.05% — SHORT over-crowded"
 
     return False, ""
 
@@ -210,6 +221,10 @@ def ask(signal: dict, scan_result: dict) -> tuple:
     pnl_sign = "+" if ctx["daily_pnl"] >= 0 else ""
     same_sym = " ⚠️ SAME SYMBOL ALREADY OPEN" if ctx["same_symbol_open"] else ""
 
+    funding_rate = signal.get("funding_rate")
+    funding_str  = f"{funding_rate:+.4f}%" if funding_rate is not None else "N/A"
+    sweep_str    = "✓ YES" if signal.get("bull_sweep") else "no"
+
     user_content = (
         # ── Portfolio context (dynamic) ──────────────────────────────────────
         f"PORTFOLIO CONTEXT:\n"
@@ -219,12 +234,14 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         # ── Signal details ───────────────────────────────────────────────────
         f"SIGNAL:\n"
         f"Symbol: {symbol} | Direction: {signal.get('side')}\n"
-        f"Score: {signal.get('score')}/31 "
-        f"(Trend:{signal.get('score_trend')} SMC:{signal.get('score_smc')} Osc:{signal.get('score_osc')})\n"
+        f"Score: {signal.get('score')}/45 "
+        f"(Trend:{signal.get('score_trend')} SMC:{signal.get('score_smc')} "
+        f"Osc:{signal.get('score_osc')} Liq:{signal.get('score_liq',0)} Fund:{signal.get('score_fund',0)})\n"
         f"Price: {signal.get('price')} | SL: {signal.get('sl')} ({sl_pct:.2f}% away)\n"
         f"TP1: {signal.get('tp1')} | TP2: {signal.get('tp2')}\n"
         f"RSI: {signal.get('rsi')} | HTF Bull: {scan_result.get('htf_bull')} | "
         f"Discount Zone: {scan_result.get('in_discount')}\n"
+        f"Liquidity Sweep: {sweep_str} | Funding Rate: {funding_str}\n"
         f"Kill Zone: {signal.get('in_kz')} | Regime: {signal.get('regime', 'UNKNOWN')}\n\n"
         f"APPROVE or REJECT? Reply with JSON only."
     )

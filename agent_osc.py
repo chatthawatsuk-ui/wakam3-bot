@@ -1,15 +1,17 @@
 """
-📈 Oscillator Agent — RSI(14) Divergence · Stochastic(14,1,3) · MACD(12,26,9)
+📈 Oscillator Agent — RSI(14) Divergence · Stochastic(14,1,3) · MACD(12,26,9) · OBV
 Pine Script source: WAKAME_RSI_MACD_STOCH.pine
 
 ส่ง report ให้ Signal Scanner ทุก scan
+MAX_SCORE = 11  (+2 จาก OBV volume confirmation)
 """
 from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.trend    import MACD
+from ta.volume   import OnBalanceVolumeIndicator
 
 NAME      = "Oscillator Agent"
 EMOJI     = "📈"
-MAX_SCORE = 9
+MAX_SCORE = 11   # 9 (original) + 2 (OBV SMA20 + SMA50 confirmation)
 
 
 def _add_indicators(df):
@@ -57,25 +59,44 @@ def _add_indicators(df):
     df["kz"]   = ((df["hour"] >= 7) & (df["hour"] < 10)) | \
                  ((df["hour"] >= 13) & (df["hour"] < 16))
 
+    # ── NEW: OBV (On-Balance Volume) — Volume Trend Confirmation ──────────────
+    # ต้องการ volume column — fallback False ถ้าไม่มี
+    if "volume" in df.columns and df["volume"].sum() > 0:
+        obv             = OnBalanceVolumeIndicator(c, df["volume"]).on_balance_volume()
+        df["obv"]       = obv
+        df["obv_sma20"] = obv.rolling(20, min_periods=10).mean()
+        df["obv_sma50"] = obv.rolling(50, min_periods=20).mean()
+        # OBV อยู่เหนือ SMA20 = short-term volume trend bull
+        df["obv_above_20"] = df["obv"] > df["obv_sma20"]
+        # OBV อยู่เหนือ SMA50 = longer-term volume confirms trend
+        df["obv_above_50"] = df["obv"] > df["obv_sma50"]
+    else:
+        df["obv_above_20"] = False
+        df["obv_above_50"] = False
+
     return df.dropna()
 
 
 def _score_long(r):
     s = 0
-    if r["rsi_bull_div"]: s += 3
-    if r["rsi_os"]:       s += 2
-    if r["st_up"]:        s += 2
-    if r["macd_up"]:      s += 2
-    return s   # max 9
+    if r["rsi_bull_div"]:  s += 3
+    if r["rsi_os"]:        s += 2
+    if r["st_up"]:         s += 2
+    if r["macd_up"]:       s += 2
+    if r["obv_above_20"]:  s += 1   # NEW: volume above short-term average
+    if r["obv_above_50"]:  s += 1   # NEW: volume above long-term average
+    return s   # max 11
 
 
 def _score_short(r):
     s = 0
-    if r["rsi_bear_div"]: s += 3
-    if r["rsi_ob"]:       s += 2
-    if r["st_dn"]:        s += 2
-    if r["macd_dn"]:      s += 2
-    return s   # max 9
+    if r["rsi_bear_div"]:  s += 3
+    if r["rsi_ob"]:        s += 2
+    if r["st_dn"]:         s += 2
+    if r["macd_dn"]:       s += 2
+    if not r["obv_above_20"]: s += 1   # NEW: OBV below SMA20 = volume confirms downside
+    if not r["obv_above_50"]: s += 1   # NEW: OBV below SMA50
+    return s   # max 11
 
 
 def run(df_1h, df_4h=None):
@@ -100,13 +121,15 @@ def run(df_1h, df_4h=None):
         "hist":        round(float(r["hist"]), 6),
         "kz":          bool(r["kz"]),
         "details": {
-            "rsi_bull_div": bool(r["rsi_bull_div"]),
-            "rsi_bear_div": bool(r["rsi_bear_div"]),
-            "rsi_os":       bool(r["rsi_os"]),
-            "rsi_ob":       bool(r["rsi_ob"]),
-            "st_up":        bool(r["st_up"]),
-            "st_dn":        bool(r["st_dn"]),
-            "macd_up":      bool(r["macd_up"]),
-            "macd_dn":      bool(r["macd_dn"]),
+            "rsi_bull_div":  bool(r["rsi_bull_div"]),
+            "rsi_bear_div":  bool(r["rsi_bear_div"]),
+            "rsi_os":        bool(r["rsi_os"]),
+            "rsi_ob":        bool(r["rsi_ob"]),
+            "st_up":         bool(r["st_up"]),
+            "st_dn":         bool(r["st_dn"]),
+            "macd_up":       bool(r["macd_up"]),
+            "macd_dn":       bool(r["macd_dn"]),
+            "obv_above_20":  bool(r.get("obv_above_20", False)),   # NEW
+            "obv_above_50":  bool(r.get("obv_above_50", False)),   # NEW
         },
     }

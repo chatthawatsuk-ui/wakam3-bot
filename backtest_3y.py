@@ -43,6 +43,8 @@ import signal_scanner as SCANNER
 # ── ปิด DB writes ระหว่าง backtest ──────────────────────────────────────────
 SCANNER.save_condition_snapshot    = lambda *a, **kw: None
 SCANNER.save_specialist_history    = lambda *a, **kw: None
+# ── ปิด Funding Agent (ไม่มี live funding rate ใน historical backtest) ───────
+SCANNER.DISABLE_FUNDING = True
 
 # ── SYMBOLS ───────────────────────────────────────────────────────────────────
 DEFAULT_SYMBOLS = [
@@ -71,7 +73,7 @@ TP2_R            = 2.0
 INITIAL_BALANCE  = 1000.0   # ยอดเริ่มต้น USD (เหมือน paper_trade.py)
 RISK_PCT         = 0.01     # 1% ของ balance ณ เวลาเปิด trade (dynamic)
 MAX_LEVERAGE     = 20       # 20x leverage (เหมือน paper_trade.py)
-CLAUDE_MIN_SCORE = 8        # Score threshold แทน Claude filter (≥8 = APPROVE)
+CLAUDE_MIN_SCORE = 10       # Score threshold แทน Claude filter (≥10/39 ≈ 26% — เดิม 8/31=26%)
 OUTPUT_CSV       = "backtest_3y.csv"
 TF_CSV           = "backtest_3y_tf.csv"
 API_LIMIT  = 300
@@ -293,6 +295,7 @@ def backtest_symbol(sym, df_primary, df_htf,
                     "score_trend":      sig.get("score_trend", 0),
                     "score_smc":        sig.get("score_smc",   0),
                     "score_osc":        sig.get("score_osc",   0),
+                    "score_liq":        sig.get("score_liq",   0),
                     "ep":               sig["price"],
                     "sl_orig":          sig["sl"],
                     "tp1":              sig["tp1"],

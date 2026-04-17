@@ -1,17 +1,18 @@
 """
-🎯 Trend Agent — CDC ActionZone EMA7/30 · SMA99 · ATR Trailing Stop
+🎯 Trend Agent — CDC ActionZone EMA7/30 · SMA99 · ATR Trailing Stop · ADX · BB Squeeze
 Pine Script source: WaKam3.pine (CDC ActionZone V3 + ATR Trail + SMA99)
 
 ส่ง report ให้ Signal Scanner ทุก scan
+MAX_SCORE = 13  (+2 จาก ADX trend strength + BB Width squeeze)
 """
 import numpy as np
-from ta.trend      import EMAIndicator, SMAIndicator
-from ta.volatility import AverageTrueRange
+from ta.trend      import EMAIndicator, SMAIndicator, ADXIndicator
+from ta.volatility import AverageTrueRange, BollingerBands
 from ta.momentum   import StochasticOscillator
 
 NAME      = "Trend Agent"
 EMOJI     = "🎯"
-MAX_SCORE = 11
+MAX_SCORE = 13   # 11 (original) + 1 (ADX) + 1 (BB squeeze)
 
 # ── Alert throttle — ส่ง HTF fallback alert ไม่เกิน 1 ครั้ง/ชั่วโมง ────────────
 _htf_warn_ts = 0.0
@@ -61,6 +62,18 @@ def _add_indicators(df):
     df["atr_trail_slow"] = _atr_trail(c.values, atr_s.values)
     df["trail_slow_bull"] = c > df["atr_trail_slow"]
 
+    # ── NEW: ADX(14) — Trend Strength Confirmation ────────────────────────────
+    # ADX > 25 = trend มีกำลัง (ไม่สนใจ direction — ดู DI+/DI- แทน)
+    df["adx"]       = ADXIndicator(h, l, c, 14).adx()
+    df["adx_strong"] = df["adx"] > 25
+
+    # ── NEW: Bollinger Band Width Squeeze ─────────────────────────────────────
+    # BB Width ต่ำกว่าค่าเฉลี่ย 50 แท่ง → แรงกด/แรงดึงสะสม → Breakout ใกล้
+    bb      = BollingerBands(c, window=20, window_dev=2)
+    bb_w    = (bb.bollinger_hband() - bb.bollinger_lband()) / bb.bollinger_mavg().replace(0, 1)
+    bb_w_avg = bb_w.rolling(50, min_periods=20).mean()
+    df["bb_squeeze"] = bb_w < bb_w_avg * 0.8   # width แคบกว่าปกติ 20%
+
     return df.dropna()
 
 
@@ -108,7 +121,9 @@ def _score_long(r):
     if r["above_sma99"]:      s += 2
     if r["ema7_gt_sma99"]:    s += 2
     if r["trail_slow_bull"]:  s += 2
-    return s   # max 11
+    if r["adx_strong"]:       s += 1   # NEW: trend confirmed by ADX
+    if r["bb_squeeze"]:       s += 1   # NEW: breakout energy building
+    return s   # max 13
 
 
 def _score_short(r):
@@ -119,7 +134,9 @@ def _score_short(r):
     if not r["above_sma99"]:     s += 2
     if not r["ema7_gt_sma99"]:   s += 2
     if not r["trail_slow_bull"]: s += 2
-    return s   # max 11
+    if r["adx_strong"]:          s += 1   # NEW
+    if r["bb_squeeze"]:          s += 1   # NEW
+    return s   # max 13
 
 
 def _daily_stoch_bias(df_1d):
@@ -183,6 +200,7 @@ def run(df_1h, df_4h, df_1d=None):
         "htf_sma":       htf_sma,
         "stoch_d_bull":  stoch_d_bull,   # None = filter ไม่ active
         "atr":           float(r.get("atr14", 0) or 0),
+        "adx":           round(float(r.get("adx", 0) or 0), 1),
         "details": {
             "cdc_bull":        bool(r["bull"]),
             "cross_up":        bool(r["cross_up"]),
@@ -192,6 +210,8 @@ def run(df_1h, df_4h, df_1d=None):
             "above_sma99":     bool(r["above_sma99"]),
             "ema7_gt_sma99":   bool(r["ema7_gt_sma99"]),
             "trail_slow_bull": bool(r["trail_slow_bull"]),
+            "adx_strong":      bool(r.get("adx_strong", False)),   # NEW
+            "bb_squeeze":      bool(r.get("bb_squeeze",  False)),   # NEW
             "stoch_d_bull":    stoch_d_bull,
             "ema7":            round(float(r["ema7"]),  6),
             "ema30":           round(float(r["ema30"]), 6),
