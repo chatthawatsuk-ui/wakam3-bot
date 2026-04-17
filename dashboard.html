@@ -3307,21 +3307,27 @@ function renderLab(){
 const AGENTS=[
   // ── Step 1: ดึงข้อมูล ─────────────────────────────────────
   {id:'data',   emoji:'📡', name:'Data Collector',
-   desc:'ดึง OHLCV จาก OKX ทุก 15 นาที (1H + 4H + 1D) → ส่งให้ 3 Specialists',
+   desc:'ดึง OHLCV จาก OKX ทุก 15 นาที (1H + 4H + 1D) → ส่งให้ 5 Specialists',
    cycle:'~15m', role:'core'},
   // ── Step 2: Pine Specialists วิเคราะห์พร้อมกัน ────────────
   {id:'trend',  emoji:'🎯', name:'Trend Agent',
-   desc:'WaKam3 › CDC ActionZone (EMA 7/30) + SMA 99 + ATR Trail + HTF 4H bias + Daily Stoch(14,3) filter',
+   desc:'WaKam3 › CDC ActionZone (EMA 7/30) + SMA 99 + ATR Trail + HTF 4H bias + ADX(14) + Bollinger Bands + Daily Stoch(14,3) filter — MAX 13 pts',
    cycle:'~15m', role:'specialist'},
   {id:'smc',    emoji:'🏦', name:'SMC Agent',
-   desc:'WaKam3 › BOS/CHoCH (Internal+Swing) + Order Blocks + Fair Value Gaps + EQH/EQL + Premium/Discount Zones',
+   desc:'WaKam3 › BOS/CHoCH (Internal+Swing) + Order Blocks + Fair Value Gaps + EQH/EQL + Premium/Discount Zones — MAX 10 pts',
    cycle:'~15m', role:'specialist'},
   {id:'osc',    emoji:'📈', name:'Oscillator Agent',
-   desc:'RSI(14) Divergence (Regular+Hidden) + Stochastic (14,1,3) + MACD (12,26,9) + Kill Zone (London/NY)',
+   desc:'RSI(14) Divergence (Regular+Hidden) + Stochastic (14,1,3) + MACD (12,26,9) + OBV (SMA20/50) + Kill Zone (London/NY) — MAX 11 pts',
+   cycle:'~15m', role:'specialist'},
+  {id:'liq',    emoji:'💧', name:'Liquidity Agent',
+   desc:'Liquidity Sweep (Bull/Bear) + Equal Highs/Lows detection + Stop Hunt zones — Bonus MAX 8 pts',
+   cycle:'~15m', role:'specialist'},
+  {id:'fund',   emoji:'💰', name:'Funding Agent',
+   desc:'OKX Funding Rate realtime — Negative funding = long bias, Positive = short bias, Extreme = contrarian signal — Bonus MAX 6 pts',
    cycle:'~15m', role:'specialist'},
   // ── Step 3: รวม score ─────────────────────────────────────
   {id:'signal', emoji:'🔍', name:'Signal Scanner',
-   desc:'Weighted score (Trend/SMC/Osc/Liq/Fund) → ถ้า ≥ 9/45 ส่งต่อ Claude Filter',
+   desc:'Core (Trend/SMC/Osc) normalized → /31 + Liq(+8) + Fund(+6) = MAX 45 → ถ้า ≥ 12/45 ส่งต่อ Claude Filter',
    cycle:'~15m', role:'core'},
   // ── Step 4: AI กรองสุดท้าย ────────────────────────────────
   {id:'claude', emoji:'🧠', name:'Claude Final Filter',
