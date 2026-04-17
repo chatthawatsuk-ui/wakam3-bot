@@ -324,6 +324,7 @@ def _record(trades, ed, i, df_primary, exit_px, exit_type, outcome, pnl, pnl_pct
         "score_trend":      ed["score_trend"],
         "score_smc":        ed["score_smc"],
         "score_osc":        ed["score_osc"],
+        "score_liq":        ed.get("score_liq", 0),
         "ep":               ed["ep"],
         "sl":               ed["sl_orig"],
         "tp1":              ed["tp1"],
@@ -439,8 +440,8 @@ def score_analysis(df):
         return
     df2 = df.copy()
     df2["score_band"] = pd.cut(
-        df2["score"], bins=[0,10,15,20,25,31],
-        labels=["≤10","11-15","16-20","21-25","≥26"]
+        df2["score"], bins=[0,10,15,20,25,30,45],
+        labels=["≤10","11-15","16-20","21-25","26-30","≥31"]
     )
     sc = df2.groupby("score_band", observed=True).agg(
         n       = ("outcome", "count"),

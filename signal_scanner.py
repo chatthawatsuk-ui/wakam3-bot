@@ -278,7 +278,7 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
     signal["claude_reason"]   = claude_reason
 
     # ── Level 4: บันทึก conditions ที่ active ตอน signal ยิง ──
-    save_condition_snapshot(sym, side, regime, ts, t_rep, s_rep, o_rep)
+    save_condition_snapshot(sym, side, regime, ts, t_rep, s_rep, o_rep, l_rep)
 
     return signal, scan_result
 
@@ -317,7 +317,7 @@ def _detect_regime(df_1h):
 #     การปรับ point ต่อ condition จะไม่เกิดอัตโนมัติ
 #     ต้องรอ Weekly Report (ทุกวันจันทร์) + คอนเฟิมก่อนทุกครั้ง
 # ══════════════════════════════════════════════════════════════
-def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
+def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep, l_rep=None):
     """
     บันทึก conditions ทุกตัวที่ active ตอน signal ยิง
     พร้อม regime → ใช้ใน weekly_report.py เพื่อคำนวณ win rate ต่อ condition
@@ -326,6 +326,7 @@ def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
         td = t_rep.get("details", {})
         sd = s_rep.get("details", {})
         od = o_rep.get("details", {})
+        ld = (l_rep or {})   # liquidity report (top-level keys: bull_sweep, bear_sweep, eq_highs, eq_lows)
 
         con = sqlite3.connect(DB_PATH)
         cur = con.cursor()
@@ -364,9 +365,35 @@ def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
                 st_up           INTEGER DEFAULT 0,
                 st_dn           INTEGER DEFAULT 0,
                 macd_up         INTEGER DEFAULT 0,
-                macd_dn         INTEGER DEFAULT 0
+                macd_dn         INTEGER DEFAULT 0,
+                -- 🎯 Phase 1 (Trend+): ADX, BB squeeze
+                adx_strong      INTEGER DEFAULT 0,
+                bb_squeeze      INTEGER DEFAULT 0,
+                -- 📈 Phase 3 (Osc+): OBV
+                obv_above_20    INTEGER DEFAULT 0,
+                obv_above_50    INTEGER DEFAULT 0,
+                -- 💧 Phase 2 (Liquidity agent)
+                bull_sweep      INTEGER DEFAULT 0,
+                bear_sweep      INTEGER DEFAULT 0,
+                eq_highs        INTEGER DEFAULT 0,
+                eq_lows         INTEGER DEFAULT 0
             )
         """)
+        # migrate: เพิ่ม columns ใน condition_snapshots ที่อาจไม่มีใน DB เก่า
+        for _c, _d in [
+            ("adx_strong",   "INTEGER DEFAULT 0"),
+            ("bb_squeeze",   "INTEGER DEFAULT 0"),
+            ("obv_above_20", "INTEGER DEFAULT 0"),
+            ("obv_above_50", "INTEGER DEFAULT 0"),
+            ("bull_sweep",   "INTEGER DEFAULT 0"),
+            ("bear_sweep",   "INTEGER DEFAULT 0"),
+            ("eq_highs",     "INTEGER DEFAULT 0"),
+            ("eq_lows",      "INTEGER DEFAULT 0"),
+        ]:
+            try:
+                cur.execute(f"ALTER TABLE condition_snapshots ADD COLUMN {_c} {_d}")
+            except Exception:
+                pass
         cur.execute("""
             INSERT INTO condition_snapshots (
                 signal_ts, symbol, side, regime,
@@ -375,8 +402,10 @@ def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
                 bos_bull, bos_bear, choch_bull, choch_bear,
                 qm_bull, qm_bear, in_discount, in_premium, in_eq,
                 rsi_bull_div, rsi_bear_div, rsi_os, rsi_ob,
-                st_up, st_dn, macd_up, macd_dn
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                st_up, st_dn, macd_up, macd_dn,
+                adx_strong, bb_squeeze, obv_above_20, obv_above_50,
+                bull_sweep, bear_sweep, eq_highs, eq_lows
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             signal_ts, sym, side, regime,
             int(td.get("cdc_bull",        False)),
@@ -405,6 +434,15 @@ def save_condition_snapshot(sym, side, regime, signal_ts, t_rep, s_rep, o_rep):
             int(od.get("st_dn",            False)),
             int(od.get("macd_up",          False)),
             int(od.get("macd_dn",          False)),
+            # NEW
+            int(td.get("adx_strong",       False)),
+            int(td.get("bb_squeeze",       False)),
+            int(od.get("obv_above_20",     False)),
+            int(od.get("obv_above_50",     False)),
+            int(ld.get("bull_sweep",       False)),
+            int(ld.get("bear_sweep",       False)),
+            int(ld.get("eq_highs",         False)),
+            int(ld.get("eq_lows",          False)),
         ))
         con.commit()
         con.close()
@@ -446,7 +484,15 @@ def save_shadow_signal(signal: dict):
             )
         """)
         # migrate: เพิ่ม columns ใน shadow_trades ที่อาจไม่มีใน DB เก่า
-        for _col, _def in [("tp1_hit", "INTEGER DEFAULT 0"), ("exit_reason", "TEXT")]:
+        for _col, _def in [
+            ("tp1_hit",      "INTEGER DEFAULT 0"),
+            ("exit_reason",  "TEXT"),
+            ("score_liq",    "INTEGER DEFAULT 0"),
+            ("score_fund",   "INTEGER DEFAULT 0"),
+            ("funding_rate", "REAL"),
+            ("bull_sweep",   "INTEGER DEFAULT 0"),
+            ("bear_sweep",   "INTEGER DEFAULT 0"),
+        ]:
             try:
                 cur.execute(f"ALTER TABLE shadow_trades ADD COLUMN {_col} {_def}")
             except Exception:
@@ -462,8 +508,9 @@ def save_shadow_signal(signal: dict):
         cur.execute("""
             INSERT INTO shadow_trades
             (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
-             sl_pct, regime, claude_reason, created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+             sl_pct, regime, claude_reason, created_at,
+             score_liq, score_fund, funding_rate, bull_sweep, bear_sweep)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             signal.get("symbol"), signal.get("side"),
             signal.get("score", 0),
@@ -473,6 +520,11 @@ def save_shadow_signal(signal: dict):
             signal.get("regime", "UNKNOWN"),
             signal.get("claude_reason", ""),
             datetime.now(timezone.utc).isoformat(),
+            signal.get("score_liq",  0),
+            signal.get("score_fund", 0),
+            signal.get("funding_rate"),
+            1 if signal.get("bull_sweep") else 0,
+            1 if signal.get("bear_sweep") else 0,
         ))
         con.commit()
         con.close()

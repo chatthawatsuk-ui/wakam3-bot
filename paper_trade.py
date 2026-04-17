@@ -130,6 +130,12 @@ def init_db():
         ("claude_approved",  "INTEGER DEFAULT 1"),   # 1=approved, 0=rejected (shouldn't reach here if 0)
         ("claude_reason",    "TEXT DEFAULT ''"),
         ("tf",               "TEXT DEFAULT '1H'"),
+        # ── NEW agents (Phase 2/3) ──────────────────────────────────────────
+        ("score_liq",        "INTEGER DEFAULT 0"),   # Liquidity agent score
+        ("score_fund",       "INTEGER DEFAULT 0"),   # Funding agent score
+        ("funding_rate",     "REAL"),                 # funding rate % (e.g. 0.01)
+        ("bull_sweep",       "INTEGER DEFAULT 0"),   # 1 if bullish sweep present
+        ("bear_sweep",       "INTEGER DEFAULT 0"),   # 1 if bearish sweep present
     ]
     for col, definition in new_cols:
         try:
@@ -168,7 +174,15 @@ def init_db():
         )
     """)
     # migrate shadow_trades: เพิ่ม columns ที่อาจไม่มีใน DB เก่า
-    for sh_col, sh_def in [("tp1_hit", "INTEGER DEFAULT 0"), ("exit_reason", "TEXT")]:
+    for sh_col, sh_def in [
+        ("tp1_hit",       "INTEGER DEFAULT 0"),
+        ("exit_reason",   "TEXT"),
+        ("score_liq",     "INTEGER DEFAULT 0"),
+        ("score_fund",    "INTEGER DEFAULT 0"),
+        ("funding_rate",  "REAL"),
+        ("bull_sweep",    "INTEGER DEFAULT 0"),
+        ("bear_sweep",    "INTEGER DEFAULT 0"),
+    ]:
         try:
             conn.execute(f"ALTER TABLE shadow_trades ADD COLUMN {sh_col} {sh_def}")
         except Exception:
@@ -205,6 +219,11 @@ def init_db():
         ("exit_reason",        "TEXT"),
         ("resolved_at",        "TEXT"),
         ("balance_at_signal",  "REAL DEFAULT 1000.0"),
+        ("score_liq",          "INTEGER DEFAULT 0"),
+        ("score_fund",         "INTEGER DEFAULT 0"),
+        ("funding_rate",       "REAL"),
+        ("bull_sweep",         "INTEGER DEFAULT 0"),
+        ("bear_sweep",         "INTEGER DEFAULT 0"),
     ]:
         try:
             conn.execute(f"ALTER TABLE signal_log ADD COLUMN {sl_col} {sl_def}")
@@ -425,8 +444,9 @@ def log_signal(conn, sig: dict, was_traded: bool, skip_reason: str = "",
     conn.execute("""
         INSERT INTO signal_log
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
-         regime, tf, was_traded, skip_reason, logged_at, balance_at_signal)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+         regime, tf, was_traded, skip_reason, logged_at, balance_at_signal,
+         score_liq, score_fund, funding_rate, bull_sweep, bear_sweep)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig.get("score", 0),
         sig.get("price", 0), sig.get("sl", 0),
@@ -436,7 +456,12 @@ def log_signal(conn, sig: dict, was_traded: bool, skip_reason: str = "",
         1 if was_traded else 0,
         skip_reason,
         datetime.now(timezone.utc).isoformat(),
-        round(balance, 2)
+        round(balance, 2),
+        sig.get("score_liq",  0),
+        sig.get("score_fund", 0),
+        sig.get("funding_rate"),
+        1 if sig.get("bull_sweep") else 0,
+        1 if sig.get("bear_sweep") else 0,
     ))
     conn.commit()
 
@@ -586,8 +611,10 @@ def open_trade(conn, sig):
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px, sl_pct, rsi,
          qty, notional_usd, leverage, margin_usd, risk_usd,
          score_trend, score_smc, score_osc, regime,
-         claude_approved, claude_reason, tf, opened_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         claude_approved, claude_reason, tf,
+         score_liq, score_fund, funding_rate, bull_sweep, bear_sweep,
+         opened_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig["score"],
         sig["price"], sig["sl"], sig["tp1"], sig["tp2"],
@@ -600,6 +627,11 @@ def open_trade(conn, sig):
         int(sig.get("claude_approved", True)),
         sig.get("claude_reason", ""),
         sig.get("tf", "1H"),
+        sig.get("score_liq",  0),
+        sig.get("score_fund", 0),
+        sig.get("funding_rate"),
+        1 if sig.get("bull_sweep") else 0,
+        1 if sig.get("bear_sweep") else 0,
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()

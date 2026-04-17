@@ -1296,15 +1296,15 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="card">
         <div class="card-h">
           <div class="card-title">FULL SCANNER</div>
-          <div class="card-meta">Score threshold: ≥8 = SIGNAL · max 31 (Trend11 + SMC10 + Osc9 + KZ1)</div>
+          <div class="card-meta">Score threshold: ≥9 = SIGNAL · max 45 (Trend13 + SMC10 + Osc11 + Liq8 + Fund6, core normalized → 31)</div>
         </div>
         <div class="tw"><table>
           <thead><tr>
             <th>#</th><th>Symbol</th><th>Side</th><th>Status</th>
-            <th>Total /31</th>
-            <th title="🎯 CDC EMA7/30 + SMA50/200 + ATR Trail (max 11)">🎯 Trend /11</th>
+            <th>Total /45</th>
+            <th title="🎯 CDC EMA7/30 + SMA50/200 + ATR Trail + ADX + BB (max 13)">🎯 Trend /13</th>
             <th title="🏦 BOS/CHoCH/QM + Discount Zone (max 10)">🏦 SMC /10</th>
-            <th title="📈 RSI Div + Stoch + MACD (max 9)">📈 Osc /9</th>
+            <th title="📈 RSI Div + Stoch + MACD + OBV (max 11)">📈 Osc /11</th>
             <th>Price</th><th>RSI</th><th>HTF</th><th>KZ</th>
           </tr></thead>
           <tbody id="sc-tb"></tbody>
@@ -2357,8 +2357,8 @@ function renderDash(){
       </td>
       <td>${sBadge(r.status)}</td>
       <td>${sideBadge(r.side)}</td>
-      <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/31</span>
-        <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/31*100)}%;background:${r.best_score>=8?'var(--green)':r.best_score>=5?'var(--yellow)':'var(--t2)'}"></div></div>
+      <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/45</span>
+        <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/45*100)}%;background:${r.best_score>=12?'var(--green)':r.best_score>=7?'var(--yellow)':'var(--t2)'}"></div></div>
       </div></td>
       <td style="font-family:var(--mono)">${px}</td>
       <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${isSig&&ep?pxFmt(ep):'—'}</td>
@@ -2598,8 +2598,8 @@ function renderWatchlistPage(){
       </td>
       <td style="min-width:80px">
         ${sc?`<div class="sbar">
-          <span style="min-width:30px;color:${bc};font-weight:700;font-size:11px">${score}/31</span>
-          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(score/31*100)}%;background:${bc}"></div></div>
+          <span style="min-width:30px;color:${bc};font-weight:700;font-size:11px">${score}/45</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(score/45*100)}%;background:${bc}"></div></div>
         </div>`:notScanned?'<span style="font-size:9px;color:var(--t2);background:var(--s3);border-radius:4px;padding:2px 6px;border:1px solid var(--border)">ไม่ได้ Scan</span>':'<span class="t2">—</span>'}
       </td>
       <td>${sc?sBadge(sc.status):notScanned?'<span style="font-size:9px;color:var(--t2)">Custom</span>':'<span class="t2">—</span>'}</td>
@@ -2962,8 +2962,8 @@ function renderSignals(){
         <td>${sBadge(r.status)}${missingHtml}</td>
         <td>
           <div class="sbar">
-            <span style="min-width:36px;color:${bc};font-weight:700">${sc}/31</span>
-            <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/31*100)}%;background:${bc}"></div></div>
+            <span style="min-width:36px;color:${bc};font-weight:700">${sc}/45</span>
+            <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/45*100)}%;background:${bc}"></div></div>
           </div>
         </td>
         <td style="font-size:11px;font-family:var(--mono)">${px}${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:9px">${chg>=0?'+':''}${chg.toFixed(1)}%</span>`:''}</td>
@@ -3141,8 +3141,8 @@ function renderScanner(){
       <td class="${r.score_short>=8?'dn':''}">${r.score_short}</td>
       <td>
         <div class="sbar">
-          <span style="min-width:32px;color:${bc}">${sc}/31</span>
-          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/31*100)}%;background:${bc}"></div></div>
+          <span style="min-width:32px;color:${bc}">${sc}/45</span>
+          <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round(sc/45*100)}%;background:${bc}"></div></div>
         </div>
       </td>
       <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi>0?r.rsi.toFixed(1):'—'}</td>
@@ -3173,7 +3173,7 @@ function renderHeatmap(id,scan){
       <div class="hmc-px">$${px}</div>
       ${chgTxt}
       <div class="hmc-bar" style="background:${bc}"></div>
-      <div class="hmc-sc" style="color:${tc}">${sc}/31</div>
+      <div class="hmc-sc" style="color:${tc}">${sc}/45</div>
     </div>`
   }).join('')
 }
@@ -3321,7 +3321,7 @@ const AGENTS=[
    cycle:'~15m', role:'specialist'},
   // ── Step 3: รวม score ─────────────────────────────────────
   {id:'signal', emoji:'🔍', name:'Signal Scanner',
-   desc:'Weighted score (Trend/SMC/Osc) → ถ้า ≥ 8/31 ส่งต่อ Claude Filter',
+   desc:'Weighted score (Trend/SMC/Osc/Liq/Fund) → ถ้า ≥ 9/45 ส่งต่อ Claude Filter',
    cycle:'~15m', role:'core'},
   // ── Step 4: AI กรองสุดท้าย ────────────────────────────────
   {id:'claude', emoji:'🧠', name:'Claude Final Filter',
@@ -4370,7 +4370,7 @@ function renderShadow(){
         <tr style="border-bottom:1px solid var(--border)">
           <td style="padding:6px 10px;font-weight:600">${r.symbol||'—'}</td>
           <td style="padding:6px 10px">${_sideBadge(r.side)}</td>
-          <td style="padding:6px 10px;text-align:right">${r.score||0}/31</td>
+          <td style="padding:6px 10px;text-align:right">${r.score||0}/45</td>
           <td style="padding:6px 10px;text-align:right">${(r.sl_pct||0).toFixed(2)}%</td>
           <td style="padding:6px 10px;color:var(--t2)">${r.regime||'—'}</td>
           <td style="padding:6px 10px;color:var(--t2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.claude_reason||'—'}</td>
@@ -4407,7 +4407,7 @@ function renderShadow(){
         return `<tr style="${rowStyle}">
           <td style="padding:6px 10px;font-weight:600">${r.symbol||'—'}</td>
           <td style="padding:6px 10px">${_sideBadge(r.side)}</td>
-          <td style="padding:6px 10px;text-align:right">${r.score||0}/31</td>
+          <td style="padding:6px 10px;text-align:right">${r.score||0}/45</td>
           <td style="padding:6px 10px;text-align:right">${(r.sl_pct||0).toFixed(2)}%</td>
           <td style="padding:6px 10px;color:var(--t2)">${r.regime||'—'}</td>
           <td style="padding:6px 10px;color:var(--t2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.claude_reason||'—'}</td>

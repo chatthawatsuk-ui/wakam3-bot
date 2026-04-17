@@ -148,16 +148,19 @@ def scan():
             if sig:
                 sig["tf"] = TF_1H.upper()   # primary scan TF — store in trade record
                 signals.append(sig)
-                log(f"  ✅ {sym} {sig['side']} score={sig['score']}/31 "
-                    f"[🎯{sig['score_trend']} 🏦{sig['score_smc']} 📈{sig['score_osc']}] "
+                log(f"  ✅ {sym} {sig['side']} score={sig['score']}/45 "
+                    f"[🎯{sig['score_trend']} 🏦{sig['score_smc']} 📈{sig['score_osc']} "
+                    f"💧{sig.get('score_liq',0)} 💰{sig.get('score_fund',0)}] "
                     f"px={sig['price']:.4f} sl={sig['sl']:.4f}")
             else:
                 sc = result.get("best_score", 0)
                 st = result.get("status", "?")
-                log(f"  {sym}: {st} score={sc}/31 "
+                log(f"  {sym}: {st} score={sc}/45 "
                     f"[🎯{result.get('score_trend',0)} "
                     f"🏦{result.get('score_smc',0)} "
-                    f"📈{result.get('score_osc',0)}]")
+                    f"📈{result.get('score_osc',0)} "
+                    f"💧{result.get('score_liq',0)} "
+                    f"💰{result.get('score_fund',0)}]")
 
             time.sleep(0.3)
 
