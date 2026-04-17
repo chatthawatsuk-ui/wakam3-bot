@@ -44,6 +44,9 @@ CORR_GROUPS = [
 
 exchange = ccxt.okx({"enableRateLimit": True})
 
+# ── HTF Reversal Cache — เก็บผล EMA7/30 4H ต่อ symbol (refresh ทุก 10 นาที) ──
+_htf_cache: dict = {}
+
 
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
@@ -648,6 +651,42 @@ def enforce_max_positions(conn):
     return excess
 
 
+# ── HTF REVERSAL EXIT — Option C ──────────────────────────────────────────────
+# ออก trade เฉพาะตอน TP1 ยังไม่โดน (SL ยังเป็น original risk)
+# ถ้า TP1 โดนแล้ว SL อยู่ที่ Breakeven → ปล่อย SL จัดการเอง (ไม่ exit กลางทาง)
+# Ref: Makner EMA 7/30 system — "ถ้า 4H เปลี่ยนทิศ → cut ทันที"
+
+def _get_htf_bull(symbol: str) -> bool | None:
+    """
+    คำนวณ 4H EMA7 vs EMA30 — เหมือน agent_trend.py _htf_bias()
+    คืน True (EMA7>EMA30 = bull), False (bear), None (error/ข้อมูลไม่พอ)
+    Cache 10 นาที/symbol เพื่อไม่ fetch ซ้ำในรอบเดียวกัน
+    """
+    import time as _time
+    now = _time.time()
+
+    cached = _htf_cache.get(symbol)
+    if cached and now - cached[1] < 600:   # 10 นาที
+        return cached[0]
+
+    try:
+        bars = exchange.fetch_ohlcv(symbol, "4h", limit=60)
+        if not bars or len(bars) < 35:
+            return None
+
+        close = pd.Series([b[4] for b in bars], dtype=float)
+        ema7  = close.ewm(span=7,  adjust=False).mean()
+        ema30 = close.ewm(span=30, adjust=False).mean()
+
+        htf_bull = bool(ema7.iloc[-1] > ema30.iloc[-1])
+        _htf_cache[symbol] = (htf_bull, now)
+        return htf_bull
+
+    except Exception as e:
+        print(f"  [HTF] {symbol} fetch error: {e}")
+        return None
+
+
 # ── CHECK OPEN TRADES ─────────────────────────────────────────────────────────
 def check_open_trades(conn):
     trades = conn.execute("""
@@ -746,6 +785,29 @@ def check_open_trades(conn):
                 _close(conn, tid, px, "LOSS", pnl_full_sl, reason="SL ❌")
                 closed.append((tid, sym, "LOSS", pnl_full_sl))
 
+        else:
+            # ── Option C: HTF Reversal Exit ───────────────────────────────────
+            # เฉพาะตอน TP1 ยังไม่โดน — ถ้า TP1 โดนแล้ว SL=BE ปล่อยไว้
+            # Ref: Makner EMA 7/30 — "4H เปลี่ยนทิศ = thesis หาย → cut"
+            if not tp1_hit:
+                htf_bull = _get_htf_bull(sym)
+                if htf_bull is not None:
+                    reversal = (side == "LONG"  and not htf_bull) or \
+                               (side == "SHORT" and htf_bull)
+                    if reversal:
+                        if qty and qty > 0 and ep and ep > 0:
+                            diff = (px - ep) if side == "LONG" else (ep - px)
+                            pnl  = qty * diff
+                        else:
+                            pnl = 0
+                        outcome  = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
+                        htf_dir  = "BEARISH" if side == "LONG" else "BULLISH"
+                        reason   = f"HTF_REVERSAL (4H→{htf_dir})"
+                        _close(conn, tid, px, outcome, pnl, reason=reason)
+                        closed.append((tid, sym, outcome, pnl))
+                        print(f"  🔄 #{tid} {sym} {side} HTF เปลี่ยนทิศ"
+                              f" @ {px:.8g} | PnL=${pnl:+.2f} [{outcome}]")
+
     return closed
 
 
@@ -758,6 +820,8 @@ def _close(conn, trade_id, exit_px, outcome, pnl, reason=""):
         exit_reason = "SL_BE"
     elif "tp1" in r_low or "tp 1" in r_low:
         exit_reason = "TP1"
+    elif "htf_reversal" in r_low or "htf_rev" in r_low:
+        exit_reason = "HTF_REVERSAL"   # 4H EMA เปลี่ยนทิศ → cut ก่อน SL โดน
     elif "timeout" in r_low:
         exit_reason = "TIMEOUT"
     elif "maxpos" in r_low or "max_pos" in r_low or "forced" in r_low:
