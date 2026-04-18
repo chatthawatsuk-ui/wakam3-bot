@@ -252,9 +252,9 @@ def propose_regime_weights(regime_data):
     for regime, d in regime_data.items():
         if "error" in d or d.get("count", 0) < 5:
             continue
-        t = d["avg_score_trend"] / 11
+        t = d["avg_score_trend"] / 13   # MAX 13 (Phase 1: ADX+BB)
         s = d["avg_score_smc"]   / 10
-        o = d["avg_score_osc"]   / 9
+        o = d["avg_score_osc"]   / 11   # MAX 11 (Phase 3: OBV)
         total = t + s + o
         if total == 0:
             proposals[regime] = {"W_TREND": 1/3, "W_SMC": 1/3, "W_OSC": 1/3,
@@ -268,9 +268,9 @@ def propose_regime_weights(regime_data):
                 "W_TREND": wt, "W_SMC": ws, "W_OSC": wo,
                 "win_rate": d["win_rate"],
                 "count":    d["count"],
-                "reason":   f"จาก avg scores: Trend={d['avg_score_trend']:.1f}/11 "
+                "reason":   f"จาก avg scores: Trend={d['avg_score_trend']:.1f}/13 "
                             f"SMC={d['avg_score_smc']:.1f}/10 "
-                            f"Osc={d['avg_score_osc']:.1f}/9",
+                            f"Osc={d['avg_score_osc']:.1f}/11",
             }
     return proposals
 
@@ -326,9 +326,9 @@ def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summar
                 context_lines.append(
                     f"- {regime}: {d.get('count', 0)} trades, "
                     f"WR={d.get('win_rate', 0):.1%}, "
-                    f"avg Trend={d.get('avg_score_trend', 0):.1f}/11 "
+                    f"avg Trend={d.get('avg_score_trend', 0):.1f}/13 "
                     f"SMC={d.get('avg_score_smc', 0):.1f}/10 "
-                    f"Osc={d.get('avg_score_osc', 0):.1f}/9"
+                    f"Osc={d.get('avg_score_osc', 0):.1f}/11"
                 )
 
         if cond_wr and "error" not in cond_wr:
@@ -353,12 +353,15 @@ def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summar
         context = "\n".join(context_lines)
 
         prompt = f"""You are an expert quant analyst for a crypto trading system.
-The system uses 3 specialist agents to score trading signals:
-- 🎯 Trend Agent (CDC EMA7/30 + SMA + ATR Trail, max 11 pts)
-- 🏦 SMC Agent (Smart Money Concepts, max 10 pts)
-- 📈 Oscillator Agent (RSI + Stochastic + MACD, max 9 pts)
+The system uses 5 specialist agents to score trading signals:
+- 🎯 Trend Agent (CDC EMA7/30 + SMA99 + ATR Trail + ADX + BB, max 13 pts) ← weighted
+- 🏦 SMC Agent (Smart Money Concepts, max 10 pts) ← weighted
+- 📈 Oscillator Agent (RSI + Stochastic + MACD + OBV, max 11 pts) ← weighted
+- 💧 Liquidity Agent (Sweep + Equal Highs/Lows, max 8 pts bonus) ← direct add
+- 💰 Funding Agent (OKX Funding Rate bias, max 6 pts bonus) ← direct add
 
-Current weights are blended into a combined score (max 31 pts).
+Core 3 agents are normalized and weighted → /31, then Liq(+8) + Fund(+6) added directly.
+Total MAX score = 45 pts. Weight proposal only covers core 3 agents (Trend/SMC/Osc).
 
 {context}
 
