@@ -3132,8 +3132,8 @@ function renderPositions(){
   if(!tb) return
 
   if(posTab==='open'){
-    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Now</th><th>TP1</th><th>SL</th><th>Lev</th><th>Risk$</th><th>TP1?</th><th>P&L %</th><th>P&L $</th><th>Opened</th></tr>'
-    if(open.length===0){tb.innerHTML='<tr><td colspan="12"><div class="empty">No open positions</div></td></tr>'}
+    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Now</th><th>TP1</th><th>TP2</th><th>SL</th><th>Lev</th><th>Risk$</th><th>TP1?</th><th>TP2?</th><th>P&L %</th><th>P&L $</th><th>Opened</th></tr>'
+    if(open.length===0){tb.innerHTML='<tr><td colspan="14"><div class="empty">No open positions</div></td></tr>'}
     else tb.innerHTML=open.map(t=>{
       const pnlPct=t.pnl_pct||0
       const pnl=t.pnl||0
@@ -3146,6 +3146,8 @@ function renderPositions(){
       const risk=t.risk_usd||0
       const levStr=lev>0?`${lev.toFixed(1)}x`:'—'
       const riskStr=risk>0?`$${risk.toFixed(2)}`:'—'
+      // TP2 hit = exit_type === 'TP2' (open trades ยังไม่ hit TP2)
+      const tp2Hit = false   // open trades ยังไม่ปิด
       return`<tr style="${pnlPct>=1?'background:rgba(34,197,94,.04)':pnlPct<=-1?'background:rgba(244,63,94,.04)':''}">
         <td class="txt">
           <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
@@ -3157,18 +3159,20 @@ function renderPositions(){
         <td style="font-family:var(--mono)">${pxFmt(t.entry_price)}</td>
         <td style="font-family:var(--mono)">${pxFmt(currPx)}</td>
         <td class="up" style="font-family:var(--mono)">${pxFmt(t.tp_price)}</td>
+        <td class="up" style="font-family:var(--mono);opacity:.7">${pxFmt(t.tp2_price)}</td>
         <td class="dn" style="font-family:var(--mono)">${pxFmt(t.sl_price)}</td>
         <td class="t2" style="font-size:11px">${levStr}</td>
         <td class="t2" style="font-size:11px">${riskStr}</td>
         <td>${t.tp1_hit?'<span class="up" style="font-size:11px">✅ Hit</span>':'<span class="t2">—</span>'}</td>
+        <td><span class="t2">—</span></td>
         <td class="${pnlPct>=0?'up':'dn'}" style="font-weight:600">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
         <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')+pnl.toFixed(2)}</td>
         <td class="t2">${timeAgo(t.open_time)}</td>
       </tr>`
     }).join('')
   } else {
-    if(thead) thead.innerHTML='<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th></tr>'
-    if(closed.length===0){tb.innerHTML='<tr><td colspan="13"><div class="empty">No closed trades</div></td></tr>'}
+    if(thead) thead.innerHTML='<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>TP2?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th></tr>'
+    if(closed.length===0){tb.innerHTML='<tr><td colspan="14"><div class="empty">No closed trades</div></td></tr>'}
     else{
       const sorted=[...closed].sort((a,b)=>new Date(b.close_time||0)-new Date(a.close_time||0))
       tb.innerHTML=sorted.slice(0,100).map((t,i)=>{
@@ -3181,6 +3185,7 @@ function renderPositions(){
         const etC=et==='TP2'?'b-win':et==='SL_BE'?'b-stale':et==='SL'?'b-los':'b-stale'
         const isSLBE=et==='SL_BE'
         const tp1Hit=t.tp1_hit
+        const tp2Hit=et==='TP2'
         const outcomeBadge=t.outcome==='WIN'
           ?'<span class="bdg b-win">WIN</span>'
           :t.outcome==='VOID'
@@ -3203,6 +3208,7 @@ function renderPositions(){
           <td style="font-family:var(--mono)">${pxFmt(t.exit_price)}</td>
           <td><span class="bdg ${etC}">${et}</span></td>
           <td>${tp1Hit?'<span class="up">✓</span>':'<span class="t2">—</span>'}</td>
+          <td>${tp2Hit?'<span class="up" style="color:var(--green);font-weight:700">✓</span>':'<span class="t2">—</span>'}</td>
           <td>${outcomeBadge}</td>
           <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')}$${Math.abs(pnl).toFixed(2)}</td>
           <td class="${pnlPct>=0?'up':'dn'}">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
@@ -4188,10 +4194,10 @@ function renderBTTrades(){
   // header: เพิ่ม "Traded?" เมื่อ live tab
   if(thead){
     const extraTh = isLive ? '<th>Traded?</th>' : ''
-    const cols = isLive ? 14 : 13
-    thead.innerHTML = `<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th>${extraTh}</tr>`
+    const cols = isLive ? 15 : 14
+    thead.innerHTML = `<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>TP2?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th>${extraTh}</tr>`
   }
-  const COLS = isLive ? 14 : 13
+  const COLS = isLive ? 15 : 14
   if(!tb) return
   if(!trades.length){ tb.innerHTML=`<tr><td colspan="${COLS}"><div class="empty">ยังไม่มี trades</div></td></tr>`; return }
   tb.innerHTML = trades.map((t,i)=>{
@@ -4235,6 +4241,7 @@ function renderBTTrades(){
       <td>${numFmt(t.exit_px)}</td>
       <td><span class="bdg ${etC}">${et}</span></td>
       <td>${t.tp1_hit?'<span class="up">✓</span>':'<span class="t2">—</span>'}</td>
+      <td>${et==='TP2'?'<span class="up" style="color:var(--green);font-weight:700">✓</span>':'<span class="t2">—</span>'}</td>
       <td>${outcomeBadge}</td>
       <td class="${pnlC}" style="font-weight:600">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</td>
       <td class="${pnlPctC}">${pnlPctStr}</td>

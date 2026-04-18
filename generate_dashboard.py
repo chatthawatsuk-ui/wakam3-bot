@@ -1394,7 +1394,7 @@ def main():
 
     closed_rows = conn.execute("""
         SELECT id, symbol, side, score, entry_px, exit_px, outcome, pnl_usd,
-               sl_px, tp1_px, tp1_hit, opened_at, closed_at,
+               sl_px, tp1_px, tp2_px, tp1_hit, opened_at, closed_at,
                notional_usd, leverage, risk_usd,
                exit_reason, regime
         FROM trades WHERE status='CLOSED' ORDER BY id
@@ -1424,6 +1424,7 @@ def main():
             "exit_price":  xp,
             "sl_price":    r["sl_px"],
             "tp_price":    r["tp1_px"],
+            "tp2_price":   r["tp2_px"]      or 0,
             "tp1_hit":     r["tp1_hit"]     or 0,
             "outcome":     r["outcome"],
             "pnl":         pnl,
