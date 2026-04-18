@@ -487,7 +487,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 /* ── Mobile bottom nav ─── */
 .mob-nav{
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;
-  height:58px;background:var(--s1);border-top:1px solid var(--border);
+  height:62px;background:var(--s1);border-top:1px solid var(--border);
   flex-direction:row;align-items:stretch;
   overflow-x:auto;overflow-y:hidden;
   -webkit-overflow-scrolling:touch;
@@ -495,16 +495,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
   padding-bottom:env(safe-area-inset-bottom,0px);
   padding-left:env(safe-area-inset-left,0px);
   padding-right:env(safe-area-inset-right,0px);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  background:rgba(15,15,19,0.96);
 }
 .mob-nav::-webkit-scrollbar{display:none}
 .mob-nav-btn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  flex:1 0 auto;min-width:54px;max-width:72px;padding:5px 4px;background:none;border:none;
-  color:var(--t2);cursor:pointer;font-size:8.5px;font-family:var(--mono);
-  letter-spacing:.03em;transition:.12s;border-radius:6px;white-space:nowrap;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  flex:1 0 auto;min-width:58px;max-width:80px;padding:6px 4px 5px;background:none;
+  border:none;border-top:2px solid transparent;
+  color:var(--t2);cursor:pointer;font-size:9px;font-family:var(--font);
+  font-weight:500;letter-spacing:.03em;transition:.15s;white-space:nowrap;
 }
-.mob-nav-btn.active{color:var(--blue)}
-.mob-nav-btn svg{width:20px;height:20px;flex-shrink:0}
+.mob-nav-btn.active{color:var(--blue);border-top-color:var(--blue)}
+.mob-nav-btn svg{width:22px;height:22px;flex-shrink:0;stroke-width:1.8}
 
 /* ══ TABLET / iPad (768 – 1023px) ══════════════════════════ */
 @media(max-width:1023px){
@@ -562,92 +566,127 @@ tr:hover td{background:rgba(255,255,255,.02)}
   body{font-size:13px}
   .sidebar{display:none}
   .mob-nav{display:flex}
-  .app{padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+  .app{padding-bottom:calc(62px + env(safe-area-inset-bottom))}
 
-  /* Pages */
-  .page{padding:10px 10px 76px}
+  /* ── Pages ── */
+  .page{padding:8px 8px 80px}
 
-  /* Topbar: compact, show only key fields */
-  .topbar{height:40px;padding:0 10px;gap:0}
-  .tb-seg{padding:0 8px}
-  .tb-lbl{font-size:8px}
-  .tb-val{font-size:11px}
+  /* ── Topbar: แสดงแค่ Portfolio + BTC + P&L + Live ── */
+  .topbar{height:44px;padding:0 10px;gap:0;background:var(--s1)}
+  .tb-seg{padding:0 9px;border-right:1px solid var(--border)}
+  .tb-seg:last-child{border-right:none;margin-left:auto}
+  .tb-lbl{font-size:8px;letter-spacing:.07em}
+  .tb-val{font-size:12px;font-weight:600}
   .tb-hide-mob{display:none}
 
-  /* Cards */
-  .card-h{padding:8px 11px}
-  .card-body{padding:10px 11px}
-  .card{border-radius:8px}
+  /* ── Cards ── */
+  .card{border-radius:10px}
+  .card-h{padding:9px 12px}
+  .card-title{font-size:11px}
 
-  /* Layout grids: all single col */
+  /* ── Layout grids ── */
   .dash-grid{grid-template-columns:1fr !important}
   .stats-4col{grid-template-columns:1fr 1fr !important}
   .pos-cards{grid-template-columns:1fr !important}
   .ai-dec-grid{grid-template-columns:1fr 1fr !important}
   .btc-stats-row{grid-template-columns:1fr 1fr !important}
-  .hm{grid-template-columns:repeat(3,1fr);gap:5px;padding:8px}
-  /* Backtest: 4 stat cols (2 rows), stack breakdowns */
-  #bt-stats{grid-template-columns:repeat(4,1fr) !important}
+  .hm{grid-template-columns:repeat(3,1fr);gap:4px;padding:6px}
+  #bt-stats{grid-template-columns:repeat(2,1fr) !important}
   #bt-breakdown-grid{grid-template-columns:1fr !important}
   #bt-tf-charts{grid-template-columns:1fr !important}
 
-  /* Heatmap cells: tighter */
-  .hmc{padding:8px 4px}
-  .hmc-sym{font-size:11px}
-  .hmc-px,.hmc-chg,.hmc-sc{font-size:9px}
+  /* ── Dashboard col order (mobile): Paper Positions ก่อน ── */
+  .dash-grid{display:flex;flex-direction:column}
+  .dash-col-left{order:1}
+  .dash-col-mid{order:2}
+  .dash-col-right{order:3}
 
-  /* Tabs: always horizontal scroll */
-  .tabs{gap:0;padding-bottom:0}
-  .tab{padding:8px 12px;font-size:10.5px;min-height:40px}
-  .wl-tab{padding:8px 12px;font-size:10.5px;min-height:40px}
+  /* ── Portfolio card: big equity number ── */
+  #d-equity{font-size:32px !important}
+  #d-equity-pct{font-size:12px !important}
 
-  /* Tables: scroll + slightly smaller */
-  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  th{padding:5px 8px;font-size:8px}
-  td{padding:6px 8px;font-size:10.5px}
+  /* ── Equity stats row: horizontal scroll ── */
+  .eq-stats{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    padding-bottom:6px;gap:14px;scrollbar-width:none}
+  .eq-stats::-webkit-scrollbar{display:none}
+  .eq-stat{flex-shrink:0}
+  .eq-stat-val{font-size:14px}
 
-  /* Touch-friendly buttons */
-  .btn-sm{min-height:36px;padding:5px 12px;font-size:10px}
-  .nav-btn,.tab,.wl-tab,.mob-nav-btn{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  /* ── Tables: sticky first col + horizontal scroll ── */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:0 0 10px 10px}
+  table{min-width:420px}
+  th{padding:5px 9px;font-size:8px;white-space:nowrap}
+  td{padding:7px 9px;font-size:11px}
+  /* hide low-priority columns on mobile */
+  .mob-hide{display:none !important}
 
-  /* Position cards */
+  /* ── Position mini list ── */
+  .pos-mini-item{padding:10px 12px}
+  .pos-mini-pnl{font-size:16px}
+  .pos-mini-sym{font-size:14px;font-weight:700}
+
+  /* ── Open position cards (signals page) ── */
   .pc-head{padding:10px 12px 6px}
-  .pc-sym{font-size:14px}
-  .pc-pnl-val{font-size:16px}
-  .pc-prices,.pc-levels{padding:0 12px 8px}
-  .pc-lv{padding:5px 6px}
+  .pc-sym{font-size:15px}
+  .pc-pnl-val{font-size:18px}
+  .pc-prices{padding:0 12px 8px;gap:6px}
+  .pc-levels{padding:0 12px 8px}
+  .pc-lv{padding:5px 8px}
+  .pc-lv-lbl{font-size:8px}
+  .pc-lv-val{font-size:12px}
   .pc-bar-wrap{padding:0 12px 10px}
 
-  /* Signal cards: slightly larger on mobile */
-  .sig-card{min-width:155px;padding:10px 11px}
-  .sig-sym{font-size:14px}
-  .sig-score{font-size:20px}
+  /* ── Signal scroll cards ── */
+  .sig-card{min-width:160px;padding:10px 12px}
+  .sig-sym{font-size:15px}
+  .sig-score{font-size:22px}
 
-  /* Stat cards: bigger values */
-  .stat-val{font-size:18px}
-  .stat-num-val{font-size:13px}
+  /* ── Heatmap cells ── */
+  .hmc{padding:7px 3px}
+  .hmc-sym{font-size:10px}
+  .hmc-px,.hmc-chg,.hmc-sc{font-size:8px}
 
-  /* Agent cards */
-  .ag-grid{padding:10px;gap:8px}
+  /* ── Tabs ── */
+  .tabs{gap:0;padding-bottom:0;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:9px 13px;font-size:11px;min-height:42px;white-space:nowrap;flex-shrink:0}
+  .wl-tab{padding:9px 13px;font-size:11px;min-height:42px;white-space:nowrap;flex-shrink:0}
+
+  /* ── Stat cards ── */
+  .stat-val{font-size:20px}
+  .stat-num-val{font-size:14px}
+
+  /* ── Buttons ── */
+  .btn-sm{min-height:36px;padding:6px 12px;font-size:10px}
+  .nav-btn,.tab,.wl-tab,.mob-nav-btn{-webkit-tap-highlight-color:transparent}
+
+  /* ── Agent cards ── */
+  .ag-grid{padding:8px;gap:8px}
   .ag-card{padding:12px}
-  .ag-avatar{width:38px;height:38px;font-size:18px}
+  .ag-avatar{width:36px;height:36px;font-size:17px}
 
-  /* Watchlist: hide volume on small mobile */
+  /* ── Watchlist: hide volume ── */
   .wl-vol{display:none}
 
-  /* BTC hero: smaller */
-  .btc-hero-px{font-size:32px}
+  /* ── BTC hero ── */
+  .btc-hero-px{font-size:34px}
+  .btc-stats-row .btc-stat-val{font-size:13px}
 
-  /* Empty state */
-  .empty{padding:22px}
+  /* ── Empty ── */
+  .empty{padding:24px;font-size:12px}
+
+  /* ── Real Positions card: compact on mobile ── */
+  .real-pos-mobile-hide{display:none}
 }
 
 /* ══ TINY MOBILE (< 400px) ══════════════════════════════════ */
 @media(max-width:399px){
   .wl-chg{display:none}
-  .hm{grid-template-columns:repeat(3,1fr)}
+  .hm{grid-template-columns:repeat(3,1fr);gap:3px}
   .tb-seg{padding:0 6px}
-  .topbar .tb-seg:nth-child(5){display:none} /* P&L hidden on tiny */
+  .topbar .tb-seg:nth-child(3){display:none} /* P&L hidden on tiny */
+  table{min-width:360px}
+  #d-equity{font-size:28px !important}
 }
 </style>
 </head>
@@ -794,7 +833,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
       <div class="dash-grid">
 
         <!-- LEFT COL -->
-        <div class="col">
+        <div class="col dash-col-left">
           <!-- Portfolio -->
           <div class="card">
             <div class="card-h">
@@ -850,8 +889,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </div>
           </div>
 
-          <!-- Real Positions -->
-          <div class="card">
+          <!-- Real Positions (ซ่อนบน mobile) -->
+          <div class="card real-pos-mobile-hide">
             <div class="card-h">
               <div class="card-title"><span class="icon">📈</span> REAL POSITIONS</div>
               <div class="card-meta" style="display:flex;align-items:center;gap:6px">
@@ -881,7 +920,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
 
         <!-- MIDDLE COL -->
-        <div class="col">
+        <div class="col dash-col-mid">
           <!-- Recent Signals -->
           <div class="card">
             <div class="card-h">
@@ -890,7 +929,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </div>
             <div class="tw"><table>
               <thead><tr>
-                <th>Symbol</th><th>Signal</th><th>Side</th><th>Score</th><th>Price</th><th>Entry</th><th>TP1</th><th>TP2</th><th>SL</th><th>RSI</th>
+                <th>Symbol</th><th>Signal</th><th>Side</th><th>Score</th>
+                <th class="mob-hide">Price</th><th class="mob-hide">Entry</th>
+                <th class="mob-hide">TP1</th><th class="mob-hide">TP2</th>
+                <th class="mob-hide">SL</th><th class="mob-hide">RSI</th>
               </tr></thead>
               <tbody id="d-sig-tb"></tbody>
             </table></div>
@@ -904,7 +946,10 @@ tr:hover td{background:rgba(255,255,255,.02)}
             </div>
             <div class="tw"><table>
               <thead><tr>
-                <th>Symbol</th><th>Signal</th><th>Side</th><th>Score</th><th>Price</th><th>Entry</th><th>TP1</th><th>TP2</th><th>SL</th><th>RSI</th>
+                <th>Symbol</th><th>Signal</th><th>Side</th><th>Score</th>
+                <th class="mob-hide">Price</th><th class="mob-hide">Entry</th>
+                <th class="mob-hide">TP1</th><th class="mob-hide">TP2</th>
+                <th class="mob-hide">SL</th><th class="mob-hide">RSI</th>
               </tr></thead>
               <tbody id="d-tq-tb"></tbody>
             </table></div>
@@ -968,7 +1013,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
         </div>
 
         <!-- RIGHT COL -->
-        <div class="col">
+        <div class="col dash-col-right">
           <!-- BTC Live -->
           <div class="card">
             <div class="card-h">
@@ -2408,17 +2453,17 @@ function renderDash(){
       <td><div class="sbar"><span style="min-width:30px;font-family:var(--mono)">${r.best_score}/45</span>
         <div class="sbar-track"><div class="sbar-fill" style="width:${Math.round((r.best_score||0)/45*100)}%;background:${r.best_score>=12?'var(--green)':r.best_score>=7?'var(--yellow)':'var(--t2)'}"></div></div>
       </div></td>
-      <td style="font-family:var(--mono)">${px}</td>
-      <td style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${isSig&&ep?pxFmt(ep):'—'}</td>
-      <td class="up" style="font-family:var(--mono);font-size:10.5px">${isSig&&tp1?pxFmt(tp1):'—'}</td>
-      <td style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${isSig&&tp2?pxFmt(tp2):'—'}</td>
-      <td class="dn" style="font-family:var(--mono);font-size:10.5px">${isSig&&sl?pxFmt(sl):'—'}</td>
-      <td class="${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi>0?r.rsi.toFixed(1):'—'}</td>
+      <td class="mob-hide" style="font-family:var(--mono)">${px}</td>
+      <td class="mob-hide" style="font-family:var(--mono);font-size:10.5px;color:var(--t2)">${isSig&&ep?pxFmt(ep):'—'}</td>
+      <td class="mob-hide up" style="font-family:var(--mono);font-size:10.5px">${isSig&&tp1?pxFmt(tp1):'—'}</td>
+      <td class="mob-hide" style="font-family:var(--mono);font-size:10.5px;color:var(--yellow)">${isSig&&tp2?pxFmt(tp2):'—'}</td>
+      <td class="mob-hide dn" style="font-family:var(--mono);font-size:10.5px">${isSig&&sl?pxFmt(sl):'—'}</td>
+      <td class="mob-hide ${r.rsi<40?'up':r.rsi>60?'dn':''}">${r.rsi>0?r.rsi.toFixed(1):'—'}</td>
     </tr>`
   }
 
   if(sigTb){
-    if(topSigs.length===0){sigTb.innerHTML='<tr><td colspan="10"><div class="empty">รอผล scan...</div></td></tr>'}
+    if(topSigs.length===0){sigTb.innerHTML='<tr><td colspan="4"><div class="empty">รอผล scan...</div></td></tr>'}
     else sigTb.innerHTML=topSigs.map(sigRowHtml).join('')
   }
 
@@ -2428,7 +2473,7 @@ function renderDash(){
   const topQ=[...scan].filter(r=>r.status==='SIGNAL'||r.status==='WATCH').sort((a,b)=>(b.best_score||0)-(a.best_score||0)).slice(0,8)
   setText('d-tq-cnt',topQ.length+' top')
   if(tqTb){
-    if(topQ.length===0){tqTb.innerHTML='<tr><td colspan="10"><div class="empty">—</div></td></tr>'}
+    if(topQ.length===0){tqTb.innerHTML='<tr><td colspan="4"><div class="empty">—</div></td></tr>'}
     else tqTb.innerHTML=topQ.map(sigRowHtml).join('')
   }
 
