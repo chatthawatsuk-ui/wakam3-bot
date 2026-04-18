@@ -1373,7 +1373,28 @@ tr:hover td{background:rgba(255,255,255,.02)}
                      padding:5px 10px;font-size:11px;width:150px;outline:none;font-family:var(--mono)"
               onkeydown="if(event.key==='Enter')wlAdd()">
             <button class="btn-sm" onclick="wlAdd()">+ เพิ่ม</button>
+            <span id="wl-sync-badge" title="GitHub sync status"
+              style="font-size:10px;padding:3px 7px;border-radius:4px;cursor:pointer;
+                     background:var(--s3);border:1px solid var(--border);color:var(--t2)"
+              onclick="wlShowTokenModal()">⚙️ ตั้งค่า</span>
           </div>
+        </div>
+        <!-- GitHub token modal -->
+        <div id="wl-token-modal" style="display:none;padding:12px 14px;border-top:1px solid var(--border);
+             background:var(--s2)">
+          <div style="font-size:10px;color:var(--t2);margin-bottom:6px">
+            🔑 GitHub Personal Access Token — เพื่อ sync เหรียญที่เพิ่มไปยัง scanner อัตโนมัติ<br>
+            <span style="color:var(--t3)">สร้างที่ github.com → Settings → Developer settings → Fine-grained tokens
+            → เลือก repo <b>wakam3-bot</b> → permissions: <b>Contents: Read & Write</b></span>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input id="wl-token-input" type="password" placeholder="github_pat_xxxx..."
+              style="background:var(--s3);border:1px solid var(--border);color:var(--text);border-radius:4px;
+                     padding:5px 10px;font-size:11px;flex:1;outline:none;font-family:var(--mono)">
+            <button class="btn-sm" onclick="wlSaveToken()" style="background:var(--blue);color:#fff">บันทึก</button>
+            <button class="btn-sm" onclick="wlClearToken()" style="color:var(--red)">ลบ Token</button>
+          </div>
+          <div id="wl-token-status" style="font-size:10px;color:var(--t2);margin-top:4px"></div>
         </div>
         <!-- Filter tabs -->
         <div style="display:flex;gap:0;border-top:1px solid var(--border)">
@@ -1821,6 +1842,7 @@ async function loadDashData(){
     if(!r.ok) return
     D=await r.json()
     wlSyncFromData()   // sync custom symbols จาก watchlist_custom.json → localStorage
+    _wlUpdateBadge()   // อัปเดต badge สถานะ GitHub sync
     loadLive()
     loadMarkets()
     render()
@@ -2485,6 +2507,87 @@ async function fetchCustomPrices(){
   renderWatchlistPage()
 }
 
+// ── GitHub Sync — sync WL_CUSTOM → watchlist_custom.json ────────────────────
+const GH_REPO='chatthawatsuk-ui/wakam3-bot'
+const GH_FILE='watchlist_custom.json'
+
+function wlShowTokenModal(){
+  const m=document.getElementById('wl-token-modal')
+  if(!m) return
+  m.style.display=m.style.display==='none'?'block':'none'
+  const inp=document.getElementById('wl-token-input')
+  const tok=localStorage.getItem('gh_pat')||''
+  if(inp) inp.value=tok?'••••••••••••••••':''
+  _wlUpdateBadge()
+}
+function wlSaveToken(){
+  const inp=document.getElementById('wl-token-input')
+  if(!inp) return
+  const v=inp.value.trim()
+  if(!v||v.startsWith('•')) return
+  localStorage.setItem('gh_pat',v)
+  inp.value='••••••••••••••••'
+  const st=document.getElementById('wl-token-status')
+  if(st) st.innerHTML='<span style="color:var(--green)">✅ บันทึกแล้ว — ทดสอบ sync...</span>'
+  syncWatchlistToGitHub().then(ok=>{
+    if(st) st.innerHTML=ok
+      ?'<span style="color:var(--green)">✅ เชื่อมต่อสำเร็จ! กดเพิ่ม/ลบเหรียญแล้ว scanner รับอัตโนมัติ</span>'
+      :'<span style="color:var(--red)">❌ Token ผิด หรือไม่มีสิทธิ์ Contents:Write</span>'
+    _wlUpdateBadge()
+  })
+}
+function wlClearToken(){
+  localStorage.removeItem('gh_pat')
+  const inp=document.getElementById('wl-token-input')
+  if(inp) inp.value=''
+  const st=document.getElementById('wl-token-status')
+  if(st) st.textContent='ลบ token แล้ว'
+  _wlUpdateBadge()
+}
+function _wlUpdateBadge(){
+  const b=document.getElementById('wl-sync-badge')
+  if(!b) return
+  const tok=localStorage.getItem('gh_pat')
+  if(!tok){
+    b.textContent='⚙️ ตั้งค่า'; b.style.color='var(--t2)'; b.title='คลิกเพื่อตั้งค่า GitHub Token'
+  } else {
+    b.textContent='🔗 Sync ON'; b.style.color='var(--green)'; b.title='เหรียญที่เพิ่มจะ sync ไป GitHub อัตโนมัติ'
+  }
+}
+
+async function syncWatchlistToGitHub(){
+  const token=localStorage.getItem('gh_pat')
+  if(!token) return false
+  const headers={
+    'Authorization':'token '+token,
+    'Accept':'application/vnd.github.v3+json',
+    'Content-Type':'application/json'
+  }
+  try {
+    // ดึง SHA ของไฟล์ปัจจุบัน (จำเป็นสำหรับ PUT)
+    const getRes=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{headers})
+    const fileData=await getRes.json()
+    const sha=fileData.sha
+
+    // เตรียม content ใหม่ (เฉพาะ custom symbols ที่ไม่อยู่ใน default FUTURES_SET)
+    const customs=WL_CUSTOM.filter(s=>!FUTURES_SET.has(s))
+    const syms=customs.map(s=>s.replace('/USDT',''))
+    const content=btoa(unescape(encodeURIComponent(JSON.stringify(syms,null,2))))
+
+    const putRes=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{
+      method:'PUT', headers,
+      body:JSON.stringify({
+        message:'watchlist: update custom symbols ('+syms.length+' coins)',
+        content, sha
+      })
+    })
+    return putRes.ok
+  } catch(e){
+    console.warn('GitHub sync failed:',e)
+    return false
+  }
+}
+
 function wlAdd(){
   const inp=document.getElementById('wl-add-input')
   if(!inp) return
@@ -2493,11 +2596,27 @@ function wlAdd(){
   if(!val.includes('/')) val=val+'/USDT'
   if(!WL_CUSTOM.includes(val)) WL_CUSTOM.push(val)
   wlSave(); inp.value=''; renderWatchlistPage(); fetchCustomPrices()
+  // sync ไป GitHub (background — ไม่ block UI)
+  if(localStorage.getItem('gh_pat')){
+    const b=document.getElementById('wl-sync-badge')
+    if(b){b.textContent='⏳ Syncing...';b.style.color='var(--yellow)'}
+    syncWatchlistToGitHub().then(ok=>{
+      if(b){
+        b.textContent=ok?'✅ Synced':'❌ Sync fail'
+        b.style.color=ok?'var(--green)':'var(--red)'
+        setTimeout(_wlUpdateBadge,3000)
+      }
+    })
+  }
 }
 
 function wlRemove(sym){
   WL_CUSTOM=WL_CUSTOM.filter(s=>s!==sym)
   wlSave(); renderWatchlistPage()
+  // sync ไป GitHub
+  if(localStorage.getItem('gh_pat')){
+    syncWatchlistToGitHub()
+  }
 }
 
 function wlFilter(f){
