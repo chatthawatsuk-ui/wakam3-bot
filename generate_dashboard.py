@@ -380,18 +380,23 @@ def check_weight_triggers(specialist_wr, scan_results):
     if snapshot:
         for key in ["trend", "smc", "osc"]:
             d      = specialist_wr.get(key, {})
-            wr_now = d.get("winrate", 50.0)
+            wr_now = d.get("winrate")
+            if wr_now is None:
+                continue   # ยังไม่มี trades — ข้ามไป
             old    = snapshot.get(key, {})
             if not old:
                 continue
+            old_wr = old.get("wr")
+            if old_wr is None:
+                continue   # snapshot เก่ามีค่า None — ข้ามไป
             old_time = datetime.fromisoformat(old.get("ts", "2000-01-01T00:00:00+00:00"))
             h_ago    = (now_utc - old_time).total_seconds() / 3600
             if h_ago <= 24:
-                drop = old.get("wr", 50.0) - wr_now
+                drop = old_wr - wr_now
                 if drop >= 15:
                     trigger_reason = (
                         f"Win rate {key.upper()} ตก {drop:.1f}% ใน {h_ago:.0f}h "
-                        f"({old['wr']:.1f}% → {wr_now:.1f}%)"
+                        f"({old_wr:.1f}% → {wr_now:.1f}%)"
                     )
                     break
 
@@ -406,8 +411,10 @@ def check_weight_triggers(specialist_wr, scan_results):
     if needs_refresh:
         new_snap = {}
         for key in ["trend", "smc", "osc"]:
-            d = specialist_wr.get(key, {})
-            new_snap[key] = {"wr": d.get("winrate", 50.0), "ts": now_str}
+            d  = specialist_wr.get(key, {})
+            wr = d.get("winrate")
+            if wr is not None:   # บันทึกเฉพาะถ้ามีข้อมูลจริง
+                new_snap[key] = {"wr": wr, "ts": now_str}
         try:
             with open(WR_SNAPSHOT_FILE, "w") as f:
                 json.dump(new_snap, f)
