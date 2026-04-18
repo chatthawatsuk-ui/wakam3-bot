@@ -3764,16 +3764,21 @@ function renderHealth(){
   const costColor = parseFloat(todayCost)>1.5?'var(--red)':parseFloat(todayCost)>0.8?'var(--yellow)':'var(--green)'
   const cacheColor= cacheHit>70?'var(--green)':cacheHit>40?'var(--yellow)':'var(--red)'
 
-  // mini bar chart 7 days
-  const maxCost = Math.max(...history.map(h=>h.cost_usd||0), 0.01)
+  // mini bar chart 7 days — bar สูงสุด 48px
+  const BAR_MAX_H = 48
+  const maxCost = Math.max(...history.map(h=>h.cost_usd||0), 0.005)
   const bars = history.map(h=>{
-    const pct = Math.round((h.cost_usd||0)/maxCost*100)
-    const barColor = (h.cost_usd||0)>1.5?'var(--red)':(h.cost_usd||0)>0.8?'var(--yellow)':'var(--green)'
+    const cost = h.cost_usd||0
+    const barH = Math.max(Math.round(cost/maxCost*BAR_MAX_H), 3)
+    const barColor = cost>1.5?'var(--red)':cost>0.8?'var(--yellow)':'var(--green)'
     const dateLabel = h.date ? h.date.slice(5) : ''
-    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">
-      <div style="font-size:9px;color:var(--t2)">$${(h.cost_usd||0).toFixed(2)}</div>
-      <div style="width:100%;height:${Math.max(pct,4)}px;background:${barColor};border-radius:2px;min-height:4px"></div>
-      <div style="font-size:9px;color:var(--t2)">${dateLabel}</div>
+    const costLabel = cost>0?'$'+cost.toFixed(4):'$0'
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0">
+      <div style="font-size:9px;color:var(--t2);white-space:nowrap">${costLabel}</div>
+      <div style="flex:1;display:flex;align-items:flex-end;width:100%">
+        <div style="width:100%;height:${barH}px;background:${barColor};border-radius:2px 2px 0 0;opacity:0.85"></div>
+      </div>
+      <div style="font-size:9px;color:var(--t2);white-space:nowrap">${dateLabel}</div>
     </div>`
   }).join('')
 
@@ -3813,7 +3818,8 @@ function renderHealth(){
     <!-- 7-Day Bar Chart -->
     ${history.length>0?`
     <div style="font-size:10px;color:var(--t2);margin-bottom:6px">📊 Daily Cost — 7 วันล่าสุด</div>
-    <div style="display:flex;gap:4px;align-items:flex-end;height:80px;padding:0 4px">
+    <div style="display:flex;gap:6px;align-items:stretch;padding:6px 4px 0;
+                border-top:1px solid var(--border)">
       ${bars}
     </div>`:'<div style="font-size:11px;color:var(--t2);text-align:center;padding:12px">ยังไม่มีข้อมูล — จะเริ่มเก็บจาก scan รอบถัดไป</div>'}
 
