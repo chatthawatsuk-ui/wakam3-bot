@@ -411,7 +411,11 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .wl-vol{font-size:10px;color:var(--t2);min-width:60px;text-align:right}
 
 /* ─── EQUITY CHART ────────────────────────── */
-#eq-canvas{display:block;width:100%;height:100px}
+#eq-canvas{display:block;width:100%;height:140px}
+.eq-stats{display:flex;gap:16px;padding:8px 13px 0;flex-wrap:wrap}
+.eq-stat{display:flex;flex-direction:column;gap:2px}
+.eq-stat-lbl{font-size:9px;color:var(--t2);letter-spacing:.08em;text-transform:uppercase}
+.eq-stat-val{font-size:13px;font-weight:600;font-family:var(--mono)}
 
 /* ─── MACRO DATA ──────────────────────────── */
 .macro-row{padding:7px 13px;border-bottom:1px solid var(--border);
@@ -920,10 +924,33 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="card">
             <div class="card-h">
               <div class="card-title"><span class="icon">📊</span> EQUITY CURVE</div>
-              <div class="card-meta">30D</div>
+              <div class="card-meta" id="eq-meta">—</div>
+            </div>
+            <!-- stat row -->
+            <div class="eq-stats">
+              <div class="eq-stat">
+                <span class="eq-stat-lbl">Start</span>
+                <span class="eq-stat-val" id="eq-start">$1,000.00</span>
+              </div>
+              <div class="eq-stat">
+                <span class="eq-stat-lbl">Current</span>
+                <span class="eq-stat-val" id="eq-cur">—</span>
+              </div>
+              <div class="eq-stat">
+                <span class="eq-stat-lbl">Change</span>
+                <span class="eq-stat-val" id="eq-chg">—</span>
+              </div>
+              <div class="eq-stat">
+                <span class="eq-stat-lbl">Peak</span>
+                <span class="eq-stat-val" id="eq-peak">—</span>
+              </div>
+              <div class="eq-stat">
+                <span class="eq-stat-lbl">Max DD</span>
+                <span class="eq-stat-val" id="eq-dd">—</span>
+              </div>
             </div>
             <div style="padding:10px 13px 13px">
-              <canvas id="eq-canvas" height="80"></canvas>
+              <canvas id="eq-canvas" height="140"></canvas>
             </div>
           </div>
 
@@ -2807,31 +2834,126 @@ function renderGainersMini(){
 function drawEquity(eq){
   const c=document.getElementById('eq-canvas')
   if(!c) return
-  const w=c.offsetWidth||300,h=80
-  c.width=w;c.height=h
+
+  // ── update stat labels ─────────────────────────────────────
+  const startVal = eq[0]||1000
+  const curVal   = eq[eq.length-1]||startVal
+  const peakVal  = Math.max(...eq)
+  const chgPct   = ((curVal-startVal)/startVal*100)
+  // max drawdown: largest drop from any peak
+  let maxDD=0, runPeak=eq[0]
+  for(const v of eq){
+    if(v>runPeak) runPeak=v
+    const dd=(runPeak-v)/runPeak*100
+    if(dd>maxDD) maxDD=dd
+  }
+  const setText2=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v}
+  const setCol=(id,pos)=>{const el=document.getElementById(id);if(el)el.style.color=pos?'var(--green)':'var(--red)'}
+  setText2('eq-start','$'+numFmt(startVal))
+  setText2('eq-cur',  '$'+numFmt(curVal))
+  setText2('eq-peak', '$'+numFmt(peakVal))
+  setText2('eq-chg',  (chgPct>=0?'+':'')+chgPct.toFixed(2)+'%')
+  setText2('eq-dd',   '-'+maxDD.toFixed(2)+'%')
+  setText2('eq-meta', eq.length+' pts')
+  setCol('eq-chg', chgPct>=0)
+  setCol('eq-dd',  false)
+
+  // ── canvas setup ───────────────────────────────────────────
+  const PAD_L=52, PAD_R=8, PAD_T=12, PAD_B=22
+  const w=c.offsetWidth||300, h=140
+  c.width=w; c.height=h
   const ctx=c.getContext('2d')
   ctx.clearRect(0,0,w,h)
+
   if(eq.length<2){
-    ctx.fillStyle='var(--t2)';ctx.font='11px Inter';ctx.textAlign='center'
-    ctx.fillText('No data yet',w/2,h/2);return
+    ctx.fillStyle='#666';ctx.font='11px Inter';ctx.textAlign='center'
+    ctx.fillText('รอข้อมูล — ต้องมี 2+ trades',w/2,h/2);return
   }
-  const mn=Math.min(...eq),mx=Math.max(...eq)
-  const rng=mx-mn||1
-  const pts=eq.map((v,i)=>({x:i/(eq.length-1)*w,y:h-((v-mn)/rng*(h-10)+5)}))
-  // gradient fill
-  const grad=ctx.createLinearGradient(0,0,0,h)
-  grad.addColorStop(0,'rgba(34,197,94,.2)')
-  grad.addColorStop(1,'rgba(34,197,94,0)')
+
+  const cw=w-PAD_L-PAD_R, ch=h-PAD_T-PAD_B
+  const mn=Math.min(...eq), mx=Math.max(...eq)
+  // ขยาย range นิดหน่อยเพื่อให้เส้นไม่ชิดขอบ
+  const pad=(mx-mn)*0.1||5
+  const lo=mn-pad, hi=mx+pad, rng=hi-lo
+
+  const toX=i=>PAD_L + i/(eq.length-1)*cw
+  const toY=v=>PAD_T + ch - (v-lo)/rng*ch
+
+  // ── Y-axis grid + labels (4 levels) ───────────────────────
+  ctx.font='10px monospace'
+  ctx.textAlign='right'
+  const nGrid=4
+  for(let i=0;i<=nGrid;i++){
+    const val=lo+rng*(i/nGrid)
+    const y=toY(val)
+    // grid line
+    ctx.beginPath()
+    ctx.strokeStyle='rgba(255,255,255,0.06)'
+    ctx.lineWidth=1
+    ctx.setLineDash([3,3])
+    ctx.moveTo(PAD_L,y); ctx.lineTo(w-PAD_R,y); ctx.stroke()
+    ctx.setLineDash([])
+    // label
+    ctx.fillStyle='#666'
+    ctx.fillText('$'+numFmt(val), PAD_L-4, y+3)
+  }
+
+  // ── baseline ที่ startVal (เส้น $1,000) ───────────────────
+  const baseY=toY(startVal)
   ctx.beginPath()
-  ctx.moveTo(pts[0].x,pts[0].y)
-  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y))
-  ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath()
-  ctx.fillStyle=grad;ctx.fill()
-  // line
+  ctx.strokeStyle='rgba(255,255,255,0.2)'
+  ctx.lineWidth=1
+  ctx.setLineDash([5,4])
+  ctx.moveTo(PAD_L,baseY); ctx.lineTo(w-PAD_R,baseY); ctx.stroke()
+  ctx.setLineDash([])
+  // label "Start"
+  ctx.fillStyle='rgba(255,255,255,0.35)'
+  ctx.textAlign='right'
+  ctx.font='9px Inter'
+  ctx.fillText('Start',PAD_L-4,baseY-2)
+
+  // ── X-axis ticks ──────────────────────────────────────────
+  ctx.fillStyle='#555'
+  ctx.font='9px Inter'
+  ctx.textAlign='center'
+  const xTicks=Math.min(eq.length-1,5)
+  for(let i=0;i<=xTicks;i++){
+    const idx=Math.round(i/xTicks*(eq.length-1))
+    const x=toX(idx)
+    ctx.fillText('#'+(idx+1), x, h-PAD_B+12)
+  }
+
+  // ── gradient fill (สีขึ้นอยู่กับ profit/loss) ─────────────
+  const isProfit=curVal>=startVal
+  const lineCol=isProfit?'rgba(34,197,94,1)':'rgba(239,68,68,1)'
+  const fillCol0=isProfit?'rgba(34,197,94,0.18)':'rgba(239,68,68,0.18)'
+  const grad=ctx.createLinearGradient(0,PAD_T,0,h-PAD_B)
+  grad.addColorStop(0,fillCol0)
+  grad.addColorStop(1,'rgba(0,0,0,0)')
   ctx.beginPath()
-  ctx.moveTo(pts[0].x,pts[0].y)
-  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y))
-  ctx.strokeStyle='var(--green)';ctx.lineWidth=1.5;ctx.stroke()
+  ctx.moveTo(toX(0),toY(eq[0]))
+  eq.slice(1).forEach((_,i)=>ctx.lineTo(toX(i+1),toY(eq[i+1])))
+  ctx.lineTo(toX(eq.length-1),h-PAD_B)
+  ctx.lineTo(toX(0),h-PAD_B)
+  ctx.closePath()
+  ctx.fillStyle=grad; ctx.fill()
+
+  // ── equity line ───────────────────────────────────────────
+  ctx.beginPath()
+  ctx.moveTo(toX(0),toY(eq[0]))
+  eq.slice(1).forEach((_,i)=>ctx.lineTo(toX(i+1),toY(eq[i+1])))
+  ctx.strokeStyle=lineCol; ctx.lineWidth=2; ctx.stroke()
+
+  // ── dot ที่จุดล่าสุด ──────────────────────────────────────
+  const lx=toX(eq.length-1), ly=toY(curVal)
+  ctx.beginPath()
+  ctx.arc(lx,ly,4,0,Math.PI*2)
+  ctx.fillStyle=lineCol; ctx.fill()
+  // label ราคา
+  ctx.fillStyle=lineCol
+  ctx.font='bold 10px monospace'
+  ctx.textAlign= lx>w-60 ? 'right' : 'left'
+  ctx.fillText('$'+numFmt(curVal), lx+(lx>w-60?-7:7), ly-6)
 }
 
 // ═══════════════════════════════════════════════════════════
