@@ -668,9 +668,12 @@ tr:hover td{background:rgba(255,255,255,.02)}
   /* ── Watchlist: hide volume ── */
   .wl-vol{display:none}
 
+  /* ── BTC page top grid: stack on mobile ── */
+  #btc-top-grid{grid-template-columns:1fr !important}
   /* ── BTC hero ── */
   .btc-hero-px{font-size:34px}
-  .btc-stats-row .btc-stat-val{font-size:13px}
+  .btc-stats-row{grid-template-columns:1fr 1fr !important}
+  .btc-stat-val{font-size:13px}
 
   /* ── Empty ── */
   .empty{padding:24px;font-size:12px}
@@ -1192,8 +1195,8 @@ tr:hover td{background:rgba(255,255,255,.02)}
     <!-- ══ BTC LIVE ══ -->
     <div id="pg-btc" class="page">
 
-      <!-- Stats row + FG (top) -->
-      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px;margin-bottom:10px">
+      <!-- Stats row + FG (top) — responsive grid -->
+      <div style="display:grid;grid-template-columns:1fr 260px;gap:10px;margin-bottom:10px" id="btc-top-grid">
         <!-- BTC Price Card -->
         <div class="card">
           <div class="card-h">
@@ -1204,13 +1207,21 @@ tr:hover td{background:rgba(255,255,255,.02)}
             <div class="btc-hero-px" id="btc-live-px">—</div>
             <div class="btc-hero-sub">
               <span id="btc-live-chg" style="font-weight:600">—</span>
-              <span style="margin-left:6px">24H Change</span>
+              <span style="margin-left:6px;color:var(--t2)">24H Change</span>
             </div>
-            <div class="btc-stats-row">
+            <!-- Row 1: High / Low / Vol USDT / Vol BTC -->
+            <div class="btc-stats-row" style="margin-top:12px">
               <div class="btc-stat"><div class="btc-stat-lbl">24H HIGH</div><div class="btc-stat-val up" id="btc-live-hi">—</div></div>
               <div class="btc-stat"><div class="btc-stat-lbl">24H LOW</div><div class="btc-stat-val dn" id="btc-live-lo">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (USDT)</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME (BTC)</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME USDT</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME BTC</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+            </div>
+            <!-- Row 2: RSI / Funding / Regime / HTF -->
+            <div class="btc-stats-row" style="margin-top:8px">
+              <div class="btc-stat"><div class="btc-stat-lbl">RSI (14)</div><div class="btc-stat-val" id="btc-live-rsi">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">FUNDING RATE</div><div class="btc-stat-val" id="btc-live-fund">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">REGIME</div><div class="btc-stat-val" id="btc-live-regime">—</div></div>
+              <div class="btc-stat"><div class="btc-stat-lbl">HTF BIAS</div><div class="btc-stat-val" id="btc-live-htf">—</div></div>
             </div>
           </div>
         </div>
@@ -2140,6 +2151,31 @@ function renderLive(){
     setText('btc-live-lo','$'+numFmt(btc.low))
     setText('btc-live-vol','$'+shortNum(vol))
     setText('btc-live-volb',shortNum(btc.volBase)+' BTC')
+    // RSI / Funding / Regime / HTF จาก scan_results
+    const btcScan=(D.scan_results||[]).find(r=>r.symbol==='BTC/USDT')
+    if(btcScan){
+      const rsi=btcScan.rsi||0
+      const rsiEl=document.getElementById('btc-live-rsi')
+      if(rsiEl){rsiEl.textContent=rsi.toFixed(1);rsiEl.className='btc-stat-val '+(rsi>70?'dn':rsi<30?'up':'')}
+      const fund=btcScan.funding_rate||0
+      const fundEl=document.getElementById('btc-live-fund')
+      if(fundEl){
+        fundEl.textContent=(fund>=0?'+':'')+fund.toFixed(4)+'%'
+        fundEl.className='btc-stat-val '+(fund>0.1?'dn':fund<-0.05?'up':'')
+      }
+      const reg=btcScan.regime||'—'
+      const regEl=document.getElementById('btc-live-regime')
+      if(regEl){
+        regEl.textContent=reg
+        regEl.className='btc-stat-val '+(reg==='TRENDING'?'up':reg==='RANGING'?'yl':'')
+      }
+      const htf=btcScan.htf_bull
+      const htfEl=document.getElementById('btc-live-htf')
+      if(htfEl){
+        htfEl.textContent=htf===true?'BULL ↑':htf===false?'BEAR ↓':'—'
+        htfEl.className='btc-stat-val '+(htf===true?'up':htf===false?'dn':'')
+      }
+    }
   }
   setText('mkt-upd','Updated '+new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Bangkok'})+' BKK')
   updateTopBar()
