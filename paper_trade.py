@@ -1041,6 +1041,35 @@ def summary(conn):
     print("=" * 56)
 
 
+RESET_FLAG_PATH = "reset_flag.json"
+
+def _check_reset_flag(conn):
+    """
+    ตรวจ reset_flag.json — ถ้ามีและ reset=true → ล้าง DB และตั้ง balance ใหม่
+    แล้วลบไฟล์ flag ทิ้ง (reset ครั้งเดียว)
+    """
+    if not os.path.exists(RESET_FLAG_PATH):
+        return
+    try:
+        with open(RESET_FLAG_PATH) as f:
+            flag = json.load(f)
+        if not flag.get("reset"):
+            return
+        balance = float(flag.get("balance", PORT_SIZE))
+        reason  = flag.get("reason", "manual reset")
+        print(f"\n🔄 RESET FLAG DETECTED — {reason}")
+        conn.execute("DELETE FROM trades")
+        conn.execute("DELETE FROM shadow_trades")
+        conn.execute("DELETE FROM signal_log")
+        conn.execute("UPDATE portfolio SET balance=?, updated=? WHERE id=1",
+                     (balance, datetime.now(timezone.utc).isoformat()))
+        conn.commit()
+        os.remove(RESET_FLAG_PATH)
+        print(f"  ✅ DB reset สำเร็จ — Balance=${balance:,.2f} | ลบ flag แล้ว")
+    except Exception as e:
+        print(f"  [WARN] reset flag error: {e}")
+
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 def main():
     print("=" * 56)
@@ -1049,6 +1078,9 @@ def main():
     print("=" * 56)
 
     conn = init_db()
+
+    # ── ตรวจ reset flag ก่อนทุกอย่าง ─────────────────────────────────────────
+    _check_reset_flag(conn)
 
     print(f"\n[0] Enforce MAX_OPEN={MAX_OPEN}...")
     voided = enforce_max_positions(conn)
