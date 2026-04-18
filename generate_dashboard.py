@@ -947,6 +947,36 @@ def load_backtest_3y():
         return {"available": False, "label": "backtest_3y", "error": str(e)}
 
 
+def _load_api_usage():
+    """โหลด Claude Haiku API usage จาก api_usage.json (30 วันล่าสุด)"""
+    path = "api_usage.json"
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        today = str(__import__("datetime").date.today())
+        # สรุป 7 วันล่าสุด
+        days = sorted(data.keys())[-7:]
+        history = [{"date": d, **data[d]} for d in days]
+        today_data = data.get(today, {})
+        total_cost = sum(v.get("cost_usd", 0) for v in data.values())
+        total_calls = sum(v.get("calls", 0) for v in data.values())
+        # cache hit rate วันนี้
+        cr = today_data.get("cache_read_tokens", 0)
+        cw = today_data.get("cache_write_tokens", 0)
+        inp = today_data.get("input_tokens", 0)
+        cache_hit_pct = round(cr / (cr + inp) * 100, 1) if (cr + inp) > 0 else 0
+        return {
+            "today": today_data,
+            "history": history,
+            "total_cost_usd": round(total_cost, 4),
+            "total_calls": total_calls,
+            "cache_hit_pct": cache_hit_pct,
+            "model": "claude-haiku-4-5-20251001",
+        }
+    except Exception:
+        return {}
+
+
 def _load_custom_symbols():
     """โหลด custom Futures symbols จาก watchlist_custom.json"""
     path = "watchlist_custom.json"
@@ -1611,6 +1641,7 @@ def main():
         "live_perf":        load_live_performance(),  # 📡 Rolling 30d
         "shadow_stats":     shadow_stats,
         "custom_symbols":   _load_custom_symbols(),   # Watchlist custom Futures
+        "api_usage":        _load_api_usage(),         # 🤖 Claude Haiku cost tracking
     }
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:

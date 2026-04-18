@@ -7,6 +7,15 @@
 """
 import os, json, sqlite3, datetime
 
+# ── Haiku pricing (claude-haiku-4-5) ─────────────────────────────────────────
+_PRICE = {
+    "input":       0.80 / 1_000_000,   # $0.80 per 1M input tokens
+    "output":      4.00 / 1_000_000,   # $4.00 per 1M output tokens
+    "cache_write": 1.00 / 1_000_000,   # $1.00 per 1M cache write tokens
+    "cache_read":  0.08 / 1_000_000,   # $0.08 per 1M cache read tokens (90% off)
+}
+API_USAGE_PATH = "api_usage.json"
+
 # Lazy-init — สร้าง client ครั้งแรกที่ถูกเรียก
 _client = None
 
@@ -69,6 +78,48 @@ Response: {"decision":"APPROVE","confidence":94,"reason":"strong score22 + sweep
 
 Respond ONLY with this exact JSON (no markdown, no extra text):
 {"decision":"APPROVE","confidence":<0-100>,"reason":"<under 80 chars>","risk_notes":"<under 80 chars>","suggested_adjustment":"<under 80 chars or none>"}"""
+
+
+def _log_api_usage(usage, approved: bool):
+    """บันทึก token usage + cost ลง api_usage.json (เก็บ 30 วัน)"""
+    today = datetime.date.today().isoformat()
+    try:
+        data = json.load(open(API_USAGE_PATH)) if os.path.exists(API_USAGE_PATH) else {}
+    except Exception:
+        data = {}
+
+    d = data.setdefault(today, {
+        "calls": 0, "approvals": 0, "rejections": 0,
+        "input_tokens": 0, "output_tokens": 0,
+        "cache_read_tokens": 0, "cache_write_tokens": 0,
+        "cost_usd": 0.0,
+    })
+    inp   = getattr(usage, "input_tokens", 0)
+    out   = getattr(usage, "output_tokens", 0)
+    cr    = getattr(usage, "cache_read_input_tokens", 0)
+    cw    = getattr(usage, "cache_creation_input_tokens", 0)
+
+    d["calls"]              += 1
+    d["approvals"]          += 1 if approved else 0
+    d["rejections"]         += 0 if approved else 1
+    d["input_tokens"]       += inp
+    d["output_tokens"]      += out
+    d["cache_read_tokens"]  += cr
+    d["cache_write_tokens"] += cw
+    d["cost_usd"]           = round(
+        d["input_tokens"]       * _PRICE["input"] +
+        d["output_tokens"]      * _PRICE["output"] +
+        d["cache_write_tokens"] * _PRICE["cache_write"] +
+        d["cache_read_tokens"]  * _PRICE["cache_read"], 6
+    )
+    # เก็บแค่ 30 วัน
+    for old_key in sorted(data)[:-30]:
+        del data[old_key]
+    try:
+        with open(API_USAGE_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
 
 
 def _init():
@@ -272,6 +323,9 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         reason     = str(data.get("reason", ""))[:120]
         risk_notes = str(data.get("risk_notes", ""))[:120]
         suggested  = str(data.get("suggested_adjustment", ""))[:120]
+
+        # บันทึก token usage + cost
+        _log_api_usage(resp.usage, approved)
 
         # รวม reason + context เพิ่มเติม
         full_reason = reason

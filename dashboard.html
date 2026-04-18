@@ -3628,6 +3628,82 @@ function renderHealth(){
       </div>`).join('')}
     </div>
   `).join('')
+
+  // ── Claude Haiku API Usage Card ──────────────────────────────────────────
+  const au = D.api_usage || {}
+  const today_au = au.today || {}
+  const history  = au.history || []
+  const todayCost   = (today_au.cost_usd || 0).toFixed(4)
+  const todayCalls  = today_au.calls || 0
+  const todayApprv  = today_au.approvals || 0
+  const todayRej    = today_au.rejections || 0
+  const cacheHit    = au.cache_hit_pct || 0
+  const totalCost   = (au.total_cost_usd || 0).toFixed(4)
+  const totalCalls  = au.total_calls || 0
+  const approvalRate= todayCalls>0?Math.round(todayApprv/todayCalls*100):0
+
+  // cost color
+  const costColor = parseFloat(todayCost)>1.5?'var(--red)':parseFloat(todayCost)>0.8?'var(--yellow)':'var(--green)'
+  const cacheColor= cacheHit>70?'var(--green)':cacheHit>40?'var(--yellow)':'var(--red)'
+
+  // mini bar chart 7 days
+  const maxCost = Math.max(...history.map(h=>h.cost_usd||0), 0.01)
+  const bars = history.map(h=>{
+    const pct = Math.round((h.cost_usd||0)/maxCost*100)
+    const barColor = (h.cost_usd||0)>1.5?'var(--red)':(h.cost_usd||0)>0.8?'var(--yellow)':'var(--green)'
+    const dateLabel = h.date ? h.date.slice(5) : ''
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">
+      <div style="font-size:9px;color:var(--t2)">$${(h.cost_usd||0).toFixed(2)}</div>
+      <div style="width:100%;height:${Math.max(pct,4)}px;background:${barColor};border-radius:2px;min-height:4px"></div>
+      <div style="font-size:9px;color:var(--t2)">${dateLabel}</div>
+    </div>`
+  }).join('')
+
+  el.innerHTML += `
+  <div class="card" style="margin-top:14px">
+    <div class="card-h" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🤖 Claude Haiku API Usage</span>
+      <span style="font-size:10px;color:var(--t2)">${au.model||'claude-haiku-4-5'}</span>
+    </div>
+
+    <!-- KPI Row -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+      <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${costColor}">$${todayCost}</div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">Today Cost</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:700">${todayCalls}</div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">API Calls Today</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:${cacheColor}">${cacheHit}%</div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">Cache Hit Rate</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:20px;font-weight:700;color:var(--green)">${approvalRate}%</div>
+        <div style="font-size:10px;color:var(--t2);margin-top:2px">Approval Rate</div>
+      </div>
+    </div>
+
+    <!-- Details Row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:11px">
+      <div style="color:var(--t2)">Today: <b style="color:var(--fg)">✅ ${todayApprv} APPROVE / ❌ ${todayRej} REJECT</b></div>
+      <div style="color:var(--t2)">All-time: <b style="color:var(--fg)">${totalCalls} calls · $${totalCost}</b></div>
+    </div>
+
+    <!-- 7-Day Bar Chart -->
+    ${history.length>0?`
+    <div style="font-size:10px;color:var(--t2);margin-bottom:6px">📊 Daily Cost — 7 วันล่าสุด</div>
+    <div style="display:flex;gap:4px;align-items:flex-end;height:80px;padding:0 4px">
+      ${bars}
+    </div>`:'<div style="font-size:11px;color:var(--t2);text-align:center;padding:12px">ยังไม่มีข้อมูล — จะเริ่มเก็บจาก scan รอบถัดไป</div>'}
+
+    <!-- Cache info -->
+    <div style="margin-top:10px;font-size:10px;color:var(--t2);border-top:1px solid var(--border);padding-top:8px">
+      💡 Cache hit ${cacheHit}% ลดต้นทุนได้ ~90% | System prompt cached ทุก scan รอบ
+    </div>
+  </div>`
 }
 
 // ═══════════════════════════════════════════════════════════
