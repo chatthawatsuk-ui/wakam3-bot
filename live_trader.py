@@ -89,15 +89,27 @@ def log(msg):
 # ── FETCH OHLCV ───────────────────────────────────────────────────────────────
 def fetch(symbol, timeframe, limit=CANDLES):
     exch = exchange_futures if symbol in FUTURES_SET else exchange_spot
-    try:
-        bars = exch.fetch_ohlcv(symbol, timeframe, limit=limit)
-        df   = pd.DataFrame(bars, columns=["ts","open","high","low","close","volume"])
-        df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-        df.set_index("dt", inplace=True)
-        return df[["open","high","low","close","volume"]].astype(float)
-    except Exception as e:
-        log(f"[WARN] fetch {symbol} {timeframe}: {e}")
-        return pd.DataFrame()
+    # ลอง format หลัก (e.g. RAVE/USDT) ก่อน
+    # ถ้าไม่ได้ลอง format linear perpetual (e.g. RAVE/USDT:USDT) เป็น fallback
+    candidates = [symbol]
+    if symbol in FUTURES_SET and ":" not in symbol:
+        # เพิ่ม :USDT suffix สำหรับ OKX linear perpetual format
+        candidates.append(symbol.split("/")[0] + "/USDT:USDT")
+    last_err = None
+    for sym_try in candidates:
+        try:
+            bars = exch.fetch_ohlcv(sym_try, timeframe, limit=limit)
+            if not bars:
+                continue
+            df = pd.DataFrame(bars, columns=["ts","open","high","low","close","volume"])
+            df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+            df.set_index("dt", inplace=True)
+            return df[["open","high","low","close","volume"]].astype(float)
+        except Exception as e:
+            last_err = e
+            continue
+    log(f"[WARN] fetch {symbol} {timeframe}: {last_err}")
+    return pd.DataFrame()
 
 
 # ── MAIN SCAN — ส่งข้อมูลให้ Signal Scanner ──────────────────────────────────
@@ -120,9 +132,11 @@ def scan():
             # เดิม 150 ทำให้เหรียญ new listing ถูก reject แม้ indicator คำนวณได้
             MIN_CANDLES = 80
             if d1h.empty or len(d1h) < MIN_CANDLES:
-                log(f"  {sym}: ข้อมูลไม่พอ ({len(d1h)} candles < {MIN_CANDLES})")
+                reason = "fetch_failed" if d1h.empty else f"only_{len(d1h)}_candles"
+                log(f"  {sym}: ข้อมูลไม่พอ ({len(d1h)} candles < {MIN_CANDLES}) [{reason}]")
                 scan_results.append({
                     "symbol": sym, "market_type": mtype, "status": "NO_DATA",
+                    "no_data_reason": reason,
                     "best_score": 0, "score_long": 0, "score_short": 0,
                     "score_trend": 0, "score_smc": 0, "score_osc": 0,
                     "rsi": 0, "price": 0, "htf_bull": False,
