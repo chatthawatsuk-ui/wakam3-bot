@@ -220,12 +220,22 @@ def _get_portfolio_context(symbol: str) -> dict:
         daily_pnl = round(daily_row[0], 2) if daily_row else 0.0
         daily_pnl_pct = round(daily_pnl / balance * 100, 2) if balance else 0.0
 
-        # Same symbol already open?
-        sym_open = conn.execute(
+        # Same symbol info — สำหรับ pyramid check
+        sym_count = conn.execute(
             "SELECT COUNT(*) FROM trades WHERE status='OPEN' AND symbol=?",
             (symbol,)
+        ).fetchone()[0]
+        same_symbol_open  = sym_count > 0
+        same_symbol_count = sym_count
+
+        # entry_px + side ของ position เก่าสุด (เพื่อคำนวณ PnL%)
+        sym_detail = conn.execute(
+            "SELECT entry_px, side FROM trades WHERE status='OPEN' AND symbol=?"
+            " ORDER BY opened_at ASC LIMIT 1",
+            (symbol,)
         ).fetchone()
-        same_symbol_open = (sym_open[0] > 0) if sym_open else False
+        same_symbol_entry_px = sym_detail[0] if sym_detail else 0.0
+        same_symbol_side     = sym_detail[1] if sym_detail else ""
 
         conn.close()
         return {
@@ -234,7 +244,10 @@ def _get_portfolio_context(symbol: str) -> dict:
             "open_summary": open_summary,
             "daily_pnl": daily_pnl,
             "daily_pnl_pct": daily_pnl_pct,
-            "same_symbol_open": same_symbol_open,
+            "same_symbol_open":     same_symbol_open,
+            "same_symbol_count":    same_symbol_count,
+            "same_symbol_entry_px": same_symbol_entry_px,
+            "same_symbol_side":     same_symbol_side,
         }
     except Exception:
         return {
@@ -243,7 +256,10 @@ def _get_portfolio_context(symbol: str) -> dict:
             "open_summary": "unknown",
             "daily_pnl": 0.0,
             "daily_pnl_pct": 0.0,
-            "same_symbol_open": False,
+            "same_symbol_open":     False,
+            "same_symbol_count":    0,
+            "same_symbol_entry_px": 0.0,
+            "same_symbol_side":     "",
         }
 
 
@@ -277,11 +293,45 @@ def ask(signal: dict, scan_result: dict) -> tuple:
     same_sym = " ⚠️ SAME SYMBOL ALREADY OPEN" if ctx["same_symbol_open"] else ""
 
     # ── Portfolio pre-checks — reject ก่อนถึง Claude (ไม่เสีย token) ────────
-    MAX_POSITIONS = 10
+    MAX_POSITIONS  = 10
+    MAX_PYRAMID    = 2   # สูงสุด 2 positions ต่อ symbol
+
     if ctx["open_count"] >= MAX_POSITIONS:
         return False, f"positions_full ({ctx['open_count']}/{MAX_POSITIONS}) — ไม่รับ signal ใหม่"
+
+    # ── Pyramid check (แทน hard reject same_symbol) ──────────────────────────
+    pyramid_note = ""
     if ctx["same_symbol_open"]:
-        return False, f"same_symbol_open — {symbol} มี position เปิดอยู่แล้ว"
+        if ctx["same_symbol_count"] >= MAX_PYRAMID:
+            return False, (f"pyramid_max — {symbol} มี {ctx['same_symbol_count']} positions"
+                           f" แล้ว (max {MAX_PYRAMID})")
+
+        # คำนวณ PnL% ของ position เดิม โดยใช้ราคาปัจจุบัน (signal.price = ราคาตลาด)
+        score_trend = signal.get("score_trend", 0)
+        current_px  = signal.get("price", 0)
+        entry_px    = ctx["same_symbol_entry_px"]
+        ext_side    = ctx["same_symbol_side"]
+
+        pnl_pct = 0.0
+        if entry_px > 0 and current_px > 0:
+            if ext_side == "LONG":
+                pnl_pct = (current_px - entry_px) / entry_px * 100
+            elif ext_side == "SHORT":
+                pnl_pct = (entry_px - current_px) / entry_px * 100
+
+        # เงื่อนไข Pyramid
+        pyr_strong = (score_trend >= 10 and pnl_pct >= 0.0)   # Trend แรงมาก + กำไร ≥ 0%
+        pyr_medium = (score_trend >= 9  and pnl_pct > 1.0)    # Trend ดี + กำไร > 1%
+
+        if not (pyr_strong or pyr_medium):
+            return False, (f"pyramid_blocked — {symbol} pos#{ctx['same_symbol_count']}"
+                           f" trend={score_trend}/13 existing_pnl={pnl_pct:+.1f}%"
+                           f" (ต้องการ trend≥10+pnl≥0% หรือ trend≥9+pnl>1%)")
+
+        # ผ่าน! เป็น Pyramid trade
+        pyramid_note = (f" 🔺 PYRAMID #{ctx['same_symbol_count']+1}"
+                        f" (trend={score_trend}/13, existing_pnl={pnl_pct:+.1f}%)")
+        same_sym = pyramid_note
 
     funding_rate = signal.get("funding_rate")
     funding_str  = f"{funding_rate:+.4f}%" if funding_rate is not None else "N/A"
