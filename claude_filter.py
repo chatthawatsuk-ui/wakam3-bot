@@ -160,6 +160,10 @@ def _hard_reject(signal: dict) -> tuple[bool, str]:
     if regime == "RANGING" and score < 12:
         return True, f"RANGING regime score{score}<12 (noise filter, WR 46.5% in backtest)"
 
+    # Rule 2b: RANGING ทุกกรณี — ไม่ส่ง Claude (ลด cost, backtest RANGING WR < 50%)
+    if regime == "RANGING":
+        return True, f"RANGING regime — skip Claude (low WR regime)"
+
     # Rule 3: SL ชิดเกิน — noise stop-out WR 45.4%
     if sl_pct < 0.5:
         return True, f"SL {sl_pct:.2f}% too tight (<0.5%) — noise stop-out risk"
@@ -271,6 +275,13 @@ def ask(signal: dict, scan_result: dict) -> tuple:
     sl_pct  = signal.get("sl_pct", 0)
     pnl_sign = "+" if ctx["daily_pnl"] >= 0 else ""
     same_sym = " ⚠️ SAME SYMBOL ALREADY OPEN" if ctx["same_symbol_open"] else ""
+
+    # ── Portfolio pre-checks — reject ก่อนถึง Claude (ไม่เสีย token) ────────
+    MAX_POSITIONS = 10
+    if ctx["open_count"] >= MAX_POSITIONS:
+        return False, f"positions_full ({ctx['open_count']}/{MAX_POSITIONS}) — ไม่รับ signal ใหม่"
+    if ctx["same_symbol_open"]:
+        return False, f"same_symbol_open — {symbol} มี position เปิดอยู่แล้ว"
 
     funding_rate = signal.get("funding_rate")
     funding_str  = f"{funding_rate:+.4f}%" if funding_rate is not None else "N/A"
