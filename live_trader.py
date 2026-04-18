@@ -37,9 +37,7 @@ FUTURES_SYMBOLS = [
     "WLD/USDT",  "ENA/USDT",  "FIL/USDT",  "APT/USDT",  "VET/USDT",
     "CRO/USDT",  "TRUMP/USDT","ONDO/USDT", "HYPE/USDT", "DEXE/USDT",
 ]
-SPOT_SYMBOLS = [
-    "MORPHO/USDT", "KAS/USDT", "QNT/USDT", "ZEC/USDT", "FLR/USDT",
-]
+SPOT_SYMBOLS = []   # ไม่มี Spot — ทุก symbol ใช้ Futures (swap)
 
 # ── Watchlist Custom — โหลดจาก watchlist_custom.json ──────────────────────────
 # เพิ่มเหรียญใน watchlist_custom.json แล้ว scanner จะ scan อัตโนมัติเป็น Futures
