@@ -3331,11 +3331,11 @@ const AGENTS=[
    cycle:'~15m', role:'core'},
   // ── Step 4: AI กรองสุดท้าย ────────────────────────────────
   {id:'claude', emoji:'🧠', name:'Claude Final Filter',
-   desc:'Claude Haiku — ประเมิน context ก่อน signal ยิง (APPROVE/REJECT) + Shadow Mode tracking',
+   desc:'Claude Haiku — ประเมิน context ก่อน signal ยิง (APPROVE/REJECT) + Pyramid check (trend≥10+pnl≥0%) + Shadow Mode tracking',
    cycle:'~15m', role:'core'},
   // ── Step 5: เปิด Trade ────────────────────────────────────
   {id:'trader', emoji:'🤖', name:'Paper Trader',
-   desc:'เปิด/ปิด paper trade + Daily Loss Cap ($50) + Correlation Check + Shadow outcome tracker',
+   desc:'เปิด/ปิด paper trade + Daily Loss Cap ($50) + Correlation Check + Pyramiding (max 2/symbol, trend≥10+pnl≥0%) + Shadow outcome tracker',
    cycle:'~15m', role:'core'},
   // ── Step 6: รายงานผล ──────────────────────────────────────
   {id:'dash',   emoji:'📊', name:'Dashboard Builder',
