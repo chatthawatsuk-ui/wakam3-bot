@@ -10,7 +10,7 @@
       "side": "LONG",
       "score": 20,
       "entry_price": 2408.97,
-      "current_price": 2340.62,
+      "current_price": 2341.7,
       "sl_price": 2332.93,
       "tp_price": 2500.22,
       "tp2_price": 2561.05,
@@ -20,8 +20,8 @@
       "leverage": 20.0,
       "margin_usd": 10.0,
       "risk_usd": 6.31,
-      "pnl_pct": -2.84,
-      "pnl": -5.67,
+      "pnl_pct": -2.79,
+      "pnl": -5.58,
       "open_time": "2026-04-18T05:31:45.090548+00:00"
     },
     {
@@ -63,6 +63,26 @@
       "pnl_pct": -0.7,
       "pnl": -1.4,
       "open_time": "2026-04-18T19:17:26.325990+00:00"
+    },
+    {
+      "id": 103,
+      "symbol": "ADA/USDT",
+      "side": "SHORT",
+      "score": 17,
+      "entry_price": 0.2472,
+      "current_price": 0.2485,
+      "sl_price": 0.2589,
+      "tp_price": 0.2332,
+      "tp2_price": 0.2238,
+      "tp1_hit": false,
+      "rsi": 34.3,
+      "notional": 196.22,
+      "leverage": 20.0,
+      "margin_usd": 9.81,
+      "risk_usd": 9.29,
+      "pnl_pct": -0.53,
+      "pnl": -1.03,
+      "open_time": "2026-04-19T03:47:29.251438+00:00"
     },
     {
       "id": 95,
@@ -318,7 +338,7 @@
       "score_short": 19,
       "best_score": 19,
       "score_pct": 42.2,
-      "price": 8.403,
+      "price": 8.416,
       "rsi": 29.1,
       "htf_bull": false,
       "in_kz": false,
@@ -331,10 +351,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": -0.0215,
+      "funding_rate": -0.02,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:41.222032+00:00",
-      "claude_reason": "[85%] SHORT signal conflicts with HTF bearish bias absent + RSI 29 near oversold (hard rule 6) | RSI 29.1 triggers oversold reject; HTF False weakens SHORT conviction | suggest: wait for RSI > 35 or HTF confirmation before re-entry"
+      "ts": "2026-04-19T03:46:36.316550+00:00",
+      "claude_reason": "[85%] SHORT in HTF bull bias + RSI 29 near oversold — directional conflict | Hard rule 6: RSI<25 for SHORT is marginal; HTF bull contradicts short | suggest: wait for HTF bearish confirmation or RSI recovery to 35+"
     },
     {
       "symbol": "AAVE/USDT",
@@ -345,7 +365,7 @@
       "score_short": 18,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 96.44,
+      "price": 96.46,
       "rsi": 19.1,
       "htf_bull": false,
       "in_kz": false,
@@ -360,7 +380,7 @@
       "bear_sweep": false,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:36.766562+00:00",
+      "ts": "2026-04-19T03:46:32.495374+00:00",
       "claude_reason": "SHORT RSI 19.1 oversold (<25)"
     },
     {
@@ -372,7 +392,7 @@
       "score_short": 18,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 1.753,
+      "price": 1.761,
       "rsi": 25.0,
       "htf_bull": false,
       "in_kz": false,
@@ -385,37 +405,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0103,
+      "funding_rate": -0.0062,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:44.081405+00:00",
-      "claude_reason": "[85%] RSI 25.0 = oversold; SHORT rejected (hard rule #6) | SL 7.25% too wide for 20× leverage risk | suggest: wait for RSI > 30 or HTF confirmation shift"
-    },
-    {
-      "symbol": "ONDO/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "SHORT",
-      "score_long": 16,
-      "score_short": 18,
-      "best_score": 18,
-      "score_pct": 40.0,
-      "price": 0.2564,
-      "rsi": 29.9,
-      "htf_bull": false,
-      "in_kz": false,
-      "score_trend": 9,
-      "score_smc": 0,
-      "score_osc": 2,
-      "score_liq": 8,
-      "score_fund": 1,
-      "in_discount": true,
-      "trail_bull": false,
-      "bull_sweep": true,
-      "bear_sweep": true,
-      "funding_rate": 0.0044,
-      "regime": "TRENDING",
-      "ts": "2026-04-19T03:32:08.215830+00:00",
-      "claude_reason": "[85%] RSI 29.9 near oversold — SHORT risky. SL 6.12% excessive for 20× leverage. | Hard rule 6: SHORT + RSI<25 borderline. 6% SL = -120% unrealized if hit. | suggest: wait for RSI >35 or reduce SL to <1.5%"
+      "ts": "2026-04-19T03:46:40.023180+00:00",
+      "claude_reason": "[85%] RSI 25 triggers hard oversold reject rule #6 (SHORT RSI<25) | SL 6.76% violates position risk at 20× — max 1% | suggest: wait for RSI>30 or reduce SL to 0.5% max"
     },
     {
       "symbol": "RIVER/USDT",
@@ -426,7 +419,7 @@
       "score_short": 18,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 6.112,
+      "price": 6.099,
       "rsi": 29.7,
       "htf_bull": false,
       "in_kz": false,
@@ -439,10 +432,10 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0404,
+      "funding_rate": 0.041,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:32:13.974713+00:00",
-      "claude_reason": "[85%] SL 27% away exceeds 20× leverage risk model (max ~5%) | Position sizing breaks 1% rule; $1k bal × 20× = $20k notional exposure | suggest: reduce SL to <1.5% or skip signal"
+      "ts": "2026-04-19T03:47:11.236930+00:00",
+      "claude_reason": "[85%] SL 27.27% excessive for 20× leverage — risks >50% unrealized loss on hit | 1% risk × 20× = 20% max; 27% SL = unacceptable drawdown | suggest: reduce position size or tighten SL to <1.5%"
     },
     {
       "symbol": "TON/USDT",
@@ -453,7 +446,7 @@
       "score_short": 17,
       "best_score": 17,
       "score_pct": 37.8,
-      "price": 1.281,
+      "price": 1.282,
       "rsi": 12.1,
       "htf_bull": false,
       "in_kz": false,
@@ -468,7 +461,7 @@
       "bear_sweep": false,
       "funding_rate": 0.005,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:15.718062+00:00",
+      "ts": "2026-04-19T03:46:14.610421+00:00",
       "claude_reason": "SHORT RSI 12.1 oversold (<25)"
     },
     {
@@ -477,10 +470,10 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 16,
-      "score_short": 8,
+      "score_short": 6,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 9.289,
+      "price": 9.32,
       "rsi": 29.6,
       "htf_bull": false,
       "in_kz": false,
@@ -493,10 +486,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.022,
+      "funding_rate": -0.0214,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:10.347049+00:00",
-      "claude_reason": "[85%] Trend:0 fails core agent + HTF bearish conflicts LONG bias | Score 16 but zero trend strength; RSI 29.6 near oversold | suggest: wait for Trend Agent ≥3 or HTF alignment shift"
+      "ts": "2026-04-19T03:46:09.642284+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + HTF bearish — directional conflict in TRENDING regime | RSI 29.6 near oversold; weak trend confirmation | suggest: wait for Trend Agent score ≥4 or HTF bull confirmation"
     },
     {
       "symbol": "PEPE/USDT",
@@ -507,7 +500,7 @@
       "score_short": 11,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 3.761e-06,
+      "price": 3.784e-06,
       "rsi": 34.0,
       "htf_bull": true,
       "in_kz": false,
@@ -520,10 +513,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0062,
+      "funding_rate": 0.0073,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:32.986657+00:00",
-      "claude_reason": "[85%] Trend score 0/13 — no EMA/SMA alignment in TRENDING regime | Score 16 insufficient without trend confirmation; RSI 34 near oversold | suggest: wait for EMA7>EMA30 + SMA99 alignment before entry"
+      "ts": "2026-04-19T03:46:29.795328+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + core score 16 fails TRENDING regime rule | No trend confirmation despite TRENDING label; weak SMC (2/10) | suggest: wait for EMA/SMA alignment or higher Trend component"
     },
     {
       "symbol": "ALGO/USDT",
@@ -534,7 +527,7 @@
       "score_short": 16,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 0.1059,
+      "price": 0.106,
       "rsi": 25.4,
       "htf_bull": false,
       "in_kz": false,
@@ -547,10 +540,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0052,
+      "funding_rate": -0.0032,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:47.199537+00:00",
-      "claude_reason": "[85%] RSI 25.4 = oversold; SHORT rejected by hard rule #6 | SL 5.56% exceeds 1% risk; regime TRENDING but oversold entry weak | suggest: wait for RSI > 30 or consider LONG instead"
+      "ts": "2026-04-19T03:46:42.538379+00:00",
+      "claude_reason": "[85%] RSI 25.4 = oversold (hard rule #6), SL 5.47% excessive for 20× leverage | SHORT when oversold = mean reversion risk, SL blows 1% on -5.47% | suggest: wait for RSI > 30 or reduce position size"
     },
     {
       "symbol": "APT/USDT",
@@ -561,7 +554,7 @@
       "score_short": 8,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 0.9274,
+      "price": 0.93,
       "rsi": 27.6,
       "htf_bull": true,
       "in_kz": false,
@@ -574,10 +567,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0062,
+      "funding_rate": 0.0069,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:32:00.978341+00:00",
-      "claude_reason": "[85%] Trend Agent score 0/13 — no EMA/SMA confirmation despite TRENDING regime | Low trend conviction (0pts) + weak oscillator (4pts) = unreliable entry | suggest: wait for EMA7>EMA30 + SMA99 alignment before reentry"
+      "ts": "2026-04-19T03:46:56.982758+00:00",
+      "claude_reason": "[85%] Trend Agent score 0/13 — no EMA/SMA confirmation despite TRENDING regime | Core score 6/28 (Trend+SMC+Osc) insufficient; liquidity bonus masks weak setup | suggest: wait for EMA7>EMA30 crossover + ADX>25 confirmation"
     },
     {
       "symbol": "TRUMP/USDT",
@@ -588,7 +581,7 @@
       "score_short": 16,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 2.831,
+      "price": 2.834,
       "rsi": 20.6,
       "htf_bull": false,
       "in_kz": false,
@@ -601,10 +594,37 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0009,
+      "funding_rate": -0.001,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:32:06.994275+00:00",
+      "ts": "2026-04-19T03:47:05.211318+00:00",
       "claude_reason": "SHORT RSI 20.6 oversold (<25)"
+    },
+    {
+      "symbol": "ONDO/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "LONG",
+      "score_long": 16,
+      "score_short": 9,
+      "best_score": 16,
+      "score_pct": 35.6,
+      "price": 0.2574,
+      "rsi": 29.9,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 0,
+      "score_smc": 2,
+      "score_osc": 4,
+      "score_liq": 8,
+      "score_fund": 2,
+      "in_discount": true,
+      "trail_bull": false,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.005,
+      "regime": "TRENDING",
+      "ts": "2026-04-19T03:47:06.349298+00:00",
+      "claude_reason": "[85%] Trend:0 is disqualifying — no trend confirmation despite TRENDING regime label | HTF bearish + weak SMC (2pts) + RSI near oversold (29.9) = low conviction | suggest: wait for EMA crossover or Trend agent confirmation before entry"
     },
     {
       "symbol": "BNB/USDT",
@@ -615,7 +635,7 @@
       "score_short": 9,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 624.2,
+      "price": 625.2,
       "rsi": 28.2,
       "htf_bull": true,
       "in_kz": false,
@@ -628,10 +648,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0052,
+      "funding_rate": 0.005,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:50.011490+00:00",
-      "claude_reason": "[85%] Trend:0 score critical — no EMA/SMA confirmation; core weakness | Score 15 needs TRENDING + Trend≥5; you have 0. Regime says TRENDING but agents disagree. | suggest: wait for EMA7/30 crossover + SMA99 alignment before entry"
+      "ts": "2026-04-19T03:45:47.352145+00:00",
+      "claude_reason": "[85%] Trend score 0/13 disqualifies signal despite sweep — no CDC/SMA confirmation | Score 15 needs trend ≥5 in TRENDING regime; RSI 28 acceptable but trend weakness fatal | suggest: wait for EMA7/30 crossover + SMA99 alignment before reentry"
     },
     {
       "symbol": "UNI/USDT",
@@ -642,7 +662,7 @@
       "score_short": 9,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 3.304,
+      "price": 3.315,
       "rsi": 29.5,
       "htf_bull": true,
       "in_kz": false,
@@ -655,10 +675,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0019,
+      "funding_rate": -0.0009,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:26.628390+00:00",
-      "claude_reason": "[85%] Score 15 + Trend:0 = weak directional confluence; RSI 29.5 near oversold | Trend agent 0pts signals no EMA/SMA alignment despite TRENDING regime | suggest: wait for Trend score ≥3 or RSI recovery to 35+"
+      "ts": "2026-04-19T03:46:24.462342+00:00",
+      "claude_reason": "[85%] Trend score 0/13 — no momentum confirmation despite TRENDING regime | SMC+Liq carry signal but zero trend alignment is red flag | suggest: wait for EMA7/30 crossover or ADX confirmation"
     },
     {
       "symbol": "NEAR/USDT",
@@ -666,10 +686,10 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 15,
-      "score_short": 11,
+      "score_short": 9,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 1.341,
+      "price": 1.347,
       "rsi": 23.8,
       "htf_bull": false,
       "in_kz": false,
@@ -682,10 +702,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.003,
+      "funding_rate": -0.0009,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:29.583233+00:00",
-      "claude_reason": "[85%] Trend score 0/13 + HTF bearish bias contradicts LONG in TRENDING regime | RSI 23.8 near oversold; weak trend confirmation; liq sweep alone insufficient | suggest: wait for Trend Agent confirmation (EMA cross, SMA99 alignment) before entry"
+      "ts": "2026-04-19T03:46:27.069826+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + HTF bearish + RSI 23.8 near oversold — weak directional setup | Low trend strength contradicts TRENDING regime label; liquidity sweep insufficient | suggest: wait for EMA7/30 crossover + HTF alignment before entry"
     },
     {
       "symbol": "ICP/USDT",
@@ -696,7 +716,7 @@
       "score_short": 7,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 2.482,
+      "price": 2.483,
       "rsi": 25.7,
       "htf_bull": false,
       "in_kz": false,
@@ -709,10 +729,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0446,
+      "funding_rate": -0.0433,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:38.111331+00:00",
-      "claude_reason": "[85%] Trend:0 + HTF not bull + score15 but weak core — overextension risk | RSI 25.7 near oversold; Trend agent 0pts signals weak momentum | suggest: wait for Trend agent confirmation or HTF alignment"
+      "ts": "2026-04-19T03:46:33.630349+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + HTF bearish bias conflict TRENDING regime claim | RSI 25.7 near oversold; score 15 requires trending confirmation | suggest: wait for EMA7/30 crossover + HTF alignment confirmation"
     },
     {
       "symbol": "ATOM/USDT",
@@ -720,10 +740,10 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 15,
-      "score_short": 7,
+      "score_short": 5,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 1.778,
+      "price": 1.78,
       "rsi": 32.9,
       "htf_bull": true,
       "in_kz": false,
@@ -736,10 +756,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0305,
+      "funding_rate": -0.0309,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:51.198262+00:00",
-      "claude_reason": "[85%] Trend:0 critical — no EMA/SMA confluence, score 15 needs trend strength | RSI 32.9 near oversold, weak momentum despite sweep | suggest: wait for Trend Agent ≥4pts or RSI recovery above 40"
+      "ts": "2026-04-19T03:46:46.469225+00:00",
+      "claude_reason": "[85%] Trend score 0/13 — no EMA/SMA alignment despite TRENDING regime claim | RSI 32.9 near oversold; core trend agent failed validation | suggest: wait for Trend agent score ≥4 and RSI recovery to 40+"
     },
     {
       "symbol": "WLD/USDT",
@@ -750,7 +770,7 @@
       "score_short": 14,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 0.2619,
+      "price": 0.2623,
       "rsi": 26.1,
       "htf_bull": false,
       "in_kz": false,
@@ -763,10 +783,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0821,
+      "funding_rate": -0.0824,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:53.827485+00:00",
-      "claude_reason": "[85%] Trend:0 + HTF bearish + RSI 26 oversold — weak core conviction | Score 15 relies on Liq:8 only; Trend agent 0pts disqualifies | suggest: wait for RSI recovery >30 + Trend confirmation"
+      "ts": "2026-04-19T03:46:49.155085+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + HTF bearish — no directional confluence | RSI 26 near oversold but weak trend setup kills signal | suggest: wait for Trend Agent confirmation or HTF alignment"
     },
     {
       "symbol": "FIL/USDT",
@@ -777,7 +797,7 @@
       "score_short": 9,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 0.9315,
+      "price": 0.9331,
       "rsi": 25.8,
       "htf_bull": true,
       "in_kz": false,
@@ -790,10 +810,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0039,
+      "funding_rate": -0.0025,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:58.279791+00:00",
-      "claude_reason": "[85%] Trend score 0/13 + regime TRENDING mismatch — no EMA/SMA confirmation | Score 15 requires Trend ≥5 for TRENDING regime validity | suggest: wait for EMA7/30 crossover + ADX confirmation"
+      "ts": "2026-04-19T03:46:53.744639+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + RSI 25.8 near oversold — weak directional conviction | Score 15 needs Trend ≥5 in TRENDING regime; liquidity sweep alone insufficient | suggest: wait for Trend Agent confirmation (EMA/SMA cross) before entry"
     },
     {
       "symbol": "CRO/USDT",
@@ -804,7 +824,7 @@
       "score_short": 11,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 0.06973,
+      "price": 0.06979,
       "rsi": 30.5,
       "htf_bull": true,
       "in_kz": false,
@@ -817,10 +837,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0233,
+      "funding_rate": -0.0241,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:32:04.031436+00:00",
-      "claude_reason": "[85%] Trend:0 kills signal — no directional momentum despite TRENDING regime | Score 15 relies on Liq(8) alone; weak oscillator(2) + zero trend | suggest: wait for EMA7/30 crossover or ADX>25 confirmation"
+      "ts": "2026-04-19T03:46:59.920112+00:00",
+      "claude_reason": "[85%] Score 15 + Trend:0 = weak directional conviction despite TRENDING regime | Zero trend points signal weak momentum; RSI 30.5 near oversold but recovery unconfirmed | suggest: wait for Trend Agent confirmation (EMA7/30 cross, ADX strength)"
     },
     {
       "symbol": "RAVE/USDT",
@@ -831,7 +851,7 @@
       "score_short": 15,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 1.373,
+      "price": 1.276,
       "rsi": 18.0,
       "htf_bull": false,
       "in_kz": false,
@@ -844,9 +864,9 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0939,
+      "funding_rate": 0.2477,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:32:12.619963+00:00",
+      "ts": "2026-04-19T03:47:10.097144+00:00",
       "claude_reason": "SHORT RSI 18.0 oversold (<25)"
     },
     {
@@ -858,7 +878,7 @@
       "score_short": 9,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 85.62,
+      "price": 85.77,
       "rsi": 27.8,
       "htf_bull": true,
       "in_kz": false,
@@ -871,10 +891,10 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0105,
+      "funding_rate": -0.0103,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:55.253614+00:00",
-      "claude_reason": "[85%] Trend:0 + RSI 27.8 near oversold + no sweep + weak score | RSI near 25 floor risks quick bounce whip; Trend agent 0 pts concerning | suggest: wait for RSI recovery to 35+ or liquidity sweep confirmation"
+      "ts": "2026-04-19T03:45:52.961860+00:00",
+      "claude_reason": "[85%] Trend score 0/13 — no EMA/SMA alignment despite TRENDING regime claim | RSI 27.8 near oversold; score 14 barely above threshold with zero trend confirmation | suggest: wait for Trend Agent confirmation (EMA7>30, SMA99 alignment)"
     },
     {
       "symbol": "ADA/USDT",
@@ -885,7 +905,7 @@
       "score_short": 11,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 0.2483,
+      "price": 0.249,
       "rsi": 32.9,
       "htf_bull": true,
       "in_kz": false,
@@ -898,10 +918,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": -0.0066,
+      "funding_rate": -0.0064,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:02.195622+00:00",
-      "claude_reason": "[85%] Trend score 0/13 — no EMA/SMA alignment despite TRENDING regime claim | Score 14 relies entirely on liquidity (8pts); core trend signal absent | suggest: wait for Trend Agent confirmation (EMA7>EMA30, SMA99 alignment)"
+      "ts": "2026-04-19T03:46:01.943667+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + regime mismatch — TRENDING regime needs core trend strength | Liquidity sweep + discount zone insufficient without trend confirmation | suggest: wait for EMA7/30 crossover or SMA99 alignment confirmation"
     },
     {
       "symbol": "SUI/USDT",
@@ -912,7 +932,7 @@
       "score_short": 11,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 0.9493,
+      "price": 0.9518,
       "rsi": 30.0,
       "htf_bull": false,
       "in_kz": false,
@@ -925,10 +945,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": -0.0027,
+      "funding_rate": -0.0024,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:13.021207+00:00",
-      "claude_reason": "[85%] Trend:0 score kills signal—no EMA/SMA alignment despite TRENDING regime claim | RSI 30 near oversold, HTF bearish, weak core momentum | suggest: wait for Trend Agent score ≥4 or HTF bull confirmation"
+      "ts": "2026-04-19T03:46:12.129938+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + HTF bearish bias conflict TRENDING regime claim | RSI 30 near oversold, weak momentum confirmation | suggest: wait for Trend Agent confirmation or HTF alignment"
     },
     {
       "symbol": "DOT/USDT",
@@ -936,10 +956,10 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 14,
-      "score_short": 8,
+      "score_short": 6,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 1.276,
+      "price": 1.277,
       "rsi": 36.4,
       "htf_bull": true,
       "in_kz": false,
@@ -952,10 +972,10 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0009,
+      "funding_rate": -0.002,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:16.919289+00:00",
-      "claude_reason": "[85%] Score 14/45 with 0 trend points — weak directional conviction despite sweep | RSI 36.4 near oversold; trend agent failure signals weak momentum | suggest: wait for trend agent confirmation (EMA/SMA crossover) before entry"
+      "ts": "2026-04-19T03:46:15.730685+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + regime TRENDING mismatch — no EMA/SMA confirmation | Score 14 relies entirely on Liq(8) — weak core signal | suggest: wait for Trend Agent confirmation (EMA7>30, SMA99 alignment)"
     },
     {
       "symbol": "HBAR/USDT",
@@ -966,7 +986,7 @@
       "score_short": 14,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 0.08824,
+      "price": 0.08833,
       "rsi": 35.4,
       "htf_bull": true,
       "in_kz": false,
@@ -979,10 +999,10 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.0152,
+      "funding_rate": -0.0135,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:22.496275+00:00",
-      "claude_reason": "[85%] SHORT in TRENDING regime + HTF bull bias = directional conflict | RSI 35.4 near oversold; score 14 weak for short | suggest: wait for HTF shift or CHoCH confirmation"
+      "ts": "2026-04-19T03:46:21.080814+00:00",
+      "claude_reason": "[85%] SHORT in TRENDING regime + HTF bull bias creates directional conflict | Trend score 0/13 + HTF bullish contradicts short bias | suggest: wait for HTF bearish shift or regime change to RANGING"
     },
     {
       "symbol": "ENA/USDT",
@@ -993,7 +1013,7 @@
       "score_short": 8,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 0.1196,
+      "price": 0.1202,
       "rsi": 42.9,
       "htf_bull": true,
       "in_kz": false,
@@ -1006,9 +1026,9 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0065,
+      "funding_rate": -0.0053,
       "regime": "RANGING",
-      "ts": "2026-04-19T03:31:56.979246+00:00",
+      "ts": "2026-04-19T03:46:52.535798+00:00",
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
@@ -1017,10 +1037,10 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 13,
-      "score_short": 10,
+      "score_short": 8,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 0.0947,
+      "price": 0.09502,
       "rsi": 32.9,
       "htf_bull": false,
       "in_kz": false,
@@ -1033,10 +1053,10 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0003,
+      "funding_rate": -0.0,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:59.434049+00:00",
-      "claude_reason": "[85%] Trend:0 + HTF bearish + RSI 32.9 near oversold — weak long setup | Score 13 lacks trend confirmation; HTF conflict | suggest: wait for HTF bull confirmation or RSI bounce above 40"
+      "ts": "2026-04-19T03:45:58.031274+00:00",
+      "claude_reason": "[85%] Trend:0 + HTF bearish + RSI 32.9 near oversold — weak directional setup | Score 13 relies on Liq:5 alone; no trend confirmation in TRENDING regime | suggest: wait for Trend Agent score or HTF bull alignment"
     },
     {
       "symbol": "BCH/USDT",
@@ -1044,10 +1064,10 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 13,
-      "score_short": 10,
+      "score_short": 8,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 445.2,
+      "price": 445.5,
       "rsi": 39.0,
       "htf_bull": true,
       "in_kz": false,
@@ -1060,10 +1080,10 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0155,
+      "funding_rate": -0.0159,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:04.983340+00:00",
-      "claude_reason": "SL 0.46% too tight (<0.5%) — noise stop-out risk"
+      "ts": "2026-04-19T03:46:04.611689+00:00",
+      "claude_reason": "SL 0.49% too tight (<0.5%) — noise stop-out risk"
     },
     {
       "symbol": "SHIB/USDT",
@@ -1074,7 +1094,7 @@
       "score_short": 11,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 6.017e-06,
+      "price": 6.046e-06,
       "rsi": 30.6,
       "htf_bull": true,
       "in_kz": false,
@@ -1087,63 +1107,36 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.0082,
+      "funding_rate": -0.0065,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:19.621622+00:00",
-      "claude_reason": "[85%] Trend score 0/13 + RSI 30.6 near oversold + no sweep confirmation | weak core signal despite TRENDING regime; liquidity unconfirmed | suggest: wait for EMA crossover + RSI recovery above 35"
-    },
-    {
-      "symbol": "XLM/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "SHORT",
-      "score_long": 9,
-      "score_short": 13,
-      "best_score": 13,
-      "score_pct": 28.9,
-      "price": 0.1704,
-      "rsi": 46.8,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 0,
-      "score_smc": 0,
-      "score_osc": 3,
-      "score_liq": 8,
-      "score_fund": 2,
-      "in_discount": true,
-      "trail_bull": false,
-      "bull_sweep": false,
-      "bear_sweep": true,
-      "funding_rate": 0.01,
-      "regime": "RANGING",
-      "ts": "2026-04-19T03:31:25.359352+00:00",
-      "claude_reason": "RANGING regime — skip Claude (low WR regime)"
+      "ts": "2026-04-19T03:46:18.456990+00:00",
+      "claude_reason": "[85%] Trend score 0/13 + weak core (6/13) — no directional confirmation | RSI 30.6 near oversold, no sweep, HTF alone insufficient | suggest: wait for EMA7/30 cross + ADX confirmation"
     },
     {
       "symbol": "HYPE/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
-      "side": "SHORT",
-      "score_long": 11,
+      "side": "LONG",
+      "score_long": 13,
       "score_short": 13,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 43.3,
+      "price": 43.41,
       "rsi": 31.7,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
-      "score_smc": 3,
-      "score_osc": 4,
-      "score_liq": 5,
-      "score_fund": 1,
+      "score_smc": 1,
+      "score_osc": 2,
+      "score_liq": 8,
+      "score_fund": 2,
       "in_discount": false,
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0089,
+      "funding_rate": 0.0094,
       "regime": "RANGING",
-      "ts": "2026-04-19T03:32:11.149964+00:00",
+      "ts": "2026-04-19T03:47:08.978048+00:00",
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
@@ -1155,7 +1148,7 @@
       "score_short": 9,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 55.53,
+      "price": 55.65,
       "rsi": 38.7,
       "htf_bull": true,
       "in_kz": false,
@@ -1168,9 +1161,9 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0004,
+      "funding_rate": 0.0006,
       "regime": "RANGING",
-      "ts": "2026-04-19T03:31:06.236038+00:00",
+      "ts": "2026-04-19T03:46:05.744547+00:00",
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
@@ -1182,7 +1175,7 @@
       "score_short": 9,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 9.219,
+      "price": 9.253,
       "rsi": 26.6,
       "htf_bull": true,
       "in_kz": false,
@@ -1195,10 +1188,10 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0117,
+      "funding_rate": -0.012,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:31:07.473301+00:00",
-      "claude_reason": "[85%] Score 12/45 with Trend:0 — no trend confirmation. RSI 26.6 near oversold. Weak signal. | Trend agent scored 0/13; core pillars missing. Discount zone alone insufficient. | suggest: wait for Trend agent confirmation (EMA/SMA crossover, ADX >20)"
+      "ts": "2026-04-19T03:46:06.877030+00:00",
+      "claude_reason": "[85%] Trend score 0/13 — no EMA/SMA confirmation despite TRENDING regime claim | RSI 26.6 near oversold; score 12 marginal for regime; no sweep | suggest: wait for Trend Agent confirmation (EMA7>EMA30, SMA99 alignment)"
     },
     {
       "symbol": "BTC/USDT",
@@ -1209,7 +1202,7 @@
       "score_short": 8,
       "best_score": 11,
       "score_pct": 24.4,
-      "price": 75509.5,
+      "price": 75605.5,
       "rsi": 33.2,
       "htf_bull": true,
       "in_kz": false,
@@ -1222,9 +1215,9 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0087,
+      "funding_rate": -0.0083,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:45.212406+00:00",
+      "ts": "2026-04-19T03:45:42.485927+00:00",
       "claude_reason": "SL 0.45% too tight (<0.5%) — noise stop-out risk"
     },
     {
@@ -1236,7 +1229,7 @@
       "score_short": 8,
       "best_score": 11,
       "score_pct": 24.4,
-      "price": 2341.75,
+      "price": 2343.04,
       "rsi": 31.8,
       "htf_bull": true,
       "in_kz": false,
@@ -1249,37 +1242,64 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0058,
+      "funding_rate": -0.0054,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:46.504381+00:00",
-      "claude_reason": "[85%] Trend:0 score kills signal — no directional conviction despite TRENDING regime | RSI 31.8 near oversold, weak oscillator + zero trend confirmation | suggest: wait for Trend Agent confirmation (EMA cross, ADX >25)"
+      "ts": "2026-04-19T03:45:43.596849+00:00",
+      "claude_reason": "[85%] Score 11/45 too low for TRENDING regime (min 9 OK but weak); Trend:0 is critical gap | No liquidity sweep + RSI 31.8 near oversold (not hard reject <25 but weak signal) | suggest: Wait for Trend Agent confirmation (EMA7/30 cross, SMA99 align, ADX strength)"
     },
     {
       "symbol": "XRP/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
-      "side": "LONG",
-      "score_long": 11,
-      "score_short": 10,
+      "side": "SHORT",
+      "score_long": 10,
+      "score_short": 11,
       "best_score": 11,
       "score_pct": 24.4,
-      "price": 1.4302,
+      "price": 1.4328,
       "rsi": 39.0,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
-      "score_smc": 2,
-      "score_osc": 2,
+      "score_smc": 0,
+      "score_osc": 4,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": true,
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0094,
+      "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:52.794064+00:00",
-      "claude_reason": "[85%] Trend score 0/13 disqualifies despite TRENDING regime label | No EMA/SMA alignment, weak signal quality (11/45) | suggest: wait for EMA7/30 crossover + ADX confirmation"
+      "ts": "2026-04-19T03:45:50.357515+00:00",
+      "claude_reason": "[85%] SHORT in TRENDING regime + HTF bull bias + score 11/45 (below 12 RANGING threshold) | Regime mismatch: directional conflict vs HTF bias | suggest: wait for regime shift to RANGING or HTF bear confirmation"
+    },
+    {
+      "symbol": "XLM/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "SHORT",
+      "score_long": 9,
+      "score_short": 11,
+      "best_score": 11,
+      "score_pct": 24.4,
+      "price": 0.1712,
+      "rsi": 46.8,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 0,
+      "score_smc": 0,
+      "score_osc": 3,
+      "score_liq": 6,
+      "score_fund": 2,
+      "in_discount": true,
+      "trail_bull": false,
+      "bull_sweep": false,
+      "bear_sweep": true,
+      "funding_rate": 0.01,
+      "regime": "RANGING",
+      "ts": "2026-04-19T03:46:23.331915+00:00",
+      "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
     },
     {
       "symbol": "POL/USDT",
@@ -1290,7 +1310,7 @@
       "score_short": 11,
       "best_score": 11,
       "score_pct": 24.4,
-      "price": 0.0895,
+      "price": 0.0894,
       "rsi": 41.6,
       "htf_bull": true,
       "in_kz": false,
@@ -1303,9 +1323,9 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.0061,
+      "funding_rate": -0.0045,
       "regime": "RANGING",
-      "ts": "2026-04-19T03:31:49.917524+00:00",
+      "ts": "2026-04-19T03:46:45.341900+00:00",
       "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
     },
     {
@@ -1317,7 +1337,7 @@
       "score_short": 8,
       "best_score": 8,
       "score_pct": 17.8,
-      "price": 0.3277,
+      "price": 0.3276,
       "rsi": 44.8,
       "htf_bull": true,
       "in_kz": false,
@@ -1330,353 +1350,353 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0157,
+      "funding_rate": -0.0159,
       "regime": "TRENDING",
-      "ts": "2026-04-19T03:30:58.180540+00:00"
+      "ts": "2026-04-19T03:45:56.907985+00:00"
     }
   ],
   "live_prices": {
     "BTC/USDT": {
-      "price": 75487.9,
-      "change": -2.08,
+      "price": 75560.1,
+      "change": -2.02,
       "high": 77250.0,
       "low": 75310.4,
       "vol": 0.0
     },
     "ETH/USDT": {
-      "price": 2340.62,
-      "change": -3.03,
+      "price": 2341.7,
+      "change": -3.08,
       "high": 2419.3,
       "low": 2330.27,
       "vol": 0.0
     },
     "BNB/USDT": {
-      "price": 623.7,
-      "change": -2.64,
+      "price": 624.5,
+      "change": -2.74,
       "high": 648.6,
       "low": 620.5,
       "vol": 0.0
     },
     "XRP/USDT": {
-      "price": 1.428,
-      "change": -2.86,
+      "price": 1.431,
+      "change": -2.72,
       "high": 1.477,
       "low": 1.422,
       "vol": 0.0
     },
     "SOL/USDT": {
-      "price": 85.6,
-      "change": -3.46,
+      "price": 85.68,
+      "change": -3.42,
       "high": 88.8,
       "low": 85.17,
       "vol": 0.0
     },
     "TRX/USDT": {
       "price": 0.3274,
-      "change": 0.09,
+      "change": 0.12,
       "high": 0.33,
       "low": 0.3262,
       "vol": 0.0
     },
     "DOGE/USDT": {
-      "price": 0.09465,
-      "change": -4.18,
+      "price": 0.09494,
+      "change": -3.99,
       "high": 0.09907,
       "low": 0.09413,
       "vol": 0.0
     },
     "ADA/USDT": {
-      "price": 0.2483,
-      "change": -3.5,
+      "price": 0.2485,
+      "change": -3.38,
       "high": 0.2587,
       "low": 0.2466,
       "vol": 0.0
     },
     "BCH/USDT": {
-      "price": 444.5,
-      "change": -2.24,
+      "price": 445.3,
+      "change": -2.15,
       "high": 455.4,
       "low": 443.0,
       "vol": 0.0
     },
     "LTC/USDT": {
-      "price": 55.52,
-      "change": -1.28,
+      "price": 55.6,
+      "change": -1.21,
       "high": 56.63,
       "low": 55.19,
       "vol": 0.0
     },
     "LINK/USDT": {
-      "price": 9.219,
-      "change": -3.82,
+      "price": 9.244,
+      "change": -3.67,
       "high": 9.625,
       "low": 9.155,
       "vol": 0.0
     },
     "AVAX/USDT": {
-      "price": 9.293,
-      "change": -4.04,
+      "price": 9.305,
+      "change": -3.98,
       "high": 9.731,
       "low": 9.195,
       "vol": 0.0
     },
     "SUI/USDT": {
-      "price": 0.9496,
-      "change": -4.63,
+      "price": 0.9513,
+      "change": -4.7,
       "high": 1.0091,
       "low": 0.9416,
       "vol": 0.0
     },
     "TON/USDT": {
-      "price": 1.282,
-      "change": -8.1,
+      "price": 1.28,
+      "change": -8.31,
       "high": 1.405,
       "low": 1.268,
       "vol": 0.0
     },
     "DOT/USDT": {
-      "price": 1.276,
-      "change": -3.63,
+      "price": 1.274,
+      "change": -4.21,
       "high": 1.339,
       "low": 1.261,
       "vol": 0.0
     },
     "SHIB/USDT": {
-      "price": 6.02e-06,
-      "change": -4.0,
+      "price": 6.04e-06,
+      "change": -3.85,
       "high": 6.31e-06,
       "low": 5.98e-06,
       "vol": 0.0
     },
     "HBAR/USDT": {
-      "price": 0.08808,
-      "change": -2.38,
+      "price": 0.08821,
+      "change": -2.26,
       "high": 0.09039,
       "low": 0.08776,
       "vol": 0.0
     },
     "XLM/USDT": {
-      "price": 0.1704,
-      "change": -1.84,
+      "price": 0.1711,
+      "change": -1.78,
       "high": 0.1764,
       "low": 0.1674,
       "vol": 0.0
     },
     "UNI/USDT": {
-      "price": 3.304,
-      "change": -4.32,
+      "price": 3.309,
+      "change": -4.34,
       "high": 3.476,
       "low": 3.266,
       "vol": 0.0
     },
     "NEAR/USDT": {
-      "price": 1.342,
-      "change": -4.01,
+      "price": 1.345,
+      "change": -4.07,
       "high": 1.421,
       "low": 1.329,
       "vol": 0.0
     },
     "TAO/USDT": {
       "price": 242.3,
-      "change": -4.34,
+      "change": -4.46,
       "high": 257.5,
       "low": 239.6,
       "vol": 0.0
     },
     "PEPE/USDT": {
-      "price": 3.76e-06,
-      "change": -4.05,
+      "price": 3.78e-06,
+      "change": -3.94,
       "high": 3.97e-06,
       "low": 3.73e-06,
       "vol": 0.0
     },
     "AAVE/USDT": {
-      "price": 96.44,
+      "price": 96.18,
       "change": -16.27,
       "high": 115.46,
       "low": 94.21,
       "vol": 0.0
     },
     "ICP/USDT": {
-      "price": 2.48,
-      "change": -4.47,
+      "price": 2.477,
+      "change": -4.73,
       "high": 2.634,
       "low": 2.454,
       "vol": 0.0
     },
     "ETC/USDT": {
       "price": 8.402,
-      "change": -3.4,
+      "change": -3.56,
       "high": 8.736,
       "low": 8.334,
       "vol": 0.0
     },
     "RENDER/USDT": {
-      "price": 1.753,
-      "change": -4.93,
+      "price": 1.757,
+      "change": -5.18,
       "high": 1.878,
       "low": 1.737,
       "vol": 0.0
     },
     "ALGO/USDT": {
-      "price": 0.10577,
-      "change": -5.22,
-      "high": 0.11185,
+      "price": 0.10585,
+      "change": -5.15,
+      "high": 0.11171,
       "low": 0.1051,
       "vol": 0.0
     },
     "POL/USDT": {
-      "price": 0.08949,
-      "change": -0.63,
+      "price": 0.0893,
+      "change": -0.76,
       "high": 0.09123,
       "low": 0.08852,
       "vol": 0.0
     },
     "ATOM/USDT": {
       "price": 1.774,
-      "change": -3.27,
+      "change": -3.38,
       "high": 1.848,
       "low": 1.76,
       "vol": 0.0
     },
     "WLD/USDT": {
-      "price": 0.2616,
-      "change": -7.33,
+      "price": 0.2618,
+      "change": -7.46,
       "high": 0.2877,
       "low": 0.257,
       "vol": 0.0
     },
     "ENA/USDT": {
-      "price": 0.11945,
-      "change": -2.76,
+      "price": 0.11996,
+      "change": -3.1,
       "high": 0.1258,
       "low": 0.11762,
       "vol": 0.0
     },
     "FIL/USDT": {
-      "price": 0.9312,
-      "change": -4.69,
+      "price": 0.9317,
+      "change": -4.85,
       "high": 0.9935,
       "low": 0.9242,
       "vol": 0.0
     },
     "APT/USDT": {
-      "price": 0.9266,
-      "change": -5.65,
+      "price": 0.9284,
+      "change": -5.61,
       "high": 0.9897,
       "low": 0.92,
       "vol": 0.0
     },
     "CRO/USDT": {
-      "price": 0.06961,
-      "change": -2.58,
+      "price": 0.06965,
+      "change": -2.6,
       "high": 0.07178,
       "low": 0.06924,
       "vol": 0.0
     },
     "TRUMP/USDT": {
-      "price": 2.829,
-      "change": -5.51,
+      "price": 2.832,
+      "change": -5.38,
       "high": 3.023,
       "low": 2.804,
       "vol": 0.0
     },
     "ONDO/USDT": {
-      "price": 0.2564,
-      "change": -4.79,
+      "price": 0.2569,
+      "change": -4.92,
       "high": 0.2719,
       "low": 0.2535,
       "vol": 0.0
     },
     "HYPE/USDT": {
-      "price": 43.26,
-      "change": -4.52,
-      "high": 45.43,
+      "price": 43.37,
+      "change": -4.49,
+      "high": 45.42,
       "low": 43.14,
       "vol": 0.0
     },
     "MORPHO/USDT": {
-      "price": 1.999,
-      "change": 2.88,
-      "high": 2.006,
+      "price": 1.983,
+      "change": 1.69,
+      "high": 2.014,
       "low": 1.893,
       "vol": 0.0
     },
     "ZEC/USDT": {
-      "price": 321.79,
-      "change": -4.3,
+      "price": 322.29,
+      "change": -4.69,
       "high": 341.26,
       "low": 318.2,
       "vol": 0.0
     },
     "FLR/USDT": {
-      "price": 0.008145,
-      "change": -3.29,
+      "price": 0.008137,
+      "change": -3.53,
       "high": 0.008458,
       "low": 0.00806,
-      "vol": 154158.69
+      "vol": 152672.95
     }
   },
   "market_tickers": [
     {
       "sym": "XAUT",
-      "price": 4773.6,
-      "change": -0.84,
-      "vol": 4860086.52
+      "price": 4775.0,
+      "change": -0.78,
+      "vol": 4805041.54
     },
     {
       "sym": "CFG",
-      "price": 0.24408,
-      "change": 10.65,
-      "vol": 2083231.99
+      "price": 0.24496,
+      "change": 11.12,
+      "vol": 2117398.87
     },
     {
       "sym": "SCR",
-      "price": 0.04502,
-      "change": -8.22,
-      "vol": 1093344.99
+      "price": 0.04465,
+      "change": -8.9,
+      "vol": 1098953.64
     },
     {
       "sym": "PAXG",
-      "price": 4773.2,
-      "change": -0.94,
-      "vol": 1044538.37
+      "price": 4774.4,
+      "change": -0.91,
+      "vol": 1044369.19
     },
     {
       "sym": "ACE",
-      "price": 0.1214,
-      "change": -11.06,
-      "vol": 1487295.6
+      "price": 0.1212,
+      "change": -10.49,
+      "vol": 1486127.64
     },
     {
       "sym": "STETH",
-      "price": 2338.23,
-      "change": -3.16,
-      "vol": 1526273.5
+      "price": 2337.65,
+      "change": -3.19,
+      "vol": 1530418.14
     },
     {
       "sym": "USDG",
       "price": 0.9996,
-      "change": 0.01,
-      "vol": 19981431.41
+      "change": 0.0,
+      "vol": 20356071.41
     }
   ],
   "btc_fg": {
     "value": 66,
     "label": "Greed",
-    "rsi": 69.3,
-    "ma30_pct": 7.0
+    "rsi": 69.6,
+    "ma30_pct": 7.1
   },
   "altcoin_season": {
     "value": 13,
     "label": "Bitcoin Season ₿",
     "outperform": 5,
     "total": 39,
-    "btc_24h": -2.08,
+    "btc_24h": -2.02,
     "timeframe": "24h"
   },
-  "last_scan": "2026-04-19T03:32:35.333448+00:00",
-  "generated": "2026-04-19T03:32:35.333448+00:00",
+  "last_scan": "2026-04-19T03:47:30.276145+00:00",
+  "generated": "2026-04-19T03:47:30.276145+00:00",
   "specialist_wr": {
     "trend": {
       "trades": 7,
@@ -1742,13 +1762,13 @@
     "locked": false,
     "reason": "Seeded from backtest_mtf.csv (2161 backtest trades, WR Trend:49.3% SMC:49.1% Osc:47.5%)",
     "total_closed": 7,
-    "generated": "2026-04-19T03:32:40.736157+00:00"
+    "generated": "2026-04-19T03:47:35.092763+00:00"
   },
   "backtest": {
     "available": true,
     "source": "mtf",
     "source_file": "backtest_mtf.csv",
-    "generated": "2026-04-19T03:30:18.479616+00:00",
+    "generated": "2026-04-19T03:45:17.867105+00:00",
     "date_from": "2024-04-18",
     "date_to": "2026-02-28",
     "total_rows": 2161,
@@ -10391,7 +10411,7 @@
     "label": "backtest_3y",
     "source": "mtf",
     "source_file": "backtest_mtf.csv",
-    "generated": "2026-04-19T03:30:18.479616+00:00",
+    "generated": "2026-04-19T03:45:17.867105+00:00",
     "date_from": "2024-04-18",
     "date_to": "2026-02-28",
     "period": "2023-01-01 → 2026-04-19",
@@ -19034,7 +19054,7 @@
     "available": true,
     "label": "live_perf",
     "source": "signal_log",
-    "generated": "2026-04-19T03:32:40.934954+00:00",
+    "generated": "2026-04-19T03:47:35.264288+00:00",
     "date_from": "2026-04-18",
     "date_to": "2026-04-18",
     "period": "All Signals · 7d (2026-04-18 → 2026-04-18)",
@@ -21709,11 +21729,11 @@
       "calls": 26,
       "approvals": 0,
       "rejections": 26,
-      "input_tokens": 40001,
-      "output_tokens": 2254,
+      "input_tokens": 39991,
+      "output_tokens": 2273,
       "cache_read_tokens": 0,
       "cache_write_tokens": 0,
-      "cost_usd": 0.041017
+      "cost_usd": 0.041085
     },
     "history": [
       {
@@ -21721,14 +21741,14 @@
         "calls": 26,
         "approvals": 0,
         "rejections": 26,
-        "input_tokens": 40001,
-        "output_tokens": 2254,
+        "input_tokens": 39991,
+        "output_tokens": 2273,
         "cache_read_tokens": 0,
         "cache_write_tokens": 0,
-        "cost_usd": 0.041017
+        "cost_usd": 0.041085
       }
     ],
-    "total_cost_usd": 0.041,
+    "total_cost_usd": 0.0411,
     "total_calls": 26,
     "cache_hit_pct": 0.0,
     "model": "claude-haiku-4-5-20251001"
