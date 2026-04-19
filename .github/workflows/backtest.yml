@@ -78,7 +78,8 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          FORCE_REPORT: ${{ github.event.inputs.force_report }}
+          # Scheduled runs always force-send; manual dispatch uses the force_report input
+          FORCE_REPORT: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.force_report }}
         run: python weekly_report.py
 
       - name: Commit backtest results
