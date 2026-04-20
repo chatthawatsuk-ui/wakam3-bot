@@ -2953,20 +2953,39 @@ function drawEquity(eq){
 
   const cw=w-PAD_L-PAD_R, ch=h-PAD_T-PAD_B
   const mn=Math.min(...eq), mx=Math.max(...eq)
-  // ขยาย range นิดหน่อยเพื่อให้เส้นไม่ชิดขอบ
-  const pad=(mx-mn)*0.1||5
-  const lo=mn-pad, hi=mx+pad, rng=hi-lo
+
+  // ── Nice scale: round Y labels ($960, $970, $980…) ────────
+  function niceStep(rawRange, targetSteps){
+    const rough = rawRange / targetSteps
+    const exp   = Math.floor(Math.log10(rough)||0)
+    const mag   = Math.pow(10, exp)
+    const f     = rough / mag
+    const nf    = f<=1?1 : f<=2?2 : f<=5?5 : 10
+    return nf * mag
+  }
+  const dataRange = (mx - mn) || 20
+  const padAmt    = dataRange * 0.18          // ~18% padding top & bottom
+  const rawLo = mn - padAmt, rawHi = mx + padAmt
+  const step  = niceStep(rawHi - rawLo, 5)   // aim ~5 grid lines
+  const lo    = Math.floor(rawLo / step) * step
+  const hi    = Math.ceil(rawHi  / step) * step
+  const rng   = hi - lo
 
   const toX=i=>PAD_L + i/(eq.length-1)*cw
   const toY=v=>PAD_T + ch - (v-lo)/rng*ch
 
-  // ── Y-axis grid + labels (4 levels) ───────────────────────
+  // ── Y-axis grid + labels (nice round values) ──────────────
   ctx.font='10px monospace'
   ctx.textAlign='right'
-  const nGrid=4
-  for(let i=0;i<=nGrid;i++){
-    const val=lo+rng*(i/nGrid)
+  // collect grid ticks from lo to hi stepping by step
+  const gridTicks=[]
+  for(let v=lo; v<=hi+step*0.01; v+=step){
+    gridTicks.push(Math.round(v*100)/100)
+  }
+  // skip ticks that would render outside canvas (too close to edge)
+  gridTicks.forEach(val=>{
     const y=toY(val)
+    if(y < PAD_T-4 || y > h-PAD_B+4) return
     // grid line
     ctx.beginPath()
     ctx.strokeStyle='rgba(255,255,255,0.06)'
@@ -2974,10 +2993,11 @@ function drawEquity(eq){
     ctx.setLineDash([3,3])
     ctx.moveTo(PAD_L,y); ctx.lineTo(w-PAD_R,y); ctx.stroke()
     ctx.setLineDash([])
-    // label
+    // label — format: $1,000 or $970 (no decimals for whole-dollar steps)
     ctx.fillStyle='#666'
-    ctx.fillText('$'+numFmt(val), PAD_L-4, y+3)
-  }
+    const lbl = step>=1 ? '$'+Math.round(val).toLocaleString() : '$'+val.toFixed(1)
+    ctx.fillText(lbl, PAD_L-4, y+3)
+  })
 
   // ── baseline ที่ startVal (เส้น $1,000) ───────────────────
   const baseY=toY(startVal)

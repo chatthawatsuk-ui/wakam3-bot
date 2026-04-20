@@ -123,7 +123,10 @@
       "Bash(py -m py_compile paper_trade.py signal_scanner.py)",
       "Bash(py -m py_compile paper_trade.py signal_scanner.py backtest_3y.py notify.py live_trader.py generate_dashboard.py)",
       "Bash(python -c ' *)",
-      "Bash(py -3 -c ' *)"
+      "Bash(py -3 -c ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c \"import sqlite3; conn=sqlite3.connect\\('paper_trades.db'\\); print\\('Balance:', conn.execute\\('SELECT balance FROM portfolio'\\).fetchone\\(\\)\\); print\\('Open:', conn.execute\\(\\\\\"SELECT COUNT\\(*\\) FROM trades WHERE status='OPEN'\\\\\"\\).fetchone\\(\\)\\); print\\('Closed:', conn.execute\\(\\\\\"SELECT COUNT\\(*\\) FROM trades WHERE status='CLOSED'\\\\\"\\).fetchone\\(\\)\\)\")",
+      "Bash(findstr /i \"balance open_count closed_count win_rate\")"
     ]
   }
 }
