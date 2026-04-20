@@ -252,7 +252,7 @@ def _get_portfolio_context(symbol: str) -> dict:
     except Exception:
         return {
             "balance": 1000.0,
-            "open_count": 0,
+            "open_count": 10,
             "open_summary": "unknown",
             "daily_pnl": 0.0,
             "daily_pnl_pct": 0.0,
