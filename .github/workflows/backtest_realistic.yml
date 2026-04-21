@@ -1,26 +1,20 @@
-name: Realistic Backtest (1%Risk Lev20x Pyramid)
+name: Portfolio Backtest (9-Symbol 3Y)
 
 on:
-  schedule:
-    - cron: '0 17 * * 0'    # อาทิตย์ 17:00 UTC = 00:00 Thai (จันทร์)
   workflow_dispatch:
     inputs:
       mode:
-        description: 'โหมด: weekly=BTC 90วัน, portfolio=9symbols 3Y'
+        description: 'โหมด: portfolio=9symbols 3Y, btc=BTC เดียว'
         required: false
-        default: 'weekly'
+        default: 'portfolio'
         type: choice
         options:
-          - weekly
           - portfolio
+          - btc
       days:
-        description: 'ย้อนหลังกี่วัน (weekly mode เท่านั้น: 90/365/1095)'
+        description: 'ย้อนหลังกี่วัน (btc mode เท่านั้น: 365/1095)'
         required: false
-        default: '90'
-      symbol:
-        description: 'Symbol (weekly mode เท่านั้น) เช่น BTC/USDT'
-        required: false
-        default: 'BTC/USDT'
+        default: '1095'
 
 permissions:
   contents: write
@@ -50,65 +44,32 @@ jobs:
         run: pip install -r requirements.txt matplotlib pyarrow
 
       - name: Run Backtest
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           MODE="${{ github.event.inputs.mode }}"
-          if [ "${{ github.event_name }}" = "schedule" ] || [ "$MODE" = "weekly" ]; then
-            DAYS="${{ github.event.inputs.days }}"
-            SYMBOL="${{ github.event.inputs.symbol }}"
-            DAYS="${DAYS:-90}"
-            SYMBOL="${SYMBOL:-BTC/USDT}"
-            echo "Weekly mode — ${DAYS} days, ${SYMBOL}"
-            python -c "
-import sys
-sys.argv = ['weekly_backtest.py']
-import weekly_backtest as wb
-wb.DAYS = int('${DAYS}')
-wb.SYMBOL = '${SYMBOL}'
-from datetime import datetime, timezone
-import time as time_mod, json, os
-now = datetime.now(timezone.utc)
-week_label = now.strftime('%Y-W%V') + f'-${DAYS}d'
-print(f'Fetching {wb.SYMBOL} 30m ({wb.DAYS} days)...')
-df = wb.fetch_ohlcv(wb.SYMBOL, wb.DAYS)
-print(f'  {len(df):,} candles')
-print('Running backtest...')
-t0 = time_mod.time()
-trades, eq_ts, eq_val = wb.backtest(df)
-elapsed = time_mod.time() - t0
-import numpy as np, pandas as pd
-tdf = pd.DataFrame(trades) if trades else pd.DataFrame()
-total = len(tdf)
-wins = int(tdf['win'].sum()) if not tdf.empty else 0
-wr = wins/total*100 if total else 0
-final = eq_val[-1]
-ret = (final - wb.START_BALANCE)/wb.START_BALANCE*100
-sv = tdf['pnl'].values if not tdf.empty else [0]
-sharpe = np.mean(sv)/np.std(sv)*np.sqrt(len(sv)) if np.std(sv)>0 else 0
-eq_s = pd.Series(eq_val)
-max_dd = ((eq_s.cummax()-eq_s)/eq_s.cummax()).max()*100
-summary = {'week': week_label, 'trades': total, 'wins': wins,
-           'losses': total-wins, 'wr': wr, 'start': wb.START_BALANCE,
-           'end': final, 'return_pct': ret, 'max_dd': max_dd,
-           'sharpe': sharpe, 'elapsed_s': round(elapsed)}
-print(f'Trades:{total} WR:{wr:.1f}% Return:{ret:+.1f}% DD:{max_dd:.1f}% Sharpe:{sharpe:.2f}')
-with open(f'weekly_backtest_{week_label}.json','w') as f: json.dump(summary,f,indent=2)
-png = wb.plot(df, trades, eq_ts, eq_val, week_label, summary)
-wb.notify(summary, week_label, png)
-"
-          else
+          if [ "$MODE" = "portfolio" ]; then
             echo "Portfolio mode — 9 symbols 3Y"
             python backtest_portfolio.py
+          else
+            DAYS="${{ github.event.inputs.days }}"
+            echo "BTC mode — ${DAYS} days"
+            python -c "
+import backtest_1y_chart as bt
+bt.DAYS = int('${DAYS}')
+import time as t0
+from datetime import datetime, timezone
+print(f'Fetching BTC/USDT 30m ({bt.DAYS} days)...')
+df = bt.fetch_ohlcv('BTC/USDT', '30m', bt.DAYS)
+print(f'  {len(df):,} candles')
+trades, eq_ts, eq_val = bt.backtest(df)
+bt.plot(df, trades, eq_ts, eq_val)
+"
           fi
 
       - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f weekly_backtest_*.png weekly_backtest_*.json \
-                     backtest_portfolio.png 2>/dev/null || true
+          git add -f backtest_portfolio.png backtest_1y_chart.png 2>/dev/null || true
           git diff --staged --stat
           if git diff --staged --quiet; then
             echo "Nothing to commit"
