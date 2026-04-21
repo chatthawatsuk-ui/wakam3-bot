@@ -59,6 +59,22 @@ def _htf_30m(df_primary, df_htf):
 
 TREND._htf_bias = _htf_30m
 
+# ── Hard Reject (same rules as claude_filter._hard_reject) ───────────────────
+def hard_reject(sig):
+    score  = sig.get("score", 0)
+    regime = sig.get("regime", "UNKNOWN")
+    sl_pct = sig.get("sl_pct", 0)
+    side   = sig.get("side", "")
+    rsi    = sig.get("rsi", 50)
+
+    if score >= 15 and regime != "TRENDING":  return True
+    if regime == "RANGING":                   return True
+    if sl_pct < 0.5:                          return True
+    if regime == "VOLATILE" and score < 14:   return True
+    if side == "LONG"  and rsi > 75:          return True
+    if side == "SHORT" and rsi < 25:          return True
+    return False
+
 # ── Load parquet ──────────────────────────────────────────────────────────────
 def load_data():
     data = {}
@@ -192,6 +208,8 @@ def backtest(data, timestamps):
             except Exception:
                 continue
             if sig is None:
+                continue
+            if hard_reject(sig):
                 continue
 
             # Pyramid check
