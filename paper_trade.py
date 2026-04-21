@@ -729,7 +729,7 @@ def enforce_max_positions(conn):
 # ถ้า TP1 โดนแล้ว SL อยู่ที่ Breakeven → ปล่อย SL จัดการเอง (ไม่ exit กลางทาง)
 # Ref: Makner EMA 7/30 system — "ถ้า 4H เปลี่ยนทิศ → cut ทันที"
 
-def _get_htf_bull(symbol: str) -> bool | None:
+def _get_htf_bull(symbol: str) -> bool:
     """
     คำนวณ 4H EMA7 vs EMA30 — เหมือน agent_trend.py _htf_bias()
     คืน True (EMA7>EMA30 = bull), False (bear), None (error/ข้อมูลไม่พอ)
@@ -743,7 +743,7 @@ def _get_htf_bull(symbol: str) -> bool | None:
         return cached[0]
 
     try:
-        bars = exchange.fetch_ohlcv(symbol, "4h", limit=60)
+        bars = exchange.fetch_ohlcv(symbol, "30m", limit=150)
         if not bars or len(bars) < 35:
             return None
 

@@ -56,11 +56,11 @@ DEFAULT_SYMBOLS = [
 # primary OKX tf, htf OKX tf, นาทีต่อ candle, warmup candles
 TF_CONFIGS = {
     # primary/htf ต้องเป็น lowercase เสมอ (ccxt OKX format)
-    "15m": dict(primary="15m", htf="1h",  resample="15min", mins=15,   warmup=400),
-    "30m": dict(primary="30m", htf="2h",  resample="30min", mins=30,   warmup=200),
-    "1H":  dict(primary="1h",  htf="4h",  resample="1h",    mins=60,   warmup=200),
-    "4H":  dict(primary="4h",  htf="1d",  resample="4h",    mins=240,  warmup=200),
-    "1D":  dict(primary="1d",  htf="1w",  resample="1D",    mins=1440, warmup=200),
+    "15m": dict(primary="15m", htf="15m", resample="15min", mins=15,   warmup=400),
+    "30m": dict(primary="30m", htf="30m", sma_htf="1h", resample="30min", mins=30,   warmup=200),
+    "1H":  dict(primary="1h",  htf="1h",  resample="1h",    mins=60,   warmup=200),
+    "4H":  dict(primary="4h",  htf="4h",  resample="4h",    mins=240,  warmup=200),
+    "1D":  dict(primary="1d",  htf="1d",  resample="1D",    mins=1440, warmup=200),
 }
 # 5 TFs เท่านั้น: 15m / 30m / 1H / 4H / 1D
 DEFAULT_TFS = ["15m", "30m", "1H", "4H", "1D"]
@@ -131,36 +131,50 @@ def fetch_paginated(symbol: str, tf_str: str, days: float) -> pd.DataFrame:
 # ══════════════════════════════════════════════════════════════════════════════
 _ORIG_HTF_BIAS = TREND._htf_bias
 
-def _make_htf_bias(resample_freq: str):
+def _make_htf_bias(resample_freq: str, df_sma_htf=None):
     EMA_FAST = TREND.EMA_FAST
     EMA_SLOW = TREND.EMA_SLOW
     SMA_99   = TREND.SMA_99
 
     def _patched(df_primary, df_htf):
+        df_primary = df_primary.copy()
+
+        # ── htf_bull: จาก df_htf (หรือ df_primary ถ้า same TF) ────────────────
         if df_htf is None or df_htf.empty:
-            df_primary = df_primary.copy()
             df_primary["htf_bull"] = True
-            df_primary["htf_sma"]  = True
-            return df_primary
-        df_htf = df_htf.copy()
-        df_htf["h7"]       = EMAIndicator(df_htf["close"], EMA_FAST).ema_indicator()
-        df_htf["h30"]      = EMAIndicator(df_htf["close"], EMA_SLOW).ema_indicator()
-        df_htf["h99"]      = SMAIndicator(df_htf["close"], SMA_99).sma_indicator()
-        df_htf["htf_bull"] = df_htf["h7"]  > df_htf["h30"]
-        df_htf["htf_sma"]  = df_htf["close"] > df_htf["h99"]
-        try:
-            htf_rs = df_htf[["htf_bull","htf_sma"]].resample(resample_freq).ffill()
-            df_primary = df_primary.join(htf_rs, how="left")
-        except Exception:
-            df_primary = df_primary.copy()
-        df_primary["htf_bull"] = df_primary["htf_bull"].ffill().fillna(True)
-        df_primary["htf_sma"]  = df_primary["htf_sma"].ffill().fillna(True)
+        else:
+            df_h = df_htf.copy()
+            df_h["h7"]       = EMAIndicator(df_h["close"], EMA_FAST).ema_indicator()
+            df_h["h30"]      = EMAIndicator(df_h["close"], EMA_SLOW).ema_indicator()
+            df_h["htf_bull"] = df_h["h7"] > df_h["h30"]
+            try:
+                htf_rs = df_h[["htf_bull"]].resample(resample_freq).ffill()
+                df_primary = df_primary.join(htf_rs, how="left")
+            except Exception:
+                pass
+            df_primary["htf_bull"] = df_primary["htf_bull"].ffill().fillna(True)
+
+        # ── htf_sma: จาก df_sma_htf (แยก TF) หรือ df_htf เดิม ─────────────────
+        sma_src = df_sma_htf if (df_sma_htf is not None and not df_sma_htf.empty) else df_htf
+        if sma_src is None or sma_src.empty:
+            df_primary["htf_sma"] = True
+        else:
+            df_s = sma_src.copy()
+            df_s["h99"]     = SMAIndicator(df_s["close"], SMA_99).sma_indicator()
+            df_s["htf_sma"] = df_s["close"] > df_s["h99"]
+            try:
+                sma_rs = df_s[["htf_sma"]].resample(resample_freq).ffill()
+                df_primary = df_primary.join(sma_rs, how="left")
+            except Exception:
+                pass
+            df_primary["htf_sma"] = df_primary["htf_sma"].ffill().fillna(True)
+
         return df_primary
 
     return _patched
 
-def patch_htf(resample_freq: str):
-    TREND._htf_bias = _make_htf_bias(resample_freq)
+def patch_htf(resample_freq: str, df_sma_htf=None):
+    TREND._htf_bias = _make_htf_bias(resample_freq, df_sma_htf)
 
 def restore_htf():
     TREND._htf_bias = _ORIG_HTF_BIAS
@@ -397,9 +411,12 @@ def main():
             needed_tfs[p_key] = p_days
         if h_key not in needed_tfs or needed_tfs[h_key] < h_days:
             needed_tfs[h_key] = h_days
+        sma_key = cfg.get("sma_htf")
+        if sma_key and (sma_key not in needed_tfs or needed_tfs[sma_key] < h_days):
+            needed_tfs[sma_key] = h_days
 
     all_trades: list[pd.DataFrame] = []
-    tf_results: dict[str, dict | None] = {}
+    tf_results: dict = {}
     t_start = time_mod.time()
 
     for sym in symbols:
@@ -424,8 +441,9 @@ def main():
                 print(f"    [{tf_name}] ข้อมูลไม่พอ (ต้องการ >{cfg['warmup']} candles)")
                 continue
 
-            # patch _htf_bias ให้ resample ตาม TF นี้
-            patch_htf(cfg["resample"])
+            # patch _htf_bias ให้ resample ตาม TF นี้ (+ sma_htf ถ้ามี)
+            df_sma_htf = data_cache.get(cfg.get("sma_htf"), None)
+            patch_htf(cfg["resample"], df_sma_htf)
             t0 = time_mod.time()
 
             print(f"    [{tf_name}] walking {len(df_p):,} candles...", end=" ", flush=True)
@@ -457,7 +475,7 @@ def main():
     print(f"  บันทึก → {output_csv}  ({len(combined):,} trades)")
 
     # ── Per-TF metrics ──────────────────────────────────────────────────────
-    tf_metrics: dict[str, dict | None] = {}
+    tf_metrics: dict = {}
     for tf_name in tfs:
         if tf_name in tf_results and isinstance(tf_results[tf_name], pd.DataFrame):
             tf_metrics[tf_name] = metrics(tf_results[tf_name])

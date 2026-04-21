@@ -147,7 +147,7 @@ def _score_short(bear_sweep: bool, eq_highs: bool, eq_lows: bool,
     return s
 
 
-def run(df_1h: pd.DataFrame, df_4h: pd.DataFrame = None) -> dict | None:
+def run(df_1h: pd.DataFrame, df_4h: pd.DataFrame = None):
     """
     💧 รัน Liquidity Agent
     ต้องการ OHLCV ≥ 30 แท่ง

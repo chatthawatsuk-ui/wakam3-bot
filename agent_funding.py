@@ -43,7 +43,7 @@ def _symbol_to_instid(symbol: str) -> str:
     return symbol.replace("/", "-") + "-SWAP"
 
 
-def _get_funding_rate(inst_id: str) -> float | None:
+def _get_funding_rate(inst_id: str) -> float:
     """
     ดึง current funding rate จาก OKX public API (ไม่ต้อง auth)
     Returns float (decimal, เช่น 0.0001 = 0.01%) หรือ None ถ้า error

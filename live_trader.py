@@ -57,10 +57,10 @@ except Exception:
 SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
 FUTURES_SET = set(FUTURES_SYMBOLS)
 
-TF_1H   = "1h"
-TF_4H   = "4h"
+TF_1H   = "30m"   # Primary TF — 30m (TF ใครTF concept)
+TF_4H   = "30m"   # Gate TF — ใช้ 30m เดียวกัน (ไม่ข้าม TF)
 TF_1D   = "1d"
-CANDLES = 300
+CANDLES = 500     # 30m ต้องการ candle มากขึ้นสำหรับ warmup
 CANDLES_D = 50   # Daily: พอสำหรับ Stochastic(14,3)
 
 DB_PATH  = "paper_trades.db"
