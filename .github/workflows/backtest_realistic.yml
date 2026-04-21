@@ -5,12 +5,20 @@ on:
     - cron: '0 17 * * 0'    # อาทิตย์ 17:00 UTC = 00:00 Thai (จันทร์)
   workflow_dispatch:
     inputs:
+      mode:
+        description: 'โหมด: weekly=BTC 90วัน, portfolio=9symbols 3Y'
+        required: false
+        default: 'weekly'
+        type: choice
+        options:
+          - weekly
+          - portfolio
       days:
-        description: 'ย้อนหลังกี่วัน (90=weekly, 365=1Y, 1095=3Y)'
+        description: 'ย้อนหลังกี่วัน (weekly mode เท่านั้น: 90/365/1095)'
         required: false
         default: '90'
       symbol:
-        description: 'Symbol เช่น BTC/USDT'
+        description: 'Symbol (weekly mode เท่านั้น) เช่น BTC/USDT'
         required: false
         default: 'BTC/USDT'
 
@@ -23,7 +31,7 @@ env:
 jobs:
   backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 480
 
     steps:
       - name: Checkout repo
@@ -39,20 +47,20 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt matplotlib
+        run: pip install -r requirements.txt matplotlib pyarrow
 
-      - name: Run Weekly Realistic Backtest
+      - name: Run Backtest
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Scheduled weekly run — 90 days"
-            python weekly_backtest.py
-          else
+          MODE="${{ github.event.inputs.mode }}"
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "$MODE" = "weekly" ]; then
             DAYS="${{ github.event.inputs.days }}"
             SYMBOL="${{ github.event.inputs.symbol }}"
-            echo "Manual run — ${DAYS} days, ${SYMBOL}"
+            DAYS="${DAYS:-90}"
+            SYMBOL="${SYMBOL:-BTC/USDT}"
+            echo "Weekly mode — ${DAYS} days, ${SYMBOL}"
             python -c "
 import sys
 sys.argv = ['weekly_backtest.py']
@@ -90,18 +98,22 @@ with open(f'weekly_backtest_{week_label}.json','w') as f: json.dump(summary,f,in
 png = wb.plot(df, trades, eq_ts, eq_val, week_label, summary)
 wb.notify(summary, week_label, png)
 "
+          else
+            echo "Portfolio mode — 9 symbols 3Y"
+            python backtest_portfolio.py
           fi
 
       - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f weekly_backtest_*.png weekly_backtest_*.json backtest_1y_chart.png 2>/dev/null || true
+          git add -f weekly_backtest_*.png weekly_backtest_*.json \
+                     backtest_portfolio.png 2>/dev/null || true
           git diff --staged --stat
           if git diff --staged --quiet; then
             echo "Nothing to commit"
           else
-            git commit -m "backtest-realistic: $(date -u '+%Y-%m-%d %H:%M UTC')"
+            git commit -m "backtest: $(date -u '+%Y-%m-%d %H:%M UTC')"
             git pull --rebase -X ours --autostash origin main
             git push origin main
           fi
