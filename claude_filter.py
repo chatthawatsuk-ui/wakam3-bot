@@ -296,7 +296,8 @@ def ask(signal: dict, scan_result: dict) -> tuple:
     MAX_POSITIONS  = 10
     MAX_PYRAMID    = 2   # สูงสุด 2 positions ต่อ symbol
 
-    if ctx["open_count"] >= MAX_POSITIONS:
+    # positions_full block เฉพาะ symbol ใหม่เท่านั้น — pyramid (same symbol) ข้ามได้
+    if ctx["open_count"] >= MAX_POSITIONS and not ctx["same_symbol_open"]:
         return False, f"positions_full ({ctx['open_count']}/{MAX_POSITIONS}) — ไม่รับ signal ใหม่"
 
     # ── Pyramid check (แทน hard reject same_symbol) ──────────────────────────
