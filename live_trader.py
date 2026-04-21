@@ -27,34 +27,17 @@ except ImportError:
 import signal_scanner as SCANNER
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-FUTURES_SYMBOLS = [
-    "BTC/USDT",  "ETH/USDT",  "BNB/USDT",  "XRP/USDT",  "SOL/USDT",
-    "TRX/USDT",  "DOGE/USDT", "ADA/USDT",  "BCH/USDT",  "LTC/USDT",
-    "LINK/USDT", "AVAX/USDT", "SUI/USDT",  "TON/USDT",  "DOT/USDT",
-    "SHIB/USDT", "HBAR/USDT", "XLM/USDT",  "UNI/USDT",  "NEAR/USDT",
-    "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
-    "ETC/USDT",  "RENDER/USDT","ALGO/USDT", "POL/USDT",  "ATOM/USDT",
-    "WLD/USDT",  "ENA/USDT",  "FIL/USDT",  "APT/USDT",
-    "CRO/USDT",  "TRUMP/USDT","ONDO/USDT", "HYPE/USDT",
-]
-SPOT_SYMBOLS = []   # ไม่มี Spot — ทุก symbol ใช้ Futures (swap)
-
-# ── Watchlist Custom — โหลดจาก watchlist_custom.json ──────────────────────────
-# เพิ่มเหรียญใน watchlist_custom.json แล้ว scanner จะ scan อัตโนมัติเป็น Futures
-_WL_CUSTOM_PATH = "watchlist_custom.json"
+# Watchlist อ่านจาก watchlist_custom.json — แก้ไขเหรียญได้โดยไม่ต้องแตะโค้ด
+_WL_PATH = "watchlist_custom.json"
 try:
-    import json as _json
-    _wl_custom = _json.load(open(_WL_CUSTOM_PATH, encoding="utf-8"))
-    _wl_futures = [s if "/" in s else s + "/USDT" for s in _wl_custom]
-    # merge เฉพาะ symbol ที่ยังไม่มีใน list หลัก
-    _new = [s for s in _wl_futures if s not in FUTURES_SYMBOLS and s not in SPOT_SYMBOLS]
-    if _new:
-        FUTURES_SYMBOLS = FUTURES_SYMBOLS + _new
-        print(f"[Watchlist] เพิ่ม {len(_new)} custom Futures: {', '.join(_new)}")
-except Exception:
-    pass  # ไม่มีไฟล์ หรือ parse error → ข้ามไป
+    _wl = json.load(open(_WL_PATH, encoding="utf-8"))
+    FUTURES_SYMBOLS = [s if "/" in s else s + "/USDT" for s in _wl]
+    print(f"[Watchlist] โหลด {len(FUTURES_SYMBOLS)} symbols จาก {_WL_PATH}")
+except Exception as e:
+    print(f"[WARN] อ่าน {_WL_PATH} ไม่ได้: {e} — ใช้ list ว่าง")
+    FUTURES_SYMBOLS = []
 
-SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
+SYMBOLS     = FUTURES_SYMBOLS
 FUTURES_SET = set(FUTURES_SYMBOLS)
 
 TF_PRIMARY = "30m"   # TF เดียวสำหรับทุกอย่าง — signal + gate (TF ใครTF)
