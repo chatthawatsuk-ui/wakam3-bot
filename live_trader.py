@@ -57,11 +57,12 @@ except Exception:
 SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
 FUTURES_SET = set(FUTURES_SYMBOLS)
 
-TF_1H   = "30m"   # Primary TF — 30m (TF ใครTF concept)
-TF_4H   = "30m"   # Gate TF — ใช้ 30m เดียวกัน (ไม่ข้าม TF)
-TF_1D   = "1d"
-CANDLES = 500     # 30m ต้องการ candle มากขึ้นสำหรับ warmup
-CANDLES_D = 50   # Daily: พอสำหรับ Stochastic(14,3)
+TF_PRIMARY = "30m"   # TF เดียวสำหรับทุกอย่าง — signal + gate (TF ใครTF)
+CANDLES    = 500     # 30m warmup window
+
+# legacy aliases — signal_scanner signature ใช้ df_1h, df_4h (ส่ง TF เดียวกัน)
+TF_1H = TF_PRIMARY
+TF_4H = TF_PRIMARY
 
 DB_PATH  = "paper_trades.db"
 LOG_PATH = "signals.log"
@@ -126,7 +127,6 @@ def scan():
         try:
             d1h = fetch(sym, TF_1H)
             d4h = fetch(sym, TF_4H)
-            d1d = fetch(sym, TF_1D, limit=CANDLES_D)   # Daily — สำหรับ Stoch filter
 
             # MIN_CANDLES: 80 พอสำหรับ EMA30, RSI14, MACD(12,26,9), Stoch(14)
             # เดิม 150 ทำให้เหรียญ new listing ถูก reject แม้ indicator คำนวณได้
@@ -146,7 +146,7 @@ def scan():
                 continue
 
             # ── ส่ง df ให้ Signal Scanner ─────────────────────
-            sig, result = SCANNER.scan_symbol(sym, d1h, d4h, mtype, d1d)
+            sig, result = SCANNER.scan_symbol(sym, d1h, d4h, mtype)
 
             # merge TP/SL levels into scan result so dashboard can show them
             if sig:

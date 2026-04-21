@@ -175,17 +175,9 @@ def run(df_1h, df_4h, df_1d=None):
     htf_bull = bool(r.get("htf_bull", True))
     htf_sma  = bool(r.get("htf_sma",  True))
 
-    # ── Daily Stochastic Filter (SRISIAM 7/30 style) ─────────────────────────
-    # True = Buy-only day, False = Sell-only day, None = filter disabled
-    stoch_d_bull = _daily_stoch_bias(df_1d)
-
+    # Gate: EMA7/30 + SMA99 บน 30m (TF ใครTF — ไม่ข้าม TF)
     long_ok  = htf_bull and htf_sma
     short_ok = not (htf_bull or htf_sma)
-
-    # เพิ่ม Daily Stoch filter ถ้ามีข้อมูล Daily
-    if stoch_d_bull is not None:
-        long_ok  = long_ok  and stoch_d_bull
-        short_ok = short_ok and not stoch_d_bull
 
     sl = _score_long(r)  if long_ok  else 0
     ss = _score_short(r) if short_ok else 0
@@ -198,7 +190,7 @@ def run(df_1h, df_4h, df_1d=None):
         "max_score":     MAX_SCORE,
         "htf_bull":      htf_bull,
         "htf_sma":       htf_sma,
-        "stoch_d_bull":  stoch_d_bull,   # None = filter ไม่ active
+        "stoch_d_bull":  None,
         "atr":           float(r.get("atr14", 0) or 0),
         "adx":           round(float(r.get("adx", 0) or 0), 1),
         "details": {
@@ -210,9 +202,8 @@ def run(df_1h, df_4h, df_1d=None):
             "above_sma99":     bool(r["above_sma99"]),
             "ema7_gt_sma99":   bool(r["ema7_gt_sma99"]),
             "trail_slow_bull": bool(r["trail_slow_bull"]),
-            "adx_strong":      bool(r.get("adx_strong", False)),   # NEW
-            "bb_squeeze":      bool(r.get("bb_squeeze",  False)),   # NEW
-            "stoch_d_bull":    stoch_d_bull,
+            "adx_strong":      bool(r.get("adx_strong", False)),
+            "bb_squeeze":      bool(r.get("bb_squeeze",  False)),
             "ema7":            round(float(r["ema7"]),  6),
             "ema30":           round(float(r["ema30"]), 6),
             "sma99":           round(float(r["sma99"]), 6),
