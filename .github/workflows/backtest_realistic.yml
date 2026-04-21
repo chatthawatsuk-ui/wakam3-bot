@@ -4,23 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'โหมด: portfolio=9symbols 3Y, btc=BTC เดียว'
+        description: 'portfolio = 9 symbols 3Y | btc = BTC only'
         required: false
         default: 'portfolio'
-        type: choice
-        options:
-          - portfolio
-          - btc
       days:
-        description: 'ย้อนหลังกี่วัน (btc mode เท่านั้น: 365/1095)'
+        description: 'Days (btc mode only: 365 or 1095)'
         required: false
         default: '1095'
 
 permissions:
   contents: write
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   backtest:
@@ -29,13 +22,13 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
 
       - name: Setup Python 3.11
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -46,23 +39,13 @@ jobs:
       - name: Run Backtest
         run: |
           MODE="${{ github.event.inputs.mode }}"
-          if [ "$MODE" = "portfolio" ]; then
+          if [ "$MODE" = "portfolio" ] || [ -z "$MODE" ]; then
             echo "Portfolio mode — 9 symbols 3Y"
             python backtest_portfolio.py
           else
             DAYS="${{ github.event.inputs.days }}"
             echo "BTC mode — ${DAYS} days"
-            python -c "
-import backtest_1y_chart as bt
-bt.DAYS = int('${DAYS}')
-import time as t0
-from datetime import datetime, timezone
-print(f'Fetching BTC/USDT 30m ({bt.DAYS} days)...')
-df = bt.fetch_ohlcv('BTC/USDT', '30m', bt.DAYS)
-print(f'  {len(df):,} candles')
-trades, eq_ts, eq_val = bt.backtest(df)
-bt.plot(df, trades, eq_ts, eq_val)
-"
+            python backtest_1y_chart.py
           fi
 
       - name: Commit results
@@ -70,7 +53,6 @@ bt.plot(df, trades, eq_ts, eq_val)
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f backtest_portfolio.png backtest_1y_chart.png 2>/dev/null || true
-          git diff --staged --stat
           if git diff --staged --quiet; then
             echo "Nothing to commit"
           else
