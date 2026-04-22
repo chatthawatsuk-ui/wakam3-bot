@@ -2562,12 +2562,14 @@ function renderDash(){
 let WL_FILTER='all'
 let WL_CUSTOM=JSON.parse(localStorage.getItem('wl_custom')||'[]')
 
-// ── sync custom_symbols จาก dashboard_data.json → localStorage ──────────────
+// ── sync watchlist จาก dashboard_data.json → localStorage ───────────────────
 function wlSyncFromData(){
-  const server=(D.custom_symbols||[]).map(s=>s.includes('/')?s:s+'/USDT')
-  let changed=false
-  server.forEach(s=>{ if(!WL_CUSTOM.includes(s)){ WL_CUSTOM.push(s); changed=true } })
-  if(changed) wlSave()
+  const source=(D.watchlist_symbols||D.custom_symbols||[])
+  const server=source.map(s=>s.includes('/')?s.toUpperCase():s.toUpperCase()+'/USDT')
+  if(JSON.stringify(WL_CUSTOM)!==JSON.stringify(server)){
+    WL_CUSTOM=[...server]
+    wlSave()
+  }
 }
 
 function wlSave(){localStorage.setItem('wl_custom',JSON.stringify(WL_CUSTOM))}
@@ -2583,11 +2585,10 @@ async function fetchCustomPrices(){
 
   await Promise.all(missing.map(async sym=>{
     const base=sym.replace('/USDT','')
-    // ลองทุก format: SWAP, 1000x SWAP, SPOT
+    // ลองเฉพาะ OKX Futures: SWAP, 1000x SWAP
     const candidates=[
       base+'-USDT-SWAP',
-      '1000'+base+'-USDT-SWAP',
-      base+'-USDT'
+      '1000'+base+'-USDT-SWAP'
     ]
     let found=false
     for(const instId of candidates){
@@ -2608,7 +2609,7 @@ async function fetchCustomPrices(){
         CUSTOM_PRICES[sym]='err'
       }
     }
-    // ถ้าลองทุก candidate แล้วไม่เจอเลย (404/empty) = ไม่มีบน OKX จริงๆ
+    // ถ้าลองทุก candidate แล้วไม่เจอเลย = ไม่มีบน OKX Futures จริงๆ
     if(!found && CUSTOM_PRICES[sym]!=='err') CUSTOM_PRICES[sym]=null
     _CP_FETCHING.delete(sym)
   }))
@@ -2677,15 +2678,14 @@ async function syncWatchlistToGitHub(){
     const fileData=await getRes.json()
     const sha=fileData.sha
 
-    // เตรียม content ใหม่ (เฉพาะ custom symbols ที่ไม่อยู่ใน default FUTURES_SET)
-    const customs=WL_CUSTOM.filter(s=>!FUTURES_SET.has(s))
-    const syms=customs.map(s=>s.replace('/USDT',''))
+    // เตรียม content ใหม่จาก watchlist ปัจจุบันทั้งชุด
+    const syms=WL_CUSTOM.map(s=>s.replace('/USDT',''))
     const content=btoa(unescape(encodeURIComponent(JSON.stringify(syms,null,2))))
 
     const putRes=await fetch('https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_FILE,{
       method:'PUT', headers,
       body:JSON.stringify({
-        message:'watchlist: update custom symbols ('+syms.length+' coins)',
+        message:'watchlist: update symbols ('+syms.length+' coins)',
         content, sha
       })
     })
@@ -2745,8 +2745,7 @@ function renderWatchlistPage(){
 
   const scanMap={}
   ;(D.scan_results||[]).forEach(r=>scanMap[r.symbol]=r)
-  const sysCoin=(D.scan_results||[]).map(r=>r.symbol)
-  const allSyms=[...new Set([...sysCoin,...WL_CUSTOM])]
+  const allSyms=WL_CUSTOM.length?[...WL_CUSTOM]:[...(D.scan_results||[]).map(r=>r.symbol)]
 
   // stats
   const sigCnt=allSyms.filter(s=>scanMap[s]?.status==='SIGNAL').length
@@ -2785,17 +2784,13 @@ function renderWatchlistPage(){
     const isCustom=WL_CUSTOM.includes(sym)
     const notScanned=isCustom&&!sc   // เพิ่มเองแต่ไม่ได้อยู่ใน scanner
 
-    // ราคา: LIVE (scanner/futures) → CUSTOM_PRICES (OKX fetch: SWAP > 1000xSWAP > SPOT) → scan price → '—'
+    // ราคา: LIVE (scanner/futures) → CUSTOM_PRICES (OKX futures fetch) → scan price → '—'
     // cp อาจเป็น object, null, 'err' — ใช้เฉพาะเมื่อเป็น object จริงๆ
     const cpObj=(cp && typeof cp==='object') ? cp : null
     const priceData=lv||cpObj
     const px=priceData?pxFmt(priceData.price):sc?pxFmt(sc.price):'—'
     const chg=priceData?priceData.change:null
-    // badge แหล่งราคา: PERP=futures, SPOT=spot (แสดงเฉพาะ custom ที่ดึงจาก OKX API)
-    const srcBadge=cpObj?(cpObj.instId.endsWith('-SWAP')
-      ?'<span style="font-size:8px;background:rgba(99,102,241,.15);color:#818cf8;border-radius:3px;padding:1px 4px;margin-left:3px;border:1px solid rgba(99,102,241,.25)">PERP</span>'
-      :'<span style="font-size:8px;background:rgba(148,163,184,.1);color:var(--t2);border-radius:3px;padding:1px 4px;margin-left:3px;border:1px solid var(--border)">SPOT</span>')
-      :''
+    const srcBadge=cpObj?'<span style="font-size:8px;background:rgba(99,102,241,.15);color:#818cf8;border-radius:3px;padding:1px 4px;margin-left:3px;border:1px solid rgba(99,102,241,.25)">PERP</span>':''
 
     // สถานะ price fetch สำหรับ custom symbols
     const priceLoading=notScanned&&(cp===undefined||cp==='err')  // ยังไม่ได้ fetch หรือ error — จะ retry
@@ -2809,7 +2804,7 @@ function renderWatchlistPage(){
     const pxCell=priceLoading
       ?'<span style="color:var(--t2);font-size:10px">กำลังโหลด…</span>'
       :priceNotFound
-        ?'<span style="color:var(--yellow);font-size:9px;line-height:1.4">ไม่มีบน OKX<br><a href="https://www.okx.com/markets/spot" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">ตรวจชื่อ ↗</a></span>'
+        ?'<span style="color:var(--yellow);font-size:9px;line-height:1.4">ไม่มีบน OKX Futures<br><a href="https://www.okx.com/th/markets/derivatives" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">ตรวจชื่อ ↗</a></span>'
         :`<span style="font-family:var(--mono);font-size:12px">${px}</span>${srcBadge}
           ${chg!==null?`<br><span class="${chg>=0?'up':'dn'}" style="font-size:10px">${chg>=0?'+':''}${chg.toFixed(2)}%</span>`:''}`
 
@@ -2834,7 +2829,7 @@ function renderWatchlistPage(){
       <td>${sc?(sc.htf_bull?'<span class="up">▲</span>':'<span class="dn">▼</span>'):'<span class="t2">—</span>'}</td>
       <td>${sc?(sc.in_kz?'<span class="up">⚡</span>':'<span class="t2">—</span>'):'<span class="t2">—</span>'}</td>
       <td><a href="${url}" target="_blank" style="color:var(--t2);text-decoration:none;font-size:14px" title="เปิด TradingView">↗</a></td>
-      <td>${isCustom?`<button onclick="wlRemove('${sym.replace(/'/g,"\\'")}');event.stopPropagation()"
+      <td>${WL_CUSTOM.includes(sym)?`<button onclick="wlRemove('${sym.replace(/'/g,"\\'")}');event.stopPropagation()"
           style="background:none;border:none;color:var(--t2);cursor:pointer;font-size:16px;line-height:1;padding:0 4px"
           title="ลบออกจาก Watchlist">×</button>`:''}
       </td>
@@ -2851,8 +2846,7 @@ function renderWatchlist(){
   // รวมเหรียญจาก scan_results + WL_CUSTOM (เหมือนหน้า Watchlist)
   const scanMap={}
   ;(D.scan_results||[]).forEach(r=>scanMap[r.symbol]=r)
-  const sysCoin=(D.scan_results||[]).map(r=>r.symbol)
-  const allSyms=[...new Set([...sysCoin,...WL_CUSTOM])]
+  const allSyms=WL_CUSTOM.length?[...WL_CUSTOM]:[...(D.scan_results||[]).map(r=>r.symbol)]
 
   // อัพเดท counter
   setText('d-wl-cnt', allSyms.length+' coins')

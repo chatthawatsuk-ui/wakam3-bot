@@ -13,28 +13,40 @@ DB_PATH   = "paper_trades.db"
 OUT_PATH  = "dashboard_data.json"
 PORT_SIZE = 1000.0
 
-# OKX USDT Perpetual Futures — confirmed
-FUTURES_SYMBOLS = [
+DEFAULT_WATCHLIST = [
     "BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "SOL/USDT",
     "TRX/USDT", "DOGE/USDT", "ADA/USDT", "BCH/USDT", "LTC/USDT",
     "LINK/USDT", "AVAX/USDT", "SUI/USDT", "TON/USDT", "DOT/USDT",
     "SHIB/USDT", "HBAR/USDT", "XLM/USDT", "UNI/USDT", "NEAR/USDT",
-    "TAO/USDT", "MNT/USDT", "PEPE/USDT", "AAVE/USDT", "ICP/USDT",
-    "ETC/USDT", "RENDER/USDT", "ALGO/USDT", "POL/USDT", "ATOM/USDT",
-    "WLD/USDT", "ENA/USDT", "FIL/USDT", "APT/USDT", "VET/USDT",
-    "CRO/USDT", "TRUMP/USDT", "ONDO/USDT", "HYPE/USDT", "DEXE/USDT",
+    "PEPE/USDT", "AAVE/USDT", "ICP/USDT", "ETC/USDT", "RENDER/USDT",
+    "ALGO/USDT", "POL/USDT", "ATOM/USDT", "WLD/USDT", "ENA/USDT",
+    "FIL/USDT", "APT/USDT", "CRO/USDT", "TRUMP/USDT", "ONDO/USDT",
+    "HYPE/USDT", "RAVE/USDT", "RIVER/USDT",
 ]
 
-# ไม่มี OKX futures — ใช้ Spot
-SPOT_SYMBOLS = [
-    "MORPHO/USDT", "KAS/USDT", "QNT/USDT", "ZEC/USDT", "FLR/USDT",
-]
 
-SYMBOLS     = FUTURES_SYMBOLS + SPOT_SYMBOLS
-FUTURES_SET = set(FUTURES_SYMBOLS)
+def _load_watchlist_symbols():
+    path = "watchlist_custom.json"
+    try:
+        with open(path, encoding="utf-8") as f:
+            syms = json.load(f)
+        out = []
+        for s in syms:
+            if not s:
+                continue
+            sym = str(s).strip().upper()
+            if "/" not in sym:
+                sym += "/USDT"
+            out.append(sym)
+        return out or DEFAULT_WATCHLIST
+    except Exception:
+        return DEFAULT_WATCHLIST
+
+
+SYMBOLS = _load_watchlist_symbols()
 
 def fetch_okx_prices():
-    """ดึงราคา + 24h stats จาก OKX (futures+spot) — รันบน GitHub Actions"""
+    """ดึงราคา + 24h stats จาก OKX Futures เท่านั้น — รันบน GitHub Actions"""
     if not ccxt:
         print("  [WARN] ccxt ไม่มี — ข้ามการดึงราคา OKX")
         return {}, [], {}
@@ -44,18 +56,14 @@ def fetch_okx_prices():
     tickers = {}
 
     try:
-        exch_fut  = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
-        exch_spot = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "spot"}})
+        exch_fut = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
 
-        tickers_fut  = exch_fut.fetch_tickers()
-        tickers_spot = exch_spot.fetch_tickers()
+        tickers_fut = exch_fut.fetch_tickers()
 
         # normalize futures keys: "BTC/USDT:USDT" → "BTC/USDT"
         tickers_fut_norm = {k.split(':')[0]: v for k, v in tickers_fut.items()}
 
-        # รวม: spot เป็น base, futures (normalized) ทับเพื่อให้ได้ราคา perp
-        tickers = tickers_spot.copy()
-        tickers.update(tickers_fut_norm)
+        tickers = tickers_fut_norm
 
         # ── live prices ทุกเหรียญใน SYMBOLS ──────────────────────────────
         for sym in SYMBOLS:
@@ -72,7 +80,7 @@ def fetch_okx_prices():
 
         # ── market tickers (futures USDT pairs, vol > $1M) ────────────────
         for sym, t in tickers.items():
-            if not sym.endswith("/USDT:USDT") and not sym.endswith("/USDT"):
+            if not sym.endswith("/USDT"):
                 continue
             vol = float(t.get("quoteVolume") or 0)
             price = float(t.get("last") or 0)
@@ -985,14 +993,8 @@ def _load_api_usage():
 
 
 def _load_custom_symbols():
-    """โหลด custom Futures symbols จาก watchlist_custom.json"""
-    path = "watchlist_custom.json"
-    try:
-        with open(path, encoding="utf-8") as f:
-            syms = json.load(f)
-        return [s if "/" in s else s + "/USDT" for s in syms if s]
-    except Exception:
-        return []
+    """compat: คืน watchlist ทั้งหมดจาก source เดียว"""
+    return _load_watchlist_symbols()
 
 
 def load_live_performance():
@@ -1648,7 +1650,8 @@ def main():
         "backtest_3y":      load_backtest_3y(),       # 📊 Historical 3Y
         "live_perf":        load_live_performance(),  # 📡 Rolling 30d
         "shadow_stats":     shadow_stats,
-        "custom_symbols":   _load_custom_symbols(),   # Watchlist custom Futures
+        "custom_symbols":   _load_custom_symbols(),   # compat key
+        "watchlist_symbols": _load_watchlist_symbols(),
         "api_usage":        _load_api_usage(),         # 🤖 Claude Haiku cost tracking
     }
 

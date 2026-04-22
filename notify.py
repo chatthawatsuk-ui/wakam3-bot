@@ -70,6 +70,18 @@ def signal_msg(sig):
     )
 
 
+def signal_status_msg(sig, status_row):
+    base = signal_msg(sig)
+    if not status_row:
+        status = "⏳ ยังไม่พบสถานะใน DB"
+    elif status_row.get("was_traded"):
+        status = "✅ เปิดเป็น Paper Position"
+    else:
+        reason = status_row.get("skip_reason") or "SKIPPED"
+        status = f"⏭ ไม่ได้เปิดเทรด ({reason})"
+    return base + f"\n📌 Status : {status}"
+
+
 def weekly_report_msg(proposal, backtest_summary=None):
     """สรุป Weekly Report + Backtest ส่ง Telegram"""
     today = proposal.get("generated", "")
@@ -79,6 +91,28 @@ def weekly_report_msg(proposal, backtest_summary=None):
         "⚠️ Proposal Only (ต้องคอนเฟิมก่อนปรับ)",
         "================================",
     ]
+
+    signal_review = proposal.get("signal_review", {})
+    if signal_review:
+        lines += [
+            "",
+            "📡 <b>Signal Review (7d)</b>",
+            f"🔵 Signals : {signal_review.get('total', 0)}",
+            f"✅ Traded  : {signal_review.get('traded', 0)}",
+            f"⏭ Skipped : {signal_review.get('skipped', 0)}",
+            f"📈 WR      : {signal_review.get('wr', 0)}%",
+        ]
+
+    trade_review = proposal.get("trade_review", {})
+    if trade_review:
+        pnl_sign = "+" if (trade_review.get("total_pnl") or 0) >= 0 else ""
+        lines += [
+            "",
+            "💼 <b>Trade Review (7d)</b>",
+            f"🔵 Trades   : {trade_review.get('n', 0)}",
+            f"📈 WR       : {trade_review.get('wr', 0)}%",
+            f"💰 Total PnL: {pnl_sign}${trade_review.get('total_pnl', 0)}",
+        ]
 
     # Backtest summary
     if backtest_summary:
@@ -396,14 +430,39 @@ def get_traded_symbols(window_minutes: int = 60) -> set:
         return set()
 
 
+def get_recent_signal_status(window_minutes: int = 120) -> dict:
+    """คืนสถานะล่าสุดของ signals ใน window: {(symbol, side): {was_traded, skip_reason}}"""
+    if not os.path.exists(DB_PATH):
+        return {}
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cutoff = (datetime.now(timezone.utc) - timedelta(minutes=window_minutes)).isoformat()
+        rows = conn.execute("""
+            SELECT symbol, side, was_traded, COALESCE(skip_reason, '') AS skip_reason, logged_at
+            FROM signal_log
+            WHERE logged_at >= ?
+            ORDER BY logged_at DESC
+        """, (cutoff,)).fetchall()
+        conn.close()
+        out = {}
+        for sym, side, was_traded, skip_reason, _ in rows:
+            key = (sym, side)
+            if key not in out:
+                out[key] = {"was_traded": int(was_traded or 0), "skip_reason": skip_reason or ""}
+        return out
+    except Exception as e:
+        print(f"[NOTIFY] recent signal status error: {e}")
+        return {}
+
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     # 1. ส่งผล closed trades ก่อน (TP/SL hit)
     print("[1] เช็ค Closed Trade Results...")
     notify_closed_trades()
 
-    # 2. ส่ง new signals — เฉพาะที่ถูกเทรดจริงเท่านั้น
-    print("[2] เช็ค New Signals (traded only)...")
+    # 2. ส่ง new signals — ส่งทุก signal พร้อมสถานะ traded/skip
+    print("[2] เช็ค New Signals (all signals)...")
     if not os.path.exists("latest_signals.json"):
         print("  ไม่มี latest_signals.json")
         sys.exit(0)
@@ -415,10 +474,9 @@ if __name__ == "__main__":
         print("  ไม่มี signal")
         sys.exit(0)
 
-    # ดึง set ของ (symbol, side) ที่เพิ่งเปิด trade จริงใน 60 นาทีล่าสุด
-    # → ใช้ signal_log.was_traded=1 เป็นหลัก, fallback trades table
+    status_map = get_recent_signal_status(window_minutes=120)
     traded = get_traded_symbols(window_minutes=60)
-    print(f"  Signals ใน JSON: {len(signals)} | เทรดจริง (DB): {len(traded)}")
+    print(f"  Signals ใน JSON: {len(signals)} | เทรดจริง (DB): {len(traded)} | มีสถานะล่าสุด: {len(status_map)}")
 
     # debug: แสดง symbols ที่จะส่ง vs ที่ skip
     sig_list = [(s["symbol"], s["side"]) for s in signals]
@@ -430,18 +488,12 @@ if __name__ == "__main__":
     for sig in signals:
         sym_side = (sig["symbol"], sig["side"])
 
-        # ── กรอง: ส่งเฉพาะที่มี trade จริงใน DB ───────────────────────────
-        if sym_side not in traded:
-            print(f"  [NOT TRADED] {sig['symbol']} {sig['side']} — skip")
-            skip_count += 1
-            continue
-
         if is_already_notified(sig):
             print(f"  [DEDUP] {sig['symbol']} {sig['side']} — ส่งไปแล้วใน 6h")
             skip_count += 1
             continue
 
-        msg = signal_msg(sig)
+        msg = signal_status_msg(sig, status_map.get(sym_side))
         ok  = send(msg)
         if ok:
             mark_notified(sig)
@@ -449,4 +501,4 @@ if __name__ == "__main__":
         status = "✅ ส่งแล้ว" if ok else "❌ ส่งไม่ได้"
         print(f"  {sig['symbol']} {sig['side']} — {status}")
 
-    print(f"  ✅ ส่ง {new_count} signals ใหม่ | ⏭ skip {skip_count} (ไม่ได้เทรด/ส่งแล้ว)")
+    print(f"  ✅ ส่ง {new_count} signals ใหม่ | ⏭ skip {skip_count} (dedup/ส่งไม่สำเร็จ)")

@@ -15,7 +15,7 @@ Usage:
   py download_history.py --days 365             # ย้อนหลัง 1 ปี
   py download_history.py --refresh              # force re-download ทับไฟล์เดิม
 """
-import sys, os, time, argparse
+import sys, os, time, argparse, json
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from datetime import datetime, timezone, timedelta
@@ -31,7 +31,7 @@ except ImportError:
 # ══════════════════════════════════════════════════════════════════════════════
 CACHE_DIR = "historical_data"
 
-DEFAULT_SYMBOLS = [
+FALLBACK_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
     "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT", "SUI/USDT",
 ]
@@ -83,6 +83,23 @@ def cache_path(symbol: str, tf: str) -> str:
     fname = sym_to_fname(symbol, tf)
     return os.path.join(CACHE_DIR, f"{fname}.parquet")
 
+
+def load_watchlist_symbols(path="watchlist_custom.json"):
+    try:
+        with open(path, encoding="utf-8") as f:
+            syms = json.load(f)
+        out = []
+        for s in syms:
+            if not s:
+                continue
+            sym = str(s).strip().upper()
+            if "/" not in sym:
+                sym += "/USDT"
+            out.append(sym)
+        return out or FALLBACK_SYMBOLS
+    except Exception:
+        return FALLBACK_SYMBOLS
+
 def fetch_all(symbol: str, tf: str, days: float) -> pd.DataFrame:
     """ดึง OHLCV ย้อนหลัง N วัน ด้วย pagination"""
     swap_sym = to_swap_symbol(symbol)   # BTC/USDT → BTC/USDT:USDT
@@ -121,7 +138,7 @@ def fetch_all(symbol: str, tf: str, days: float) -> pd.DataFrame:
 def main():
     parser = argparse.ArgumentParser(description="WAKAM3 Historical Data Downloader")
     parser.add_argument("--symbols", nargs="+", default=None,
-                        help=f"Symbols (default: {len(DEFAULT_SYMBOLS)} ตัวหลัก)")
+                        help="Symbols (default: watchlist_custom.json)")
     parser.add_argument("--tf",      nargs="+", default=None,
                         help=f"TFs (default: {ALL_TFS})")
     parser.add_argument("--days",    type=float, default=DEFAULT_DAYS,
@@ -130,7 +147,7 @@ def main():
                         help="force re-download ทับไฟล์ที่มีอยู่แล้ว")
     args = parser.parse_args()
 
-    symbols = args.symbols or DEFAULT_SYMBOLS
+    symbols = args.symbols or load_watchlist_symbols()
     tfs     = args.tf      or ALL_TFS
     days    = args.days
     refresh = args.refresh
