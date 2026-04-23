@@ -1,5 +1,5 @@
 import sys, os, sqlite3, json, warnings
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pandas as pd
 warnings.filterwarnings("ignore")
 
@@ -423,13 +423,14 @@ def log_signal(conn, sig: dict, was_traded: bool, skip_reason: str = "",
             balance = PORT_SIZE
 
     # ตรวจ PENDING entry เดิมใน 4h ล่าสุด
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=4)).isoformat()
     dup = conn.execute("""
         SELECT id FROM signal_log
         WHERE symbol=? AND side=?
           AND outcome='PENDING'
-          AND logged_at >= datetime('now', '-4 hours')
+          AND logged_at >= ?
         LIMIT 1
-    """, (sig["symbol"], sig["side"])).fetchone()
+    """, (sig["symbol"], sig["side"], cutoff)).fetchone()
 
     if dup:
         if was_traded:

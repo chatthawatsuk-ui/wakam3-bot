@@ -27,18 +27,30 @@ except ImportError:
 import signal_scanner as SCANNER
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
-# Watchlist อ่านจาก watchlist_custom.json — แก้ไขเหรียญได้โดยไม่ต้องแตะโค้ด
+# Watchlist อ่านจาก watchlist_custom.json — ใช้เป็น source of truth ของระบบ
 _WL_PATH = "watchlist_custom.json"
-try:
-    _wl = json.load(open(_WL_PATH, encoding="utf-8"))
-    FUTURES_SYMBOLS = [s if "/" in s else s + "/USDT" for s in _wl]
-    print(f"[Watchlist] โหลด {len(FUTURES_SYMBOLS)} symbols จาก {_WL_PATH}")
-except Exception as e:
-    print(f"[WARN] อ่าน {_WL_PATH} ไม่ได้: {e} — ใช้ list ว่าง")
-    FUTURES_SYMBOLS = []
 
-SYMBOLS     = FUTURES_SYMBOLS
-FUTURES_SET = set(FUTURES_SYMBOLS)
+
+def _load_watchlist(path=_WL_PATH):
+    try:
+        with open(path, encoding="utf-8") as f:
+            syms = json.load(f)
+        out = []
+        for s in syms:
+            if not s:
+                continue
+            sym = str(s).strip().upper()
+            if "/" not in sym:
+                sym += "/USDT"
+            out.append(sym)
+        print(f"[Watchlist] โหลด {len(out)} symbols จาก {path}")
+        return out
+    except Exception as e:
+        print(f"[WARN] อ่าน {path} ไม่ได้: {e} — ใช้ list ว่าง")
+        return []
+
+
+SYMBOLS = _load_watchlist()
 
 TF_PRIMARY = "30m"   # TF เดียวสำหรับทุกอย่าง — signal + gate (TF ใครTF)
 CANDLES    = 500     # 30m warmup window
@@ -55,12 +67,6 @@ exchange_futures = ccxt.okx({
     "enableRateLimit": True,
     "options": {"defaultType": "swap"},
 })
-exchange_spot = ccxt.okx({
-    "enableRateLimit": True,
-    "options": {"defaultType": "spot"},
-})
-
-
 # ── LOGGER ────────────────────────────────────────────────────────────────────
 def log(msg):
     ts   = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
@@ -72,28 +78,26 @@ def log(msg):
 
 # ── FETCH OHLCV ───────────────────────────────────────────────────────────────
 def fetch(symbol, timeframe, limit=CANDLES):
-    exch = exchange_futures if symbol in FUTURES_SET else exchange_spot
-    # ลอง format หลัก (e.g. RAVE/USDT) ก่อน
-    # ถ้าไม่ได้ลอง format linear perpetual (e.g. RAVE/USDT:USDT) เป็น fallback
-    candidates = [symbol]
-    if symbol in FUTURES_SET and ":" not in symbol:
-        # เพิ่ม :USDT suffix สำหรับ OKX linear perpetual format
-        candidates.append(symbol.split("/")[0] + "/USDT:USDT")
+    base = symbol.split("/")[0]
+    attempts = [
+        ("FUTURES", exchange_futures, [symbol, f"{base}/USDT:USDT"]),
+    ]
     last_err = None
-    for sym_try in candidates:
-        try:
-            bars = exch.fetch_ohlcv(sym_try, timeframe, limit=limit)
-            if not bars:
+    for market_type, exch, candidates in attempts:
+        for sym_try in candidates:
+            try:
+                bars = exch.fetch_ohlcv(sym_try, timeframe, limit=limit)
+                if not bars:
+                    continue
+                df = pd.DataFrame(bars, columns=["ts","open","high","low","close","volume"])
+                df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
+                df.set_index("dt", inplace=True)
+                return df[["open","high","low","close","volume"]].astype(float), market_type
+            except Exception as e:
+                last_err = e
                 continue
-            df = pd.DataFrame(bars, columns=["ts","open","high","low","close","volume"])
-            df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-            df.set_index("dt", inplace=True)
-            return df[["open","high","low","close","volume"]].astype(float)
-        except Exception as e:
-            last_err = e
-            continue
     log(f"[WARN] fetch {symbol} {timeframe}: {last_err}")
-    return pd.DataFrame()
+    return pd.DataFrame(), "UNKNOWN"
 
 
 # ── MAIN SCAN — ส่งข้อมูลให้ Signal Scanner ──────────────────────────────────
@@ -106,10 +110,10 @@ def scan():
         f"({'dynamic' if abs(SCANNER.W_TREND - 1/3) > 0.01 else 'equal (default)'})")
 
     for sym in SYMBOLS:
-        mtype = "FUTURES" if sym in FUTURES_SET else "SPOT"
         try:
-            d1h = fetch(sym, TF_1H)
-            d4h = fetch(sym, TF_4H)
+            d1h, mtype_1 = fetch(sym, TF_1H)
+            d4h, mtype_4 = fetch(sym, TF_4H)
+            mtype = mtype_1 if mtype_1 != "UNKNOWN" else mtype_4
 
             # MIN_CANDLES: 80 พอสำหรับ EMA30, RSI14, MACD(12,26,9), Stoch(14)
             # เดิม 150 ทำให้เหรียญ new listing ถูก reject แม้ indicator คำนวณได้
@@ -191,12 +195,12 @@ if __name__ == "__main__":
         except Exception as e:
             log(f"[ERR] write scan_results.json: {e}")
 
-    if signals:
-        try:
-            with open("latest_signals.json", "w") as f:
-                json.dump(signals, f, indent=2, ensure_ascii=False)
+    try:
+        with open("latest_signals.json", "w") as f:
+            json.dump(signals, f, indent=2, ensure_ascii=False)
+        if signals:
             log(f"บันทึก → latest_signals.json ({len(signals)} signals)")
-        except Exception as e:
-            log(f"[ERR] write latest_signals.json: {e}")
-    else:
-        log("ไม่มี signal รอบนี้")
+        else:
+            log("ไม่มี signal รอบนี้ — ล้าง latest_signals.json เป็น []")
+    except Exception as e:
+        log(f"[ERR] write latest_signals.json: {e}")

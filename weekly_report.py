@@ -26,6 +26,39 @@ DB_PATH       = "paper_trades.db"
 PROPOSALS_DIR = "proposals"
 MIN_SIGNALS   = 10    # ขั้นต่ำก่อนเสนอปรับ
 
+
+def _build_signal_trade_reviews():
+    """สรุปแยก Signal Review และ Trade Review จาก signal_log/trades ใน 7 วัน"""
+    try:
+        import generate_dashboard as GD
+        live_perf = GD.load_live_performance()
+        if not live_perf or not live_perf.get("available"):
+            return {}, {}
+
+        summary_all = live_perf.get("summary") or {}
+        summary_traded = live_perf.get("summary_traded") or {}
+
+        signal_review = {
+            "total": int(live_perf.get("total_rows", 0) or 0),
+            "traded": int(live_perf.get("n_traded", 0) or 0),
+            "skipped": int(live_perf.get("n_skipped", 0) or 0),
+            "wr": float(summary_all.get("wr", 0) or 0),
+            "total_pnl": float(summary_all.get("total_pnl", 0) or 0),
+            "sharpe": float(summary_all.get("sharpe", 0) or 0),
+            "dd": float(summary_all.get("dd", 0) or 0),
+        }
+        trade_review = {
+            "n": int(summary_traded.get("n", 0) or 0),
+            "wr": float(summary_traded.get("wr", 0) or 0),
+            "total_pnl": float(summary_traded.get("total_pnl", 0) or 0),
+            "sharpe": float(summary_traded.get("sharpe", 0) or 0),
+            "dd": float(summary_traded.get("dd", 0) or 0),
+        }
+        return signal_review, trade_review
+    except Exception as e:
+        print(f"  [WARN] signal/trade reviews: {e}")
+        return {}, {}
+
 # ── Point ปัจจุบัน (hardcoded ใน agents) ──────────────────────────────────────
 DEFAULT_POINTS = {
     # 🎯 Trend Agent — LONG
@@ -611,6 +644,14 @@ def generate_weekly_report():
             star = " ⭐" if tf == best_tf else ""
             print(f"   {tf}: {d['n']} trades, WR={d['wr']}%, avg=${d['avg_pnl']}{star}")
 
+    signal_review, trade_review = _build_signal_trade_reviews()
+    if signal_review:
+        print("\n📡 Signal Review (7d)")
+        print(f"   Signals={signal_review['total']} Traded={signal_review['traded']} Skipped={signal_review['skipped']} WR={signal_review['wr']}%")
+    if trade_review:
+        print("\n💼 Trade Review (7d)")
+        print(f"   Trades={trade_review['n']} WR={trade_review['wr']}% PnL=${trade_review['total_pnl']}")
+
     claude_prop = _claude_weight_proposal(
         specialist_wr_raw,
         regime_data if "error" not in regime_data else {},
@@ -624,6 +665,8 @@ def generate_weekly_report():
         "generated":        today,
         "status":           "PENDING_CONFIRMATION",
         "warning":          "⚠️ PROPOSAL ONLY — ต้องได้รับการคอนเฟิมจากเจ้าของก่อนปรับใช้จริง",
+        "signal_review":    signal_review,
+        "trade_review":     trade_review,
         "level4": {
             "condition_winrates": cond_wr if "error" not in cond_wr else {},
             "proposals":          cond_prop,

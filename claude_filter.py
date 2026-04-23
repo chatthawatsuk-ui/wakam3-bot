@@ -200,7 +200,7 @@ def _get_portfolio_context(symbol: str) -> dict:
 
         # Balance จาก portfolio table
         row = conn.execute(
-            "SELECT balance FROM portfolio ORDER BY updated_at DESC LIMIT 1"
+            "SELECT balance FROM portfolio ORDER BY updated DESC LIMIT 1"
         ).fetchone()
         balance = round(row[0], 2) if row else 1000.0
 
@@ -214,8 +214,8 @@ def _get_portfolio_context(symbol: str) -> dict:
         # Daily PnL (trades closed today UTC)
         today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
         daily_row = conn.execute(
-            "SELECT COALESCE(SUM(pnl),0) FROM trades WHERE status='CLOSED' AND closed_at >= ?",
-            (today,)
+            "SELECT COALESCE(SUM(pnl_usd),0) FROM trades WHERE status='CLOSED' AND closed_at LIKE ?",
+            (f"{today}%",)
         ).fetchone()
         daily_pnl = round(daily_row[0], 2) if daily_row else 0.0
         daily_pnl_pct = round(daily_pnl / balance * 100, 2) if balance else 0.0

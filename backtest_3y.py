@@ -16,27 +16,22 @@ Output:
   backtest_3y_tf.csv    — สรุป metrics แยกตาม TF (TF Leaderboard)
 
 Usage:
-  py backtest_3y.py                           # ทุก TF, 5 symbols, 3Y
+  py backtest_3y.py                           # ทุก TF, 10 symbols, 3Y
   py backtest_3y.py --tf 1h 4h               # เลือก TF ที่ต้องการ
   py backtest_3y.py --symbols BTC/USDT        # symbol เดียว
   py backtest_3y.py --years 1                 # 1 ปี (เร็วกว่า)
-  py backtest_3y.py --extended               # 10 symbols
   py backtest_3y.py --step 1                 # scan ทุก candle (ช้า แต่แม่น)
 """
 
-import sys, os, warnings, time as time_mod, argparse
+import sys, os, warnings, argparse
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 import pandas as pd
 
 warnings.filterwarnings("ignore")
-
-try:
-    import ccxt
-except ImportError:
-    print("[ERROR] pip install ccxt"); sys.exit(1)
 
 import signal_scanner as SCANNER
 
@@ -47,11 +42,9 @@ SCANNER.save_specialist_history    = lambda *a, **kw: None
 SCANNER.DISABLE_FUNDING = True
 
 # ── SYMBOLS ───────────────────────────────────────────────────────────────────
-DEFAULT_SYMBOLS = [
+BACKTEST_SYMBOLS = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT",
-]
-EXTENDED_SYMBOLS = DEFAULT_SYMBOLS + [
-    "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT",
+    "DOGE/USDT", "ADA/USDT", "LINK/USDT", "AVAX/USDT", "SUI/USDT",
 ]
 
 # ── MULTI-TF CONFIG ───────────────────────────────────────────────────────────
@@ -76,24 +69,14 @@ MAX_LEVERAGE     = 20       # 20x leverage (เหมือน paper_trade.py)
 CLAUDE_MIN_SCORE = 10       # Score threshold แทน Claude filter (≥10/39 ≈ 26% — เดิม 8/31=26%)
 OUTPUT_CSV       = "backtest_3y.csv"
 TF_CSV           = "backtest_3y_tf.csv"
-API_LIMIT  = 300
 CACHE_DIR  = "historical_data"
-
-exchange = ccxt.okx({
-    "enableRateLimit": True,
-    "options": {"defaultType": "swap"},
-})
-
-print("Loading OKX markets...", end=" ", flush=True)
-exchange.load_markets()
-print(f"{len(exchange.markets)} pairs")
 
 
 # ── CACHE ─────────────────────────────────────────────────────────────────────
 def _cache_path(symbol: str, tf: str) -> str:
     return os.path.join(CACHE_DIR, symbol.replace("/", "_") + f"_{tf}.parquet")
 
-def _load_cache(symbol: str, tf: str, years: float) -> pd.DataFrame | None:
+def _load_cache(symbol: str, tf: str, years: float) -> Optional[pd.DataFrame]:
     fpath = _cache_path(symbol, tf)
     if not os.path.exists(fpath):
         return None
@@ -106,45 +89,13 @@ def _load_cache(symbol: str, tf: str, years: float) -> pd.DataFrame | None:
         return None
 
 
-# ── PAGINATED FETCH ───────────────────────────────────────────────────────────
+# ── CACHE-ONLY LOAD ───────────────────────────────────────────────────────────
 def fetch_paginated(symbol, tf, years=3):
     cached = _load_cache(symbol, tf, years)
     if cached is not None:
         return cached
-
-    since_dt = datetime.now(timezone.utc) - timedelta(days=int(years * 365))
-    since_ms = int(since_dt.timestamp() * 1000)
-    all_bars = []
-    page     = 0
-
-    while True:
-        try:
-            bars = exchange.fetch_ohlcv(symbol, tf, since=since_ms, limit=API_LIMIT)
-        except Exception as e:
-            print(f"\n  [WARN] fetch {symbol} {tf} page {page}: {e}")
-            time_mod.sleep(1)
-            break
-
-        if not bars:
-            break
-
-        all_bars.extend(bars)
-        page += 1
-
-        if len(bars) < API_LIMIT:
-            break
-
-        since_ms = bars[-1][0] + 1
-        time_mod.sleep(0.25)
-
-    if not all_bars:
-        return pd.DataFrame()
-
-    df = pd.DataFrame(all_bars, columns=["ts","open","high","low","close","volume"])
-    df.drop_duplicates("ts", inplace=True)
-    df["dt"] = pd.to_datetime(df["ts"], unit="ms", utc=True)
-    df.set_index("dt", inplace=True)
-    return df[["open","high","low","close","volume"]].astype(float).sort_index()
+    print(f"  [WARN] missing cache: {symbol} {tf} — ข้าม (backtest_3y ใช้ historical_data/ เท่านั้น)")
+    return pd.DataFrame()
 
 
 # ── PnL ───────────────────────────────────────────────────────────────────────
@@ -505,11 +456,9 @@ def main():
                         help=f"TFs ที่จะทดสอบ (default: ทุก TF = {ALL_TFS})")
     parser.add_argument("--step",     type=int, default=None,
                         help="override scan step ทุก TF (default ตาม TF config)")
-    parser.add_argument("--extended", action="store_true",
-                        help="ใช้ 10 symbols แทน 5")
     args = parser.parse_args()
 
-    symbols  = args.symbols or (EXTENDED_SYMBOLS if args.extended else DEFAULT_SYMBOLS)
+    symbols  = args.symbols or BACKTEST_SYMBOLS
     tfs      = args.tf or ALL_TFS
 
     # validate TF input
@@ -533,7 +482,7 @@ def main():
         f.endswith(".parquet") for f in os.listdir(CACHE_DIR)
     ) if os.path.isdir(CACHE_DIR) else False
     if not cache_ok:
-        print(f"\n  [INFO] ไม่พบ {CACHE_DIR}/ — ดึงจาก OKX API (ช้ากว่า)")
+        print(f"\n  [WARN] ไม่พบ {CACHE_DIR}/ — backtest_3y ต้องใช้ historical cache เท่านั้น")
         print(f"  [INFO] รัน  py download_history.py  เพื่อสร้าง cache 3Y ก่อน")
 
     all_trades  = []     # trades ทุก TF รวมกัน
