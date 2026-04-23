@@ -126,7 +126,14 @@
       "Bash(py -3 -c ' *)",
       "Bash(python3 -c ' *)",
       "Bash(python -c \"import sqlite3; conn=sqlite3.connect\\('paper_trades.db'\\); print\\('Balance:', conn.execute\\('SELECT balance FROM portfolio'\\).fetchone\\(\\)\\); print\\('Open:', conn.execute\\(\\\\\"SELECT COUNT\\(*\\) FROM trades WHERE status='OPEN'\\\\\"\\).fetchone\\(\\)\\); print\\('Closed:', conn.execute\\(\\\\\"SELECT COUNT\\(*\\) FROM trades WHERE status='CLOSED'\\\\\"\\).fetchone\\(\\)\\)\")",
-      "Bash(findstr /i \"balance open_count closed_count win_rate\")"
+      "Bash(findstr /i \"balance open_count closed_count win_rate\")",
+      "Bash(python -c \"import notify; print\\('OK'\\)\")",
+      "Bash(python3 -c \"import notify; print\\('OK'\\)\")",
+      "Bash(python3 -c \"import paper_trade; print\\('OK'\\)\")",
+      "Bash(grep -v \"^$\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(sqlite3 paper_trades.db \"SELECT id, symbol, side, status, entry_px, sl_px, tp1_px, notional_usd, opened_at FROM trades WHERE status='OPEN' ORDER BY symbol, id;\")"
     ]
   }
 }

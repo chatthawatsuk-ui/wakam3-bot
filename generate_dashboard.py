@@ -1465,21 +1465,57 @@ def main():
         FROM trades WHERE status='OPEN' ORDER BY score DESC, id DESC
     """).fetchall()
 
-    opens = []
+    # ── Group rows by (symbol, side) เพื่อ merge pyramid positions ──────────
+    from collections import OrderedDict
+    groups = OrderedDict()
     for r in open_rows:
-        sym      = r["symbol"]
-        ep       = float(r["entry_px"]     or 0)
-        sl       = float(r["sl_px"]        or 0)
-        side     = r["side"]
-        tp1_hit  = r["tp1_hit"]
-        notional = float(r["notional_usd"] or 0)
-        lev      = float(r["leverage"]     or 0)
-        raw_margin = float(r["margin_usd"] or 0)
-        # margin_usd ใน DB เก่าเก็บ portfolio balance — ถ้า margin > notional ให้คำนวณจาก notional/lev
-        margin_disp = raw_margin if (raw_margin > 0 and raw_margin < notional) else (notional / lev if lev > 0 else notional / 5)
-        risk_usd = float(r["risk_usd"]     or 0)
+        key = (r["symbol"], r["side"])
+        groups.setdefault(key, []).append(r)
 
-        # ── Unrealized P&L ───────────────────────────────────────────────────
+    opens = []
+    for (sym, side), rows in groups.items():
+        if len(rows) == 1:
+            r = rows[0]
+            ep       = float(r["entry_px"]     or 0)
+            sl       = float(r["sl_px"]        or 0)
+            notional = float(r["notional_usd"] or 0)
+            lev      = float(r["leverage"]     or 0)
+            raw_margin = float(r["margin_usd"] or 0)
+            margin_disp = raw_margin if (raw_margin > 0 and raw_margin < notional) else (notional / lev if lev > 0 else notional / 5)
+            risk_usd = float(r["risk_usd"] or 0)
+            tp1      = float(r["tp1_px"] or 0)
+            tp2      = float(r["tp2_px"] or 0)
+            tp1_hit  = bool(r["tp1_hit"])
+            score    = r["score"]
+            rsi      = r["rsi"]
+            open_time = r["opened_at"]
+            row_id   = r["id"]
+            pyramid_count = 1
+        else:
+            # merge: weighted avg entry, sum notional/margin/risk, latest SL/TP
+            total_notional = sum(float(r["notional_usd"] or 0) for r in rows)
+            if total_notional > 0:
+                ep = sum(float(r["entry_px"] or 0) * float(r["notional_usd"] or 0) for r in rows) / total_notional
+            else:
+                ep = float(rows[0]["entry_px"] or 0)
+            # latest row (highest id) for SL/TP/lev/score/rsi
+            latest = max(rows, key=lambda r: r["id"])
+            sl       = float(latest["sl_px"]  or 0)
+            tp1      = float(latest["tp1_px"] or 0)
+            tp2      = float(latest["tp2_px"] or 0)
+            lev      = float(latest["leverage"] or 0)
+            score    = max(r["score"] or 0 for r in rows)
+            rsi      = latest["rsi"]
+            open_time = min(r["opened_at"] for r in rows)  # earliest open
+            row_id    = latest["id"]
+            notional  = total_notional
+            risk_usd  = sum(float(r["risk_usd"]  or 0) for r in rows)
+            raw_margin_sum = sum(float(r["margin_usd"] or 0) for r in rows)
+            margin_disp = raw_margin_sum if (raw_margin_sum > 0 and raw_margin_sum < notional) else (notional / lev if lev > 0 else notional / 5)
+            tp1_hit   = any(bool(r["tp1_hit"]) for r in rows)
+            pyramid_count = len(rows)
+
+        # ── Unrealized P&L ─────────────────────────────────────────────────
         lv      = live_prices.get(sym, {})
         curr_px = float(lv.get("price") or ep)
 
@@ -1488,33 +1524,33 @@ def main():
         if ep > 0 and curr_px > 0:
             raw_pct = (curr_px - ep) / ep * 100
             pnl_pct = raw_pct if side == "LONG" else -raw_pct
-
-            if notional > 0:                          # ใช้ notional จาก DB (ถูกต้อง)
+            if notional > 0:
                 pnl_usd = pnl_pct / 100 * notional
-            else:                                     # fallback สำหรับ trades เก่า
+            else:
                 sl_dist = abs(ep - sl) / ep if (ep > 0 and sl > 0) else 0.005
                 pos_usd = (PORT_SIZE * 0.01) / sl_dist if sl_dist > 0 else 0
                 pnl_usd = pnl_pct / 100 * pos_usd
 
         opens.append({
-            "id":            r["id"],
+            "id":            row_id,
             "symbol":        sym,
             "side":          side,
-            "score":         r["score"],
-            "entry_price":   ep,
+            "score":         score,
+            "entry_price":   round(ep, 8),
             "current_price": round(curr_px, 8),
             "sl_price":      sl,
-            "tp_price":      float(r["tp1_px"] or 0),
-            "tp2_price":     float(r["tp2_px"] or 0),
-            "tp1_hit":       bool(tp1_hit),
-            "rsi":           r["rsi"],
+            "tp_price":      tp1,
+            "tp2_price":     tp2,
+            "tp1_hit":       tp1_hit,
+            "rsi":           rsi,
             "notional":      round(notional, 2),
             "leverage":      round(lev, 2),
             "margin_usd":    round(margin_disp, 2),
             "risk_usd":      round(risk_usd, 2),
             "pnl_pct":       round(pnl_pct, 2),
-            "pnl":          round(pnl_usd, 2),
-            "open_time":    r["opened_at"],
+            "pnl":           round(pnl_usd, 2),
+            "open_time":     open_time,
+            "pyramid_count": pyramid_count,
         })
 
     # ── Level 2: Specialist Win Rate ─────────────────────────────────────────

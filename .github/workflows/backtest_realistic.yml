@@ -40,11 +40,11 @@ jobs:
         run: |
           MODE="${{ github.event.inputs.mode }}"
           if [ "$MODE" = "portfolio" ] || [ -z "$MODE" ]; then
-            echo "Portfolio mode — 9 symbols 3Y"
+            echo "Portfolio mode - 9 symbols 3Y"
             python backtest_portfolio.py
           else
             DAYS="${{ github.event.inputs.days }}"
-            echo "BTC mode — ${DAYS} days"
+            echo "BTC mode - ${DAYS} days"
             python backtest_1y_chart.py
           fi
 

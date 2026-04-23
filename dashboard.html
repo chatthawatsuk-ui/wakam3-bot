@@ -2421,6 +2421,7 @@ function renderDash(){
               ${sideBadge(t.side)}
               <span style="font-size:13px;font-weight:700;font-family:var(--mono)">${symDisp(t.symbol)}</span>
               <span style="font-size:9px;background:rgba(247,147,26,.18);color:#f7931a;border-radius:3px;padding:1px 4px;font-weight:700">${lev}x</span>
+              ${(t.pyramid_count||1)>1?`<span style="font-size:9px;background:rgba(168,85,247,.2);color:#a855f7;border-radius:3px;padding:1px 4px;font-weight:700">×${t.pyramid_count} Pyramid</span>`:''}
             </div>
             <div style="text-align:right">
               <div class="${upnlCls}" style="font-size:14px;font-weight:700;font-family:var(--mono)">${upnlSign}$${Math.abs(upnlLive).toFixed(2)}</div>
