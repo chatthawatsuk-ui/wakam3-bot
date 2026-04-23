@@ -12,6 +12,7 @@ CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID", "")
 
 NOTIFIED_PATH = "notified_signals.json"   # track signals ที่ส่งไปแล้ว
 CLOSED_PATH   = "closed_results.json"     # paper_trade.py เขียน, notify.py อ่าน
+DB_PATH       = "paper_trades.db"
 
 
 # ── SEND ──────────────────────────────────────────────────────────────────────
@@ -44,23 +45,39 @@ def _fmt(px):
     return f"{px:,.2f}"
 
 
+def _get_balance():
+    """ดึง balance ล่าสุดจาก portfolio table"""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        row  = conn.execute(
+            "SELECT balance FROM portfolio ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        conn.close()
+        return row[0] if row else 1000.0
+    except Exception:
+        return 1000.0
+
+
 def signal_msg(sig):
-    is_long   = sig["side"] == "LONG"
-    dir_icon  = "🟢" if is_long else "🔴"
-    kz_tag    = " ⚡KZ" if sig.get("in_kz") else ""
-    regime    = sig.get("regime", "")
+    is_long    = sig["side"] == "LONG"
+    dir_icon   = "🟢" if is_long else "🔴"
+    kz_tag     = " ⚡KZ" if sig.get("in_kz") else ""
+    regime     = sig.get("regime", "")
     regime_str = f"\n📊 Regime : {regime}" if regime else ""
-    sym_clean = sig['symbol'].replace("/USDT", "/USDT.P")
+    sym_clean  = sig['symbol'].replace("/USDT", "/USDT.P")
+    sig_label  = "Signal H" if sig.get("claude_approved") else "Signal"
+    balance    = _get_balance()
+    risk_usd   = balance * 0.01
     return (
         f"================================\n"
-        f"🚀 <b>Signal : {sym_clean} - RR1.2{kz_tag}</b>\n"
+        f"🚀 <b>{sig_label} : {sym_clean} - RR1.2{kz_tag}</b>\n"
         f"↕️ Direction : {sig['side']} {dir_icon}\n"
         f"--------------------------------\n"
         f"🔵 Entry : {_fmt(sig['price'])}\n"
         f"🟢 TP1   : {_fmt(sig['tp1'])}  (RR1.2)\n"
         f"🟢 TP2   : {_fmt(sig['tp2'])}  (RR2.0)\n"
         f"🔴 SL    : {_fmt(sig['sl'])}  (-{sig['sl_pct']}%)\n"
-        f"🎫 Risk per trade : 1-5%\n"
+        f"💰 Risk  : ${risk_usd:.2f}  (Lev 20x)\n"
         f"📊 Score : {sig['score']}/45"
         f"  [🎯{sig.get('score_trend',0)} 🏦{sig.get('score_smc',0)} 📈{sig.get('score_osc',0)}"
         f" 💧{sig.get('score_liq',0)} 💰{sig.get('score_fund',0)}]"
@@ -220,62 +237,37 @@ def get_recent_messages(limit=20):
 
 
 def order_limit_msg(r):
-    is_long  = r.get("side", "") == "LONG"
-    dir_icon = "🟢" if is_long else "🔴"
-    sym_clean = r['symbol'].replace("/USDT", "/USDT.P")
-    ep  = r.get("entry_px", 0)
-    tp1 = r.get("tp1_px",   0)
-    tp2 = r.get("tp2_px",   0)
-    sl  = r.get("sl_px",    0)
-    return (
-        f"================================\n"
-        f"🔵 <b>Update : {sym_clean} - Order Limit Hit ✅</b>\n"
-        f"↕️ Direction : {r.get('side','')} {dir_icon}\n"
-        f"--------------------------------\n"
-        f"🔵 Entry : {_fmt(ep)}\n"
-        f"🟢 TP1   : {_fmt(tp1)}  (RR1.2)\n"
-        f"🟢 TP2   : {_fmt(tp2)}  (RR2.0)\n"
-        f"🔴 SL    : {_fmt(sl)}\n"
-        f"================================"
-    )
+    base = r['symbol'].replace("/USDT", "")
+    return f"Update : 🔵 {base} - Order Limit Hit"
 
 
 def close_msg(r):
-    icon    = "✅ WIN" if r.get("outcome") == "WIN" else "❌ LOSS"
-    side    = r.get("side", "")
-    ep      = r.get("entry_px", 0)
-    ex      = r.get("exit_px",  0)
-    pnl     = r.get("pnl",      0)
-    lev     = r.get("leverage",  0)
-    notional = r.get("notional", 0)
-    reason  = r.get("reason", "")
+    base    = r['symbol'].replace("/USDT", "")
+    outcome = r.get("outcome", "")
+    reason  = r.get("reason", "").lower()
+    pnl     = r.get("pnl", 0)
+    pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
 
-    lev_str = f"  {lev:.1f}x / ${notional:.0f}" if lev else ""
-    return (
-        f"{icon} <b>{r['symbol']}</b> {side} — {reason}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"Entry  : {ep:.8g}\n"
-        f"Exit   : {ex:.8g}\n"
-        f"PnL    : <b>${pnl:+.2f}</b>{lev_str}\n"
-        f"━━━━━━━━━━━━━━━━━━━━"
-    )
+    if "sl_be" in reason:
+        return f"Update : 🔒 {base} - SL → Breakeven (WIN)  {pnl_str}"
+    elif "tp2" in reason:
+        return f"Update : ✅ {base} - TP2 Hit (WIN)  {pnl_str}"
+    elif "sl" in reason:
+        return f"Update : ❌ {base} - SL Hit (LOSS)  {pnl_str}"
+    elif "timeout" in reason:
+        icon = "✅" if outcome == "WIN" else "❌"
+        return f"Update : {icon} {base} - Timeout ({outcome})  {pnl_str}"
+    elif "htf" in reason:
+        icon = "✅" if outcome == "WIN" else "❌"
+        return f"Update : {icon} {base} - HTF Exit ({outcome})  {pnl_str}"
+    else:
+        icon = "✅" if outcome == "WIN" else "❌"
+        return f"Update : {icon} {base} - {outcome}  {pnl_str}"
 
 
 def tp1_msg(r):
-    side = r.get("side", "")
-    ep   = r.get("entry_px",   0)
-    tp1  = r.get("tp1_px",     0)
-    tgt  = r.get("tp1_target", 0)
-    side_icon = "🟢" if side == "LONG" else "🔴"
-    return (
-        f"🎯 <b>TP1 HIT</b> — {side_icon} {r['symbol']} {side}\n"
-        f"━━━━━━━━━━━━━━━━━━━━\n"
-        f"Entry  : {ep:.8g}\n"
-        f"TP1    : {tp1:.8g}  ✅ (target {tgt:.8g})\n"
-        f"SL ขยับ → Breakeven {ep:.8g}\n"
-        f"รอ TP2 ต่อ 🚀\n"
-        f"━━━━━━━━━━━━━━━━━━━━"
-    )
+    base = r['symbol'].replace("/USDT", "")
+    return f"Update : 🎯 {base} - TP1 Hit → SL ขยับ Breakeven"
 
 
 # ── DEDUP — ตรวจว่าส่งไปแล้วหรือยัง ─────────────────────────────────────────
@@ -350,8 +342,6 @@ def notify_closed_trades():
 
 
 # ── ตรวจว่า signal นี้ถูกเปิดเทรดจริงหรือเปล่า ────────────────────────────────
-DB_PATH = "paper_trades.db"
-
 def get_traded_symbols(window_minutes: int = 60) -> set:
     """
     คืน set ของ (symbol, side) ที่ถูกเปิดเทรดจริงใน N นาทีล่าสุด
