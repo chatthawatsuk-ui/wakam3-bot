@@ -133,7 +133,13 @@
       "Bash(grep -v \"^$\")",
       "Skill(update-config)",
       "Skill(update-config:*)",
-      "Bash(sqlite3 paper_trades.db \"SELECT id, symbol, side, status, entry_px, sl_px, tp1_px, notional_usd, opened_at FROM trades WHERE status='OPEN' ORDER BY symbol, id;\")"
+      "Bash(sqlite3 paper_trades.db \"SELECT id, symbol, side, status, entry_px, sl_px, tp1_px, notional_usd, opened_at FROM trades WHERE status='OPEN' ORDER BY symbol, id;\")",
+      "Bash(sqlite3 paper_trades.db \"SELECT id, symbol, side, score, entry_px, sl_px, tp1_px, notional_usd, opened_at, regime FROM trades WHERE symbol='RAVE/USDT' ORDER BY id;\")",
+      "Bash(sqlite3 paper_trades.db \"SELECT id, symbol, side, score, entry_px, sl_px, tp1_px, regime, opened_at FROM trades WHERE symbol='RAVE/USDT';\")",
+      "Bash(sqlite3 paper_trades.db \"SELECT * FROM signal_log WHERE symbol='RAVE/USDT' ORDER BY id DESC LIMIT 5;\")",
+      "Bash(python3 -c \"import signal_scanner; print\\('OK'\\)\")",
+      "Bash(sqlite3 paper_trades.db \"DELETE FROM trades WHERE symbol='RAVE/USDT' AND status='OPEN'; SELECT changes\\(\\) AS deleted;\")",
+      "Bash(sqlite3 paper_trades.db \"SELECT id, symbol, status FROM trades WHERE symbol='RAVE/USDT';\")"
     ]
   }
 }
