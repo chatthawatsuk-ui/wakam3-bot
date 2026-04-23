@@ -592,29 +592,37 @@ def open_trade(conn, sig):
         log_signal(conn, sig, was_traded=False, skip_reason="MAX_OPEN", balance=balance)
         return None
 
-    # ── Pyramid check — อนุญาต max MAX_PYRAMID_PER_SYMBOL positions ต่อ symbol ──
+    # ── Pyramid check — 1 position ต่อ symbol, pyramid = MERGE ทับแถวเดิม ─────
     existing_rows = conn.execute(
-        "SELECT id, entry_px, side FROM trades WHERE symbol=? AND status='OPEN'"
+        "SELECT id, entry_px, side, qty, notional_usd, margin_usd, risk_usd, pyramid_level, score"
+        " FROM trades WHERE symbol=? AND status='OPEN'"
         " ORDER BY opened_at ASC",
         (sig["symbol"],)
     ).fetchall()
     existing_count = len(existing_rows)
 
-    pyramid_level = 1  # default: first entry
-
-    if existing_count >= MAX_PYRAMID_PER_SYMBOL:
-        print(f"  [SKIP] {sig['symbol']} มี {existing_count} positions แล้ว"
-              f" (max {MAX_PYRAMID_PER_SYMBOL})")
-        log_signal(conn, sig, was_traded=False, skip_reason="PYRAMID_MAX", balance=balance)
-        return None
-
     if existing_count > 0:
-        # มี position เดิมอยู่ → ตรวจ pyramid conditions (ซ้ำ logic ใน claude_filter)
-        existing_entry = existing_rows[0][1]   # entry_px ของ position เก่าสุด
-        existing_side  = existing_rows[0][2]   # side ของ position เก่าสุด
-        current_px     = sig.get("price", 0)
-        score_trend    = sig.get("score_trend", 0)
+        ex               = existing_rows[0]
+        existing_id      = ex[0]
+        existing_entry   = ex[1]
+        existing_side    = ex[2]
+        existing_qty     = ex[3] or 0.0
+        existing_notional= ex[4] or 0.0
+        existing_margin  = ex[5] or 0.0
+        existing_risk    = ex[6] or 0.0
+        existing_level   = ex[7] or 1
+        existing_score   = ex[8] or 0
+        current_px       = sig.get("price", 0)
+        score_trend      = sig.get("score_trend", 0)
 
+        # ── ถึง max pyramid level แล้ว → skip ────────────────────────────────
+        if existing_level >= MAX_PYRAMID_PER_SYMBOL:
+            print(f"  [SKIP] {sig['symbol']} pyramid ครบ level {existing_level} แล้ว"
+                  f" (max {MAX_PYRAMID_PER_SYMBOL})")
+            log_signal(conn, sig, was_traded=False, skip_reason="PYRAMID_MAX", balance=balance)
+            return None
+
+        # ── ตรวจ pyramid condition ────────────────────────────────────────────
         pnl_pct = 0.0
         if existing_entry > 0 and current_px > 0:
             if existing_side == "LONG":
@@ -622,7 +630,7 @@ def open_trade(conn, sig):
             elif existing_side == "SHORT":
                 pnl_pct = (existing_entry - current_px) / existing_entry * 100
 
-        pyr_strong = (score_trend >= 10 and pnl_pct >= 0.0)
+        pyr_strong = (score_trend >= 10 and pnl_pct > 0.5)
         pyr_medium = (score_trend >= 9  and pnl_pct > 1.0)
 
         if not (pyr_strong or pyr_medium):
@@ -632,11 +640,55 @@ def open_trade(conn, sig):
                        skip_reason="PYRAMID_BLOCKED", balance=balance)
             return None
 
-        pyramid_level = existing_count + 1
-        print(f"  🔺 PYRAMID #{pyramid_level} — {sig['symbol']}"
-              f" trend={score_trend}/13 existing_pnl={pnl_pct:+.1f}%"
-              f" (entry#{1}@{existing_entry:.4f})")
+        # ── MERGE: คำนวณ qty/entry/margin/notional ใหม่ ──────────────────────
+        new_entry = sig["price"]
+        new_sl    = sig["sl"]
+        if new_entry > 0 and new_sl > 0 and abs(new_entry - new_sl) / new_entry >= 0.001:
+            add_qty, add_notional, _, add_margin, add_risk = calc_position(balance, new_entry, new_sl)
+        else:
+            add_qty = add_notional = add_margin = add_risk = 0.0
 
+        total_qty      = existing_qty + add_qty
+        avg_entry      = ((existing_qty * existing_entry) + (add_qty * new_entry)) / total_qty \
+                         if total_qty > 0 else new_entry
+        total_notional = existing_notional + add_notional
+        total_margin   = existing_margin   + add_margin
+        total_risk     = existing_risk     + add_risk
+        new_level      = existing_level + 1
+        new_score      = max(sig["score"], existing_score)
+
+        conn.execute("""
+            UPDATE trades SET
+                entry_px      = ?,
+                qty           = ?,
+                notional_usd  = ?,
+                margin_usd    = ?,
+                risk_usd      = ?,
+                sl_px         = ?,
+                tp1_px        = ?,
+                tp2_px        = ?,
+                score         = ?,
+                pyramid_level = ?
+            WHERE id = ?
+        """, (
+            round(avg_entry, 8), round(total_qty, 6),
+            round(total_notional, 4), round(total_margin, 4), round(total_risk, 4),
+            new_sl, sig["tp1"], sig["tp2"],
+            new_score, new_level, existing_id,
+        ))
+        conn.commit()
+
+        print(f"  🔺 PYRAMID #{new_level} MERGE — {sig['symbol']}"
+              f" trend={score_trend}/13 pnl={pnl_pct:+.1f}%"
+              f" entry {existing_entry:.6g}→avg {avg_entry:.6g}"
+              f" qty={total_qty:.4f} notional=${total_notional:.0f}"
+              f" margin=${total_margin:.2f}")
+
+        log_signal(conn, sig, was_traded=True, skip_reason="", balance=balance)
+        _append_order_limit_hit(sig)
+        return existing_id
+
+    # ── First entry (ไม่มี position เดิม) ────────────────────────────────────
     entry_px = sig["price"]
     sl_px    = sig["sl"]
 
@@ -672,15 +724,14 @@ def open_trade(conn, sig):
         sig.get("funding_rate"),
         1 if sig.get("bull_sweep") else 0,
         1 if sig.get("bear_sweep") else 0,
-        pyramid_level,
+        1,   # pyramid_level = 1 (first entry เสมอ)
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()
     trade_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    pyr_tag = f" 🔺PYR#{pyramid_level}" if pyramid_level > 1 else ""
-    print(f"  ✅ เปิด #{trade_id}{pyr_tag} {sig['symbol']} {sig['side']} "
+    print(f"  ✅ เปิด #{trade_id} {sig['symbol']} {sig['side']} "
           f"@ {sig['price']} | qty={qty:.4f} notional=${notional:.0f} "
-          f"lev={leverage:.1f}x risk=${risk:.2f}")
+          f"lev={leverage:.1f}x margin=${margin:.2f} risk=${risk:.2f}")
 
     # ── บันทึก signal_log (was_traded=1) ─────────────────────────────────────
     log_signal(conn, sig, was_traded=True, skip_reason="", balance=balance)
