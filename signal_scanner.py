@@ -285,6 +285,9 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
 
     signal["claude_approved"] = True
     signal["claude_reason"]   = claude_reason
+    # haiku_filtered = True เฉพาะเมื่อ Claude Haiku run จริงและ approve
+    # fallback (filter_disabled / err:...) ไม่นับ
+    signal["haiku_filtered"]  = claude_reason.startswith("[")
 
     # ── Level 4: บันทึก conditions ที่ active ตอน signal ยิง ──
     save_condition_snapshot(sym, side, regime, ts, t_rep, s_rep, o_rep, l_rep)

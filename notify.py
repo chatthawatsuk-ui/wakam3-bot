@@ -65,7 +65,7 @@ def signal_msg(sig):
     regime     = sig.get("regime", "")
     regime_str = f"\n📊 Regime : {regime}" if regime else ""
     sym_clean  = sig['symbol'].replace("/USDT", "/USDT.P")
-    sig_label  = "Signal H" if sig.get("claude_approved") else "Signal"
+    sig_label  = "Signal H" if sig.get("haiku_filtered") else "Signal"
     balance    = _get_balance()
     risk_usd   = balance * 0.01
     return (
