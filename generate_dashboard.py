@@ -1,4 +1,4 @@
-import sys, os, sqlite3, json, warnings, time
+import sys, os, sqlite3, json, warnings, time, urllib.request
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 from datetime import datetime, timezone
@@ -103,19 +103,6 @@ def fetch_okx_prices():
 
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
-def _rsi(closes, period=14):
-    """Simple RSI calculation (pure Python, no pandas needed)"""
-    if len(closes) < period + 1:
-        return 50.0
-    deltas = [closes[i] - closes[i-1] for i in range(1, len(closes))]
-    gains  = [d if d > 0 else 0.0 for d in deltas]
-    losses = [-d if d < 0 else 0.0 for d in deltas]
-    avg_g  = sum(gains[-period:]) / period
-    avg_l  = sum(losses[-period:]) / period
-    if avg_l == 0:
-        return 100.0
-    rs = avg_g / avg_l
-    return round(100 - 100 / (1 + rs), 1)
 
 
 def calc_market_indices(tickers_norm):
@@ -164,43 +151,15 @@ def calc_market_indices(tickers_norm):
     except Exception as e:
         print(f"  [WARN] altcoin_season: {e}")
 
-    # ── 2. BTC Fear & Greed (daily OHLCV) ─────────────────────────────────────
+    # ── 2. Fear & Greed Index (alternative.me) ────────────────────────────────
     try:
-        exch = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
-        bars = exch.fetch_ohlcv("BTC/USDT", "1d", limit=91)
-        if bars and len(bars) >= 31:
-            closes = [float(b[4]) for b in bars]   # close prices
-            curr   = closes[-1]
-
-            # RSI(14) daily
-            rsi = _rsi(closes)
-
-            # Momentum: % above/below 30d MA  (−20% → 0, +20% → 100)
-            ma30      = sum(closes[-30:]) / 30
-            momentum  = (curr - ma30) / ma30 * 100
-            mom_score = max(0.0, min(100.0, (momentum + 20) / 40 * 100))
-
-            # Volatility: std of last 14 daily returns (low vol = greed)
-            rets   = [(closes[i] - closes[i-1]) / closes[i-1] * 100
-                      for i in range(len(closes)-14, len(closes))]
-            mean_r = sum(rets) / len(rets)
-            std_r  = (sum((r - mean_r)**2 for r in rets) / len(rets)) ** 0.5
-            vol_score = max(0.0, min(100.0, 100 - std_r / 5 * 100))
-
-            score = round(rsi * 0.4 + mom_score * 0.4 + vol_score * 0.2)
-            if score >= 75:   lbl = "Extreme Greed"
-            elif score >= 55: lbl = "Greed"
-            elif score >= 45: lbl = "Neutral"
-            elif score >= 25: lbl = "Fear"
-            else:             lbl = "Extreme Fear"
-
-            result["btc_fg"] = {
-                "value": score,
-                "label": lbl,
-                "rsi":   rsi,
-                "ma30_pct": round(momentum, 1),
-            }
-        print(f"  BTC F&G: {result['btc_fg']['value']}/100 — {result['btc_fg']['label']}")
+        url = "https://api.alternative.me/fng/?limit=1"
+        with urllib.request.urlopen(url, timeout=10) as resp:
+            fng = json.loads(resp.read())["data"][0]
+        score = int(fng["value"])
+        lbl   = fng["value_classification"]
+        result["btc_fg"] = {"value": score, "label": lbl}
+        print(f"  F&G: {score}/100 — {lbl}")
     except Exception as e:
         print(f"  [WARN] btc_fg: {e}")
 
