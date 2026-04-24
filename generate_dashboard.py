@@ -159,11 +159,25 @@ def calc_market_indices(tickers_norm):
     except Exception as e:
         print(f"  [WARN] altcoin_season: {e}")
 
-    # ── 2. BTC Fear & Greed (computed from price + dominance) ────────────────
+    # ── 2. BTC Fear & Greed (price 50% + RSI 30% + BTC dom 20%) ─────────────
     try:
         btc_t2   = tickers_norm.get("BTC/USDT", {})
         btc_chg2 = float(btc_t2.get("percentage") or 0)
-        score = round(max(0, min(100, 50 + btc_chg2 * 2.5)))
+        # BTC RSI จาก scan_results.json (รันก่อน generate_dashboard)
+        btc_rsi = 50.0
+        try:
+            import os
+            if os.path.exists("scan_results.json"):
+                sr = json.load(open("scan_results.json"))
+                btc_scan = next((r for r in sr if r.get("symbol") == "BTC/USDT"), {})
+                btc_rsi = float(btc_scan.get("rsi") or 50)
+        except Exception:
+            pass
+        alt_val      = result["altcoin_season"]["value"]
+        price_score  = max(0, min(100, 50 + btc_chg2 * 2.5))
+        rsi_score    = max(0, min(100, btc_rsi))
+        dom_score    = max(0, min(100, 100 - alt_val))
+        score = round(price_score * 0.5 + rsi_score * 0.3 + dom_score * 0.2)
         if score >= 80:   lbl = "Extreme Greed"
         elif score >= 60: lbl = "Greed"
         elif score >= 40: lbl = "Neutral"
@@ -173,8 +187,9 @@ def calc_market_indices(tickers_norm):
             "value":   score,
             "label":   lbl,
             "btc_24h": round(btc_chg2, 2),
+            "btc_rsi": round(btc_rsi, 1),
         }
-        print(f"  BTC F&G: {score}/100 — {lbl} (BTC {btc_chg2:+.1f}%)")
+        print(f"  BTC F&G: {score}/100 — {lbl} (price={price_score:.0f} rsi={rsi_score:.0f} dom={dom_score:.0f})")
     except Exception as e:
         print(f"  [WARN] btc_fg: {e}")
 
