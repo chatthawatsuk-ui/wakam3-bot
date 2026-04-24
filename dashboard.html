@@ -426,13 +426,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .macro-sub{font-size:9px;color:var(--t2)}
 
 /* ─── BTC LIVE PAGE ───────────────────────── */
-.btc-hero{padding:20px;text-align:center}
-.btc-hero-px{font-size:42px;font-weight:700;letter-spacing:-.02em;font-family:var(--mono)}
-.btc-hero-sub{font-size:13px;color:var(--t2);margin-top:4px}
-.btc-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
-.btc-stat{background:var(--s4);border-radius:8px;padding:12px;border:1px solid var(--border)}
-.btc-stat-lbl{font-size:9px;color:var(--t2);letter-spacing:.1em;margin-bottom:4px}
-.btc-stat-val{font-size:14px;font-weight:600;font-family:var(--mono)}
+.btc-hero{padding:28px 24px 18px;text-align:center}
+.btc-hero-px{font-size:54px;font-weight:800;letter-spacing:-.03em;font-family:var(--mono);line-height:1}
+.btc-hero-sub{font-size:13px;color:var(--t2);margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px}
+.btc-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.btc-stats-section{margin-top:14px}
+.btc-stats-section-lbl{font-size:8px;color:var(--t2);letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;padding-left:2px;opacity:.7}
+.btc-stat{background:var(--s4);border-radius:8px;padding:11px 13px;border:1px solid var(--border);border-left:3px solid transparent;transition:border-color .2s}
+.btc-stat.au{border-left-color:#22c55e}
+.btc-stat.ad{border-left-color:#ef4444}
+.btc-stat.ab{border-left-color:#60a5fa}
+.btc-stat.ay{border-left-color:#eab308}
+.btc-stat.ap{border-left-color:#a78bfa}
+.btc-stat-lbl{font-size:8px;color:var(--t2);letter-spacing:.12em;margin-bottom:5px}
+.btc-stat-val{font-size:15px;font-weight:700;font-family:var(--mono)}
 
 /* ─── TRADINGVIEW INTERVAL BUTTONS ───────── */
 .tv-int-btn{
@@ -1042,22 +1049,45 @@ tr:hover td{background:rgba(255,255,255,.02)}
               <div class="card-title"><span class="icon">😱</span> FEAR &amp; GREED INDEX</div>
               <div class="card-meta" id="fg-upd">—</div>
             </div>
-            <div class="fg-wrap">
-              <div class="fg-gauge-wrap">
-                <canvas id="fg-canvas" width="100" height="56"></canvas>
+            <div style="display:grid;grid-template-columns:1fr 1px 1fr">
+              <!-- Crypto Market (alternative.me) -->
+              <div style="padding:10px 13px">
+                <div style="font-size:8px;color:var(--t2);letter-spacing:.1em;margin-bottom:6px">CRYPTO MARKET</div>
+                <div class="fg-wrap" style="padding:0">
+                  <div class="fg-gauge-wrap">
+                    <canvas id="fg-canvas" width="100" height="56"></canvas>
+                  </div>
+                  <div class="fg-info">
+                    <div class="fg-num" id="fg-val">—</div>
+                    <div class="fg-lbl t2" id="fg-lbl">LOADING...</div>
+                    <div class="fg-hist">
+                      <span>Yesterday: <b id="fg-yst">—</b></span>
+                      <span>Week: <b id="fg-week">—</b></span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="fg-info">
-                <div class="fg-num" id="fg-val">—</div>
-                <div class="fg-lbl t2" id="fg-lbl">LOADING...</div>
-                <div class="fg-hist">
-                  <span>Yesterday: <b id="fg-yst">—</b></span>
-                  <span>Week: <b id="fg-week">—</b></span>
+              <!-- Divider -->
+              <div style="background:var(--border)"></div>
+              <!-- BTC Sentiment (calculated) -->
+              <div style="padding:10px 13px">
+                <div style="font-size:8px;color:var(--t2);letter-spacing:.1em;margin-bottom:6px">BTC SENTIMENT</div>
+                <div class="fg-wrap" style="padding:0">
+                  <div class="fg-gauge-wrap">
+                    <canvas id="db-btc-fg-canvas" width="100" height="56"></canvas>
+                  </div>
+                  <div class="fg-info">
+                    <div class="fg-num" id="db-btc-fg-val">—</div>
+                    <div class="fg-lbl t2" id="db-btc-fg-lbl">—</div>
+                    <div class="fg-hist">
+                      <span>BTC 24h <b id="db-btc-fg-chg">—</b></span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
             <div style="padding:4px 13px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border);display:flex;justify-content:space-between">
-              <span>📊 <b style="color:var(--text)">Crypto Market</b> overall sentiment</span>
-              <span>src: alternative.me</span>
+              <span>Crypto: <b style="color:var(--text)">alternative.me</b> · BTC: <b style="color:var(--text)">calculated</b></span>
             </div>
           </div>
 
@@ -1206,29 +1236,38 @@ tr:hover td{background:rgba(255,255,255,.02)}
           <div class="btc-hero">
             <div class="btc-hero-px" id="btc-live-px">—</div>
             <div class="btc-hero-sub">
-              <span id="btc-live-chg" style="font-weight:600">—</span>
-              <span style="margin-left:6px;color:var(--t2)">24H Change</span>
+              <span id="btc-live-chg" style="font-weight:700;font-size:15px">—</span>
+              <span style="color:var(--t2);font-size:12px">24H Change</span>
             </div>
-            <!-- Row 1: High / Low / Vol USDT / Vol BTC -->
-            <div class="btc-stats-row" style="margin-top:12px">
-              <div class="btc-stat"><div class="btc-stat-lbl">24H HIGH</div><div class="btc-stat-val up" id="btc-live-hi">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">24H LOW</div><div class="btc-stat-val dn" id="btc-live-lo">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME USDT</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">VOLUME BTC</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+            <!-- Row 1: Market Data -->
+            <div class="btc-stats-section">
+              <div class="btc-stats-section-lbl">Market Data</div>
+              <div class="btc-stats-row">
+                <div class="btc-stat au"><div class="btc-stat-lbl">24H HIGH</div><div class="btc-stat-val up" id="btc-live-hi">—</div></div>
+                <div class="btc-stat ad"><div class="btc-stat-lbl">24H LOW</div><div class="btc-stat-val dn" id="btc-live-lo">—</div></div>
+                <div class="btc-stat ab"><div class="btc-stat-lbl">VOLUME USDT</div><div class="btc-stat-val" id="btc-live-vol">—</div></div>
+                <div class="btc-stat ab"><div class="btc-stat-lbl">VOLUME BTC</div><div class="btc-stat-val t2" id="btc-live-volb">—</div></div>
+              </div>
             </div>
-            <!-- Row 2: RSI / Funding / Regime / HTF -->
-            <div class="btc-stats-row" style="margin-top:8px">
-              <div class="btc-stat"><div class="btc-stat-lbl">RSI (14)</div><div class="btc-stat-val" id="btc-live-rsi">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">FUNDING RATE</div><div class="btc-stat-val" id="btc-live-fund">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">REGIME</div><div class="btc-stat-val" id="btc-live-regime">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">HTF BIAS</div><div class="btc-stat-val" id="btc-live-htf">—</div></div>
+            <!-- Row 2: Technicals -->
+            <div class="btc-stats-section">
+              <div class="btc-stats-section-lbl">Technicals</div>
+              <div class="btc-stats-row">
+                <div class="btc-stat ap"><div class="btc-stat-lbl">RSI (14)</div><div class="btc-stat-val" id="btc-live-rsi">—</div></div>
+                <div class="btc-stat ay"><div class="btc-stat-lbl">FUNDING RATE</div><div class="btc-stat-val" id="btc-live-fund">—</div></div>
+                <div class="btc-stat ay"><div class="btc-stat-lbl">REGIME</div><div class="btc-stat-val" id="btc-live-regime">—</div></div>
+                <div class="btc-stat au"><div class="btc-stat-lbl">HTF BIAS</div><div class="btc-stat-val" id="btc-live-htf">—</div></div>
+              </div>
             </div>
-            <!-- Row 3: BTC Dom / ETH Dom / Total MCap / 24H Volume -->
-            <div class="btc-stats-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
-              <div class="btc-stat"><div class="btc-stat-lbl">BTC DOM</div><div class="btc-stat-val" id="btc-dom-btc">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">ETH DOM</div><div class="btc-stat-val t2" id="btc-dom-eth">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">TOTAL MCAP</div><div class="btc-stat-val" id="btc-dom-mcap">—</div></div>
-              <div class="btc-stat"><div class="btc-stat-lbl">VOL 24H</div><div class="btc-stat-val t2" id="btc-dom-vol">—</div></div>
+            <!-- Row 3: Macro -->
+            <div class="btc-stats-section" style="border-top:1px solid var(--border);padding-top:14px">
+              <div class="btc-stats-section-lbl">Macro · src: CoinGecko</div>
+              <div class="btc-stats-row">
+                <div class="btc-stat ay"><div class="btc-stat-lbl">BTC DOM</div><div class="btc-stat-val" id="btc-dom-btc">—</div></div>
+                <div class="btc-stat ab"><div class="btc-stat-lbl">ETH DOM</div><div class="btc-stat-val t2" id="btc-dom-eth">—</div></div>
+                <div class="btc-stat ab"><div class="btc-stat-lbl">TOTAL MCAP</div><div class="btc-stat-val" id="btc-dom-mcap">—</div></div>
+                <div class="btc-stat ab"><div class="btc-stat-lbl">VOL 24H</div><div class="btc-stat-val t2" id="btc-dom-vol">—</div></div>
+              </div>
             </div>
           </div>
           <div style="padding:2px 13px 6px;font-size:9px;color:var(--t2);text-align:right">src: coingecko.com · <span id="btc-dom-upd">—</span></div>
@@ -1237,20 +1276,20 @@ tr:hover td{background:rgba(255,255,255,.02)}
         <div class="card">
           <div class="card-h">
             <div class="card-title"><span class="icon">😱</span> FEAR &amp; GREED INDEX</div>
-            <div style="font-size:9px;color:var(--t2)">Crypto Market</div>
+            <div style="font-size:9px;color:var(--t2)">BTC Sentiment</div>
           </div>
           <div style="padding:16px 20px;text-align:center">
             <canvas id="btc-fg-canvas" width="180" height="100" style="display:block;margin:0 auto"></canvas>
             <div id="btc-fg-val" style="font-size:44px;font-weight:800;font-family:var(--mono);margin-top:8px;line-height:1">—</div>
             <div id="btc-fg-lbl" style="font-size:13px;letter-spacing:.08em;font-weight:600;margin-top:4px">—</div>
             <div style="display:flex;justify-content:center;gap:20px;margin-top:14px;font-size:11px;color:var(--t2)">
-              <div>Yesterday <b id="btc-fg-yst" style="color:var(--text)">—</b></div>
-              <div>Last Week <b id="btc-fg-week" style="color:var(--text)">—</b></div>
+              <div><b id="btc-fg-week" style="color:var(--text)">—</b></div>
+              <div><b id="btc-fg-yst" style="color:var(--text)">—</b></div>
             </div>
           </div>
           <div style="padding:4px 13px 8px;font-size:9px;color:var(--t2);border-top:1px solid var(--border);display:flex;justify-content:space-between">
-            <span>📊 <b style="color:var(--text)">Crypto Market</b> overall sentiment</span>
-            <span>src: alternative.me</span>
+            <span>📊 <b style="color:var(--text)">BTC</b> price sentiment</span>
+            <span>src: calculated</span>
           </div>
         </div>
       </div>
@@ -1948,7 +1987,7 @@ async function loadLive(){
   // ใช้ live_prices จาก dashboard_data.json (ดึงโดย GitHub Actions จาก OKX)
   if(D.live_prices&&Object.keys(D.live_prices).length>0){
     for(const[sym,v] of Object.entries(D.live_prices)){
-      LIVE[sym]={price:v.price,change:v.change,high:v.high,low:v.low,vol:v.vol,volBase:0}
+      LIVE[sym]={price:v.price,change:v.change,high:v.high,low:v.low,vol:v.vol,volBase:v.volBase||0}
     }
     renderLive()
   }
@@ -2254,8 +2293,9 @@ function drawFGCanvas(id,w,h,val){
   c.width=w;c.height=h
   const ctx=c.getContext('2d')
   ctx.clearRect(0,0,w,h)
-  const cx=w/2, cy=h*0.9, r=Math.min(w*0.46,h*0.84)
+  const cx=w/2, r=Math.min(w*0.44,h*0.78)
   const lw=Math.max(6,r*0.26)
+  const cy=Math.max(r+lw*0.5+2, h*0.88)
   // 5 colored zones
   const zones=[
     {from:0,  to:25, color:'#ef4444'},
@@ -2308,16 +2348,26 @@ function drawFGCanvas(id,w,h,val){
 // BTC FEAR & GREED
 // ═══════════════════════════════════════════════════════════
 function renderBTCFG(){
-  const v=FG.value||0
-  const lbl=FG.label||'—'
+  const fg=D.btc_fg||{}
+  const v=fg.value||0
+  const lbl=fg.label||'—'
   const c=v>=60?'var(--green)':v<=40?'var(--red)':'var(--yellow)'
+  const chg=fg.btc_24h!=null?(fg.btc_24h>0?'+':'')+fg.btc_24h+'%':'—'
+  // BTC Live page
   const el=document.getElementById('btc-fg-val')
   if(el){el.textContent=v||'—';el.style.color=c}
   const lblEl=document.getElementById('btc-fg-lbl')
   if(lblEl){lblEl.textContent=lbl.toUpperCase();lblEl.style.color=c}
-  setText('btc-fg-yst',FG.yesterday||'—')
-  setText('btc-fg-week',FG.lastWeek||'—')
+  setText('btc-fg-yst',chg)
+  setText('btc-fg-week','BTC 24h')
   drawFGCanvas('btc-fg-canvas',180,100,v)
+  // DB page
+  const dbEl=document.getElementById('db-btc-fg-val')
+  if(dbEl){dbEl.textContent=v||'—';dbEl.style.color=c}
+  const dbLbl=document.getElementById('db-btc-fg-lbl')
+  if(dbLbl){dbLbl.textContent=lbl.toUpperCase();dbLbl.style.color=c}
+  setText('db-btc-fg-chg',chg)
+  drawFGCanvas('db-btc-fg-canvas',100,56,v)
 }
 
 // ═══════════════════════════════════════════════════════════

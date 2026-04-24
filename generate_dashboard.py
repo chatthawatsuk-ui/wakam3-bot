@@ -70,20 +70,28 @@ def fetch_okx_prices():
             t = tickers.get(sym)
             if not t:
                 continue
+            px    = float(t.get("last") or 0)
+            qvol  = float(t.get("quoteVolume") or 0)
+            bvol  = float(t.get("baseVolume")  or 0)
+            vol   = qvol if qvol > 0 else round(bvol * px, 2)
             live_prices[sym] = {
-                "price":  round(float(t.get("last") or 0), 8),
-                "change": round(float(t.get("percentage") or 0), 2),
-                "high":   round(float(t.get("high") or 0), 8),
-                "low":    round(float(t.get("low") or 0), 8),
-                "vol":    round(float(t.get("quoteVolume") or 0), 2),
+                "price":   round(px, 8),
+                "change":  round(float(t.get("percentage") or 0), 2),
+                "high":    round(float(t.get("high") or 0), 8),
+                "low":     round(float(t.get("low")  or 0), 8),
+                "vol":     round(vol, 2),
+                "volBase": round(bvol, 4),
             }
 
         # ── market tickers (futures USDT pairs, vol > $1M) ────────────────
         for sym, t in tickers.items():
             if not sym.endswith("/USDT"):
                 continue
-            vol = float(t.get("quoteVolume") or 0)
-            price = float(t.get("last") or 0)
+            px    = float(t.get("last") or 0)
+            qvol  = float(t.get("quoteVolume") or 0)
+            bvol  = float(t.get("baseVolume")  or 0)
+            vol   = qvol if qvol > 0 else round(bvol * px, 2)
+            price = px
             if vol < 1_000_000 or price <= 0:
                 continue
             base = sym.replace("/USDT:USDT", "").replace("/USDT", "")
@@ -151,15 +159,22 @@ def calc_market_indices(tickers_norm):
     except Exception as e:
         print(f"  [WARN] altcoin_season: {e}")
 
-    # ── 2. Fear & Greed Index (alternative.me) ────────────────────────────────
+    # ── 2. BTC Fear & Greed (computed from price + dominance) ────────────────
     try:
-        url = "https://api.alternative.me/fng/?limit=1"
-        with urllib.request.urlopen(url, timeout=10) as resp:
-            fng = json.loads(resp.read())["data"][0]
-        score = int(fng["value"])
-        lbl   = fng["value_classification"]
-        result["btc_fg"] = {"value": score, "label": lbl}
-        print(f"  F&G: {score}/100 — {lbl}")
+        btc_t2   = tickers_norm.get("BTC/USDT", {})
+        btc_chg2 = float(btc_t2.get("percentage") or 0)
+        score = round(max(0, min(100, 50 + btc_chg2 * 2.5)))
+        if score >= 80:   lbl = "Extreme Greed"
+        elif score >= 60: lbl = "Greed"
+        elif score >= 40: lbl = "Neutral"
+        elif score >= 20: lbl = "Fear"
+        else:             lbl = "Extreme Fear"
+        result["btc_fg"] = {
+            "value":   score,
+            "label":   lbl,
+            "btc_24h": round(btc_chg2, 2),
+        }
+        print(f"  BTC F&G: {score}/100 — {lbl} (BTC {btc_chg2:+.1f}%)")
     except Exception as e:
         print(f"  [WARN] btc_fg: {e}")
 
