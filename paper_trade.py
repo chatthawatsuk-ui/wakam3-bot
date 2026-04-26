@@ -1116,14 +1116,6 @@ def main():
     summary(conn)
     conn.close()
 
-    # ── ส่ง Telegram ทุก event: TP1/TP2/SL/Timeout/OrderLimitHit ──
-    print("\n[3] ส่ง Telegram Notifications...")
-    try:
-        import notify as NOTIFY
-        NOTIFY.notify_closed_trades()
-    except Exception as e:
-        print(f"  [WARN] notify failed: {e}")
-
 
 if __name__ == "__main__":
     main()
