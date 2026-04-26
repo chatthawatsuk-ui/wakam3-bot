@@ -3,6 +3,8 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 warnings.filterwarnings("ignore")
 
+import position_manager as PM
+
 CLOSED_PATH = "closed_results.json"   # notify.py จะอ่านไฟล์นี้เพื่อส่ง Telegram
 
 try:
@@ -17,7 +19,7 @@ PORT_SIZE     = 1000.0   # ยอดเริ่มต้น USD
 RISK_PCT      = 0.01     # A: 1% ของ balance คงเหลือ ณ เวลาปัจจุบัน (dynamic)
 MAX_LEVERAGE  = 20       # B: leverage 20x ทุก position
 MAX_OPEN              = 10   # จำนวน position เปิดพร้อมกันสูงสุด
-MAX_PYRAMID_PER_SYMBOL = 2   # สูงสุด N positions ต่อ symbol (pyramiding)
+MAX_PYRAMID_PER_SYMBOL = 4   # สูงสุด N positions ต่อ symbol (pyramiding)
 TRADE_TIMEOUT_HRS  = 48   # ปิด trade อัตโนมัติถ้าค้างเกิน N ชั่วโมง
 TP1_R         = 1.2
 TP2_R         = 2.0
@@ -139,12 +141,17 @@ def init_db():
         ("bear_sweep",       "INTEGER DEFAULT 0"),   # 1 if bearish sweep present
         # ── Pyramiding (Phase 3) ────────────────────────────────────────────
         ("pyramid_level",    "INTEGER DEFAULT 1"),   # 1=first entry, 2=pyramid add
+        # ── Slippage Tracking ───────────────────────────────────────────────
+        ("signal_price",     "REAL"),                # ราคา ณ เวลา scan
+        ("slippage_pct",     "REAL DEFAULT 0"),      # % ต่าง = (entry - signal_price)/signal_price×100
     ]
     for col, definition in new_cols:
         try:
             conn.execute(f"ALTER TABLE trades ADD COLUMN {col} {definition}")
         except Exception:
             pass
+
+    PM.migrate_db(conn)
 
     conn.execute("""
         CREATE TABLE IF NOT EXISTS portfolio (
@@ -592,101 +599,20 @@ def open_trade(conn, sig):
         log_signal(conn, sig, was_traded=False, skip_reason="MAX_OPEN", balance=balance)
         return None
 
-    # ── Pyramid check — 1 position ต่อ symbol, pyramid = MERGE ทับแถวเดิม ─────
-    existing_rows = conn.execute(
-        "SELECT id, entry_px, side, qty, notional_usd, margin_usd, risk_usd, pyramid_level, score"
-        " FROM trades WHERE symbol=? AND status='OPEN'"
-        " ORDER BY opened_at ASC",
-        (sig["symbol"],)
-    ).fetchall()
-    existing_count = len(existing_rows)
-
-    if existing_count > 0:
-        ex               = existing_rows[0]
-        existing_id      = ex[0]
-        existing_entry   = ex[1]
-        existing_side    = ex[2]
-        existing_qty     = ex[3] or 0.0
-        existing_notional= ex[4] or 0.0
-        existing_margin  = ex[5] or 0.0
-        existing_risk    = ex[6] or 0.0
-        existing_level   = ex[7] or 1
-        existing_score   = ex[8] or 0
-        current_px       = sig.get("price", 0)
-        score_trend      = sig.get("score_trend", 0)
-
-        # ── ถึง max pyramid level แล้ว → skip ────────────────────────────────
-        if existing_level >= MAX_PYRAMID_PER_SYMBOL:
-            print(f"  [SKIP] {sig['symbol']} pyramid ครบ level {existing_level} แล้ว"
-                  f" (max {MAX_PYRAMID_PER_SYMBOL})")
-            log_signal(conn, sig, was_traded=False, skip_reason="PYRAMID_MAX", balance=balance)
-            return None
-
-        # ── ตรวจ pyramid condition ────────────────────────────────────────────
-        pnl_pct = 0.0
-        if existing_entry > 0 and current_px > 0:
-            if existing_side == "LONG":
-                pnl_pct = (current_px - existing_entry) / existing_entry * 100
-            elif existing_side == "SHORT":
-                pnl_pct = (existing_entry - current_px) / existing_entry * 100
-
-        pyr_strong = (score_trend >= 10 and pnl_pct > 0.5)
-        pyr_medium = (score_trend >= 9  and pnl_pct > 1.0)
-
-        if not (pyr_strong or pyr_medium):
-            print(f"  [SKIP] {sig['symbol']} pyramid blocked"
-                  f" — trend={score_trend}/13 pnl={pnl_pct:+.1f}%")
-            log_signal(conn, sig, was_traded=False,
-                       skip_reason="PYRAMID_BLOCKED", balance=balance)
-            return None
-
-        # ── MERGE: คำนวณ qty/entry/margin/notional ใหม่ ──────────────────────
-        new_entry = sig["price"]
-        new_sl    = sig["sl"]
-        if new_entry > 0 and new_sl > 0 and abs(new_entry - new_sl) / new_entry >= 0.001:
-            add_qty, add_notional, _, add_margin, add_risk = calc_position(balance, new_entry, new_sl)
+    # ── Pyramid check ─────────────────────────────────────────────────────────
+    open_trade_row = PM.get_open_trade(conn, sig["symbol"], sig.get("side", ""))
+    if open_trade_row:
+        current_px = float(sig.get("price", 0) or 0)
+        action, reason, params = PM.evaluate(sig, open_trade_row, current_px)
+        if action == "PYRAMID":
+            PM.apply_pyramid(conn, open_trade_row["id"], params, current_px, balance)
+            log_signal(conn, sig, was_traded=True, skip_reason="", balance=balance)
+            _append_order_limit_hit(sig)
+            return open_trade_row["id"]
         else:
-            add_qty = add_notional = add_margin = add_risk = 0.0
-
-        total_qty      = existing_qty + add_qty
-        avg_entry      = ((existing_qty * existing_entry) + (add_qty * new_entry)) / total_qty \
-                         if total_qty > 0 else new_entry
-        total_notional = existing_notional + add_notional
-        total_margin   = existing_margin   + add_margin
-        total_risk     = existing_risk     + add_risk
-        new_level      = existing_level + 1
-        new_score      = max(sig["score"], existing_score)
-
-        conn.execute("""
-            UPDATE trades SET
-                entry_px      = ?,
-                qty           = ?,
-                notional_usd  = ?,
-                margin_usd    = ?,
-                risk_usd      = ?,
-                sl_px         = ?,
-                tp1_px        = ?,
-                tp2_px        = ?,
-                score         = ?,
-                pyramid_level = ?
-            WHERE id = ?
-        """, (
-            round(avg_entry, 8), round(total_qty, 6),
-            round(total_notional, 4), round(total_margin, 4), round(total_risk, 4),
-            new_sl, sig["tp1"], sig["tp2"],
-            new_score, new_level, existing_id,
-        ))
-        conn.commit()
-
-        print(f"  🔺 PYRAMID #{new_level} MERGE — {sig['symbol']}"
-              f" trend={score_trend}/13 pnl={pnl_pct:+.1f}%"
-              f" entry {existing_entry:.6g}→avg {avg_entry:.6g}"
-              f" qty={total_qty:.4f} notional=${total_notional:.0f}"
-              f" margin=${total_margin:.2f}")
-
-        log_signal(conn, sig, was_traded=True, skip_reason="", balance=balance)
-        _append_order_limit_hit(sig)
-        return existing_id
+            print(f"  [SKIP] {sig['symbol']} — {reason}")
+            log_signal(conn, sig, was_traded=False, skip_reason="PYRAMID_BLOCKED", balance=balance)
+            return None
 
     # ── First entry (ไม่มี position เดิม) ────────────────────────────────────
     entry_px = sig["price"]
@@ -698,6 +624,13 @@ def open_trade(conn, sig):
         # fallback: fixed $10 risk ถ้าราคาไม่มีหรือผิดปกติ
         qty = notional = leverage = margin = risk = 0
 
+    # ── Slippage ──────────────────────────────────────────────────────────────
+    signal_price = sig.get("signal_price") or sig["price"]
+    slippage_pct = (
+        (sig["price"] - signal_price) / signal_price * 100
+        if signal_price and signal_price > 0 else 0.0
+    )
+
     conn.execute("""
         INSERT INTO trades
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px, sl_pct, rsi,
@@ -705,8 +638,8 @@ def open_trade(conn, sig):
          score_trend, score_smc, score_osc, regime,
          claude_approved, claude_reason, tf,
          score_liq, score_fund, funding_rate, bull_sweep, bear_sweep,
-         pyramid_level, opened_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         pyramid_level, signal_price, slippage_pct, opened_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig["score"],
         sig["price"], sig["sl"], sig["tp1"], sig["tp2"],
@@ -725,13 +658,16 @@ def open_trade(conn, sig):
         1 if sig.get("bull_sweep") else 0,
         1 if sig.get("bear_sweep") else 0,
         1,   # pyramid_level = 1 (first entry เสมอ)
+        signal_price,
+        round(slippage_pct, 4),
         datetime.now(timezone.utc).isoformat()
     ))
     conn.commit()
     trade_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     print(f"  ✅ เปิด #{trade_id} {sig['symbol']} {sig['side']} "
           f"@ {sig['price']} | qty={qty:.4f} notional=${notional:.0f} "
-          f"lev={leverage:.1f}x margin=${margin:.2f} risk=${risk:.2f}")
+          f"lev={leverage:.1f}x margin=${margin:.2f} risk=${risk:.2f} "
+          f"slippage={slippage_pct:+.3f}%")
 
     # ── บันทึก signal_log (was_traded=1) ─────────────────────────────────────
     log_signal(conn, sig, was_traded=True, skip_reason="", balance=balance)

@@ -1320,6 +1320,26 @@ def load_backtest_data():
         return {"available": False, "error": str(e)}
 
 
+def get_slippage_summary(conn):
+    """สรุป slippage จาก trades ที่มี signal_price จริง คืน {count, avg_pct, max_pct, p90_pct}"""
+    try:
+        rows = conn.execute("""
+            SELECT slippage_pct FROM trades
+            WHERE signal_price IS NOT NULL AND slippage_pct != 0
+        """).fetchall()
+        if not rows:
+            return {"count": 0, "avg_pct": None, "max_pct": None, "p90_pct": None}
+        vals = sorted([float(r[0]) for r in rows])
+        n    = len(vals)
+        avg  = round(sum(vals) / n, 4)
+        mx   = round(max(vals, key=abs), 4)
+        p90  = round(vals[min(int(n * 0.9), n - 1)], 4)
+        return {"count": n, "avg_pct": avg, "max_pct": mx, "p90_pct": p90}
+    except Exception as e:
+        print(f"  [WARN] get_slippage_summary: {e}")
+        return {"count": 0, "avg_pct": None, "max_pct": None, "p90_pct": None}
+
+
 def main():
     last_scan = datetime.now(timezone.utc).isoformat()
 
@@ -1678,6 +1698,7 @@ def main():
         "custom_symbols":   _load_custom_symbols(),   # compat key
         "watchlist_symbols": _load_watchlist_symbols(),
         "api_usage":        _load_api_usage(),         # 🤖 Claude Haiku cost tracking
+        "slippage":         get_slippage_summary(conn),
     }
 
     with open(OUT_PATH, "w", encoding="utf-8") as f:

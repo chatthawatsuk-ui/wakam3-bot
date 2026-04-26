@@ -252,6 +252,8 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
         "side":         side,
         "score":        sl if side == "LONG" else ss,
         "price":        _fmt_price(ep),
+        "signal_price": _fmt_price(ep),
+        "atr":          t_rep["atr"],
         "sl":           _fmt_price(sl_p),
         "tp1":          _fmt_price(tp1),
         "tp2":          _fmt_price(tp2),
@@ -265,7 +267,8 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
         "score_liq":    b_liq,
         "score_fund":   b_fund,
         "funding_rate": funding_rate,
-        "bull_sweep":   l_rep["bull_sweep"] if l_rep else False,
+        "bull_sweep":   l_rep["bull_sweep"]  if l_rep else False,
+        "bear_sweep":   l_rep["bear_sweep"]  if l_rep else False,
         "ts":           ts,
     }
 
