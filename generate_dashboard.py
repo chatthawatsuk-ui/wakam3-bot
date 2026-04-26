@@ -520,10 +520,11 @@ def check_weight_approval():
     ตรวจ Telegram getUpdates → หา /approve_weights command
     ถ้าเจอ: โหลด pending_weights.json → บันทึก weights.json → ส่ง confirm Telegram
     เรียกก่อน calc_dynamic_weights() ทุก scan
+    คืนค่า True ถ้า approve สำเร็จ เพื่อให้ caller ข้าม calc_dynamic_weights()
     """
     PENDING = "pending_weights.json"
     if not os.path.exists(PENDING):
-        return  # ไม่มี pending weight รอ approve
+        return False  # ไม่มี pending weight รอ approve
 
     try:
         import requests
@@ -598,15 +599,18 @@ def check_weight_approval():
             N.send(confirm_msg)
             print(f"  ✅ Weight approved via Telegram — "
                   f"Trend:{pending['trend']} SMC:{pending['smc']} Osc:{pending['osc']}")
+            return True
 
     except Exception as e:
         print(f"  [WARN] check_weight_approval: {e}")
+    return False
 
 
-def calc_dynamic_weights(specialist_wr):
+def calc_dynamic_weights(specialist_wr, skip_persist=False):
     """
     Level 3 — คำนวณ dynamic weights จาก win rate แต่ละ specialist
     บันทึก weights.json ให้ live_trader.py อ่านใช้ run ถัดไป
+    skip_persist=True เมื่อรอบนี้มี Telegram approval แล้ว ป้องกันทับค่าที่อนุมัติ
     - ถ้า < MIN_TRADES: seed จาก backtest_mtf.csv (ถ้ามี) แทนที่จะ lock เป็น equal
     """
     total_closed = specialist_wr.get("total_closed", 0)
@@ -666,13 +670,16 @@ def calc_dynamic_weights(specialist_wr):
             "generated": datetime.now(timezone.utc).isoformat(),
         }
 
-    try:
-        with open("weights.json", "w") as f:
-            json.dump(weights, f, indent=2, ensure_ascii=False)
-        status = "🔒 locked" if weights["locked"] else "✅ adapted"
-        print(f"  Dynamic Weights {status} — Trend:{weights['trend']} SMC:{weights['smc']} Osc:{weights['osc']}")
-    except Exception as e:
-        print(f"  [WARN] weights.json write: {e}")
+    if skip_persist:
+        print(f"  Dynamic Weights (calc only, ไม่เขียนไฟล์ — รอบนี้มี Telegram approval แล้ว)")
+    else:
+        try:
+            with open("weights.json", "w") as f:
+                json.dump(weights, f, indent=2, ensure_ascii=False)
+            status = "🔒 locked" if weights["locked"] else "✅ adapted"
+            print(f"  Dynamic Weights {status} — Trend:{weights['trend']} SMC:{weights['smc']} Osc:{weights['osc']}")
+        except Exception as e:
+            print(f"  [WARN] weights.json write: {e}")
 
     return weights
 
@@ -1566,9 +1573,9 @@ def main():
     specialist_wr = calc_specialist_winrate(conn)
 
     # ── Level 3: Dynamic Weights (ตรวจ Telegram approval + triggers) ───────────
-    check_weight_approval()
+    just_approved = check_weight_approval()
     check_weight_triggers(specialist_wr, scan_results)
-    dyn_weights = calc_dynamic_weights(specialist_wr)
+    dyn_weights = calc_dynamic_weights(specialist_wr, skip_persist=just_approved)
 
     sess_data = {}
     for t in closed:

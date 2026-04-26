@@ -347,12 +347,14 @@ def mark_notified(sig):
 
 # ── CLOSE RESULTS — paper_trade.py เขียน, notify.py อ่านแล้วล้าง ───────────
 def notify_closed_trades():
-    """อ่าน closed_results.json → ส่ง Telegram (CLOSE + TP1) → ลบไฟล์"""
+    """อ่าน closed_results.json → ส่ง Telegram (CLOSE + TP1) → ลบเฉพาะที่ส่งสำเร็จ"""
     if not os.path.exists(CLOSED_PATH):
         return
     try:
         with open(CLOSED_PATH) as f:
             results = json.load(f)
+
+        failed = []
         for r in results:
             if r.get("type") == "TP1":
                 msg = tp1_msg(r)
@@ -370,7 +372,16 @@ def notify_closed_trades():
                 status = "✅" if ok else "❌"
                 print(f"  {status} ปิด {r['symbol']} {r.get('outcome','')} "
                       f"PnL=${r.get('pnl',0):+.2f}")
-        os.remove(CLOSED_PATH)
+            if not ok:
+                failed.append(r)
+
+        if failed:
+            # เขียนเฉพาะ event ที่ส่งไม่สำเร็จกลับไว้ รอบถัดไปจะ retry
+            with open(CLOSED_PATH, "w") as f:
+                json.dump(failed, f, ensure_ascii=False)
+            print(f"  [NOTIFY] retry queue: {len(failed)} event(s) เก็บไว้สำหรับรอบถัดไป")
+        else:
+            os.remove(CLOSED_PATH)
     except Exception as e:
         print(f"[NOTIFY] closed_results error: {e}")
 
