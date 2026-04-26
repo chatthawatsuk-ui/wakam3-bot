@@ -22,6 +22,9 @@
   --purple:#7c3aed;--orange:#f97316;--cyan:#06b6d4;
   --font:'Geist','Barlow Condensed',sans-serif;--mono:'Geist Mono',monospace;
   --sidebar-w:210px;
+  --panel:var(--s2);--bg-3:var(--s4);--up:var(--green);--up-bg:var(--green-bg);
+  --down:var(--red);--down-bg:var(--red-bg);--text-2:var(--t2);--text-4:var(--t3);
+  --font-mono:var(--mono);--border-hi:var(--border2);--border-soft:#252530;
 }
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:12px;overflow:hidden;-webkit-font-smoothing:antialiased}
 .app{display:flex;height:100vh}
@@ -183,37 +186,58 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pos-ml{margin-left:auto}
 .pos-pnl{font-family:var(--mono);font-size:11px}
 
-/* ─── OPEN POSITION CARDS (signals page) ─────── */
-.pos-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
-@media(max-width:540px){.pos-cards{grid-template-columns:1fr}}
-.pos-card{background:var(--s3);border:1px solid var(--border);border-radius:10px;
-  overflow:hidden;position:relative}
-.pos-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.pos-card.lng::before{background:linear-gradient(90deg,var(--green),rgba(34,197,94,.2))}
-.pos-card.sht::before{background:linear-gradient(90deg,var(--red),rgba(244,63,94,.2))}
-.pc-head{display:flex;align-items:center;justify-content:space-between;
-  padding:10px 13px 6px;gap:8px}
-.pc-sym{font-size:15px;font-weight:700;font-family:var(--mono);letter-spacing:-.01em}
-.pc-score{font-size:10px;background:var(--s4);color:var(--t2);
-  border-radius:3px;padding:2px 6px;white-space:nowrap}
-.pc-pnl{text-align:right}
-.pc-pnl-val{font-size:17px;font-weight:700;font-family:var(--mono);line-height:1}
-.pc-pnl-pct{font-size:10px;margin-top:2px}
-.pc-prices{padding:0 13px 8px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.pc-price-lbl{font-size:9px;color:var(--t2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
-.pc-price-val{font-size:12px;font-family:var(--mono);font-weight:600}
-.pc-levels{padding:0 13px 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.pc-lv{text-align:center;background:var(--s4);border-radius:6px;padding:4px 6px}
-.pc-lv-lbl{font-size:9px;color:var(--t2);letter-spacing:.05em}
-.pc-lv-val{font-size:10px;font-family:var(--mono);font-weight:600;margin-top:1px}
-.pc-lv-pct{font-size:9px;margin-top:1px}
-.pc-bar-wrap{padding:0 13px 10px}
-.pc-bar-lbl{display:flex;justify-content:space-between;font-size:9px;color:var(--t2);margin-bottom:4px}
-.pc-bar-track{height:6px;background:var(--s4);border-radius:3px;overflow:hidden}
-.pc-bar-fill{height:100%;border-radius:3px;transition:width .5s ease;
-  background:linear-gradient(90deg,var(--green),rgba(34,197,94,.5))}
-.pc-foot{display:flex;align-items:center;justify-content:space-between;
-  padding:7px 13px;border-top:1px solid var(--border);font-size:10px;color:var(--t2)}
+/* ─── OPEN POSITION CARDS ─────── */
+.pos-cards,.pos-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:12px}
+@media(max-width:540px){.pos-cards,.pos-grid{grid-template-columns:1fr}}
+.pos-card{position:relative;border:1px solid var(--border);border-left:3px solid var(--down);
+  border-radius:10px;background:var(--panel);padding:12px 14px;display:flex;
+  flex-direction:column;gap:10px;font-size:12px;transition:border-color 120ms,background 120ms}
+.pos-card:hover{border-color:var(--border-hi)}
+.pos-card.long{border-left-color:var(--up)}
+.pos-card.short{border-left-color:var(--down)}
+.pos-hd{display:flex;align-items:center;gap:8px}
+.pos-side{display:inline-flex;align-items:center;padding:3px 7px;border-radius:5px;
+  font-size:10px;font-weight:700;letter-spacing:.05em;font-family:var(--font-mono);border:1px solid}
+.pos-side.long{color:var(--up);background:var(--up-bg);border-color:rgba(34,197,94,.4)}
+.pos-side.short{color:var(--down);background:var(--down-bg);border-color:rgba(244,63,94,.4)}
+.pos-sym{font-weight:700;font-size:14px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:1px}
+.pos-sym .sfx{color:var(--text-4);font-weight:500;font-size:11px}
+.pos-lev{display:inline-flex;padding:2px 6px;border-radius:4px;
+  background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);
+  color:#eab308;font-size:10px;font-weight:700;font-family:var(--font-mono)}
+.pos-pyramid{display:inline-flex;padding:2px 6px;border-radius:4px;
+  background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.4);
+  color:#a78bfa;font-size:10px;font-weight:700;font-family:var(--font-mono);margin-left:auto}
+.pos-pnl-wrap{margin-left:auto;text-align:right;line-height:1.15}
+.pos-pnl{font-family:var(--font-mono);font-weight:700;font-size:16px;letter-spacing:-.01em}
+.pos-pnl.up{color:var(--up)}.pos-pnl.down{color:var(--down)}
+.pos-pnl-lab{font-size:9.5px;color:var(--text-4);letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-mono)}
+.pos-row{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);color:var(--text-2);font-size:11.5px}
+.pos-row .lab{color:var(--text-4);margin-right:4px}
+.pos-row .v{color:var(--text);font-weight:500}
+.pos-row .lev-r{color:#eab308;font-weight:700}
+.pos-row .age{margin-left:auto;color:var(--text-4);font-size:11px}
+.pos-bar{position:relative;height:5px;background:var(--bg-3);border-radius:999px;overflow:hidden;margin:2px 0}
+.pos-bar .fill{position:absolute;top:0;bottom:0;left:0;border-radius:999px}
+.pos-bar.up .fill{background:linear-gradient(90deg,#16a34a,var(--up))}
+.pos-bar.down .fill{background:linear-gradient(90deg,#be123c,var(--down))}
+.pos-bar .marker{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--text);border-radius:1px}
+.pos-entry-now{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-family:var(--font-mono);font-size:11.5px}
+.pos-entry-now .col{display:flex;align-items:baseline;gap:5px}
+.pos-entry-now .col.right{justify-content:flex-end}
+.pos-entry-now .lab{color:var(--text-4)}
+.pos-entry-now .v{color:var(--text);font-weight:500}
+.pos-entry-now .v.now{font-weight:600}
+.pos-targets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-family:var(--font-mono);
+  font-size:11px;padding-top:8px;border-top:1px dashed var(--border-soft)}
+.pos-targets .t .lab{color:var(--text-4);margin-right:3px;font-size:10px;letter-spacing:.06em}
+.pos-targets .t.sl .v{color:var(--down)}
+.pos-targets .t.tp1 .v{color:#d97706}
+.pos-targets .t.tp2 .v{color:var(--up)}
+.pos-targets .t.tp2{text-align:right}
+.pos-targets .t.tp1{text-align:center}
+.pc-foot{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;
+  padding-top:6px;border-top:1px solid var(--border);font-size:10px;color:var(--t2)}
 .pc-tp1hit{background:var(--green-bg);color:var(--green);
   font-size:9px;border-radius:5px;padding:2px 6px;font-weight:600;
   border:1px solid rgba(34,197,94,.25)}
@@ -2490,6 +2514,77 @@ function renderEquity(){
   if(urSubEl) urSubEl.textContent = opens.length+' open position'+(opens.length!==1?'s':'')
 }
 
+// ═══════════════════════════════════════════════════════════
+// POSITION CARD — shared renderer (Dashboard + Signals + Positions pages)
+// ═══════════════════════════════════════════════════════════
+function renderPositionCard(p){
+  const isLong=p.side==='LONG'
+  const lv=LIVE[p.symbol]
+  const ep=p.entry_price||0
+  const curPx=lv?lv.price:(p.current_price||ep)
+  const sl=p.sl_price,tp1=p.tp_price,tp2=p.tp2_price||0
+  const notional=p.notional||0
+  const lev=(p.leverage&&p.leverage>=1)?Math.round(p.leverage):5
+  const rawMargin=p.margin_usd||0
+  const margin=(rawMargin>0&&rawMargin<notional)?rawMargin:notional/lev
+  const risk=p.risk_usd||0
+  const pyramid=p.pyramid_count||1
+
+  // Real-time PnL
+  const pnlUsd=ep&&notional?(isLong?notional*(curPx-ep)/ep:notional*(ep-curPx)/ep):(p.pnl||0)
+  const pnlPct=notional>0?pnlUsd/notional*100:(p.pnl_pct||0)
+  const pnlUp=pnlUsd>=0
+  const pnlSign=pnlUp?'+':'-'
+
+  // Progress bar: Entry → Now on ±5% scale
+  const change=ep>0?(curPx-ep)/ep:0
+  const inProfit=isLong?change>0:change<0
+  const clamped=Math.max(-1,Math.min(1,change/0.05))
+  const fillPct=Math.min(80,Math.abs(clamped)*50+8)
+  const markerPos=50+clamped*40
+
+  const sym=(p.symbol||'').replace('/USDT','')
+  return`<div class="pos-card ${isLong?'long':'short'}">
+    <div class="pos-hd">
+      <span class="pos-side ${isLong?'long':'short'}">${p.side}</span>
+      <span class="pos-sym">${sym}<span class="sfx">.P</span></span>
+      <span class="pos-lev">${lev}x</span>
+      ${pyramid>=2?`<span class="pos-pyramid">×${pyramid} Pyramid</span>`:''}
+      <div class="pos-pnl-wrap">
+        <div class="pos-pnl ${pnlUp?'up':'down'}">${pnlSign}$${Math.abs(pnlUsd).toFixed(2)}</div>
+        <div class="pos-pnl-lab">PnL (USDT)</div>
+      </div>
+    </div>
+    <div class="pos-row">
+      ${notional>0?`<span><span class="lab">Size</span><span class="v">$${numFmt(notional)}</span></span><span style="color:var(--text-4)">|</span>`:''}
+      ${margin>0?`<span><span class="lab">Margin</span><span class="v">$${margin.toFixed(2)}</span></span><span style="color:var(--text-4)">|</span>`:''}
+      <span><span class="lab">Lev</span><span class="lev-r">${lev}x</span></span>
+      <span class="age">${timeAgo(p.open_time)}</span>
+    </div>
+    <div>
+      <div class="pos-entry-now">
+        <div class="col"><span class="lab">Entry</span><span class="v">${pxFmt(ep)}</span></div>
+        <div class="col right"><span class="lab">Now</span><span class="v now">${pxFmt(curPx)}</span></div>
+      </div>
+      <div class="pos-bar ${inProfit?'up':'down'}">
+        <div class="fill" style="width:${fillPct}%${inProfit?';left:0':';left:auto;right:0'}"></div>
+        <div class="marker" style="left:${markerPos}%"></div>
+      </div>
+    </div>
+    <div class="pos-targets">
+      <div class="t sl"><span class="lab">SL</span><span class="v">${pxFmt(sl)}</span></div>
+      <div class="t tp1"><span class="lab">TP1${p.tp1_hit?' ✓':''}</span><span class="v">${pxFmt(tp1)}</span></div>
+      ${tp2>0?`<div class="t tp2"><span class="lab">TP2</span><span class="v">${pxFmt(tp2)}</span></div>`:'<div class="t tp2"></div>'}
+    </div>
+    <div class="pc-foot">
+      <span>Score <b>${p.score||0}</b> · RSI <b>${p.rsi||'—'}</b></span>
+      <span class="${pnlUp?'up':'dn'}">${pnlSign}${Math.abs(pnlPct).toFixed(2)}%</span>
+      ${risk>0?`<span>Risk $${risk.toFixed(2)}</span>`:''}
+      ${p.tp1_hit?'<span class="pc-tp1hit">BE Lock ✓</span>':''}
+    </div>
+  </div>`
+}
+
 function renderDash(){
   const scan=D.scan_results||[],sigs=D.signals||[],open=D.open_trades||[],closed=D.closed_trades||[]
   const bal=D.balance||1000,pnl=D.pnl||0
@@ -2511,72 +2606,7 @@ function renderDash(){
   const posEl=document.getElementById('d-pos-list')
   if(posEl){
     if(open.length===0){posEl.innerHTML='<div class="empty">No open positions</div>'}
-    else{
-      posEl.innerHTML=open.map(t=>{
-        const pnl=t.pnl||0, pct=t.pnl_pct||0
-        const isLong=t.side==='LONG'
-        const pnlCls=pnl>=0?'up':'dn', sign=pnl>=0?'+':''
-        const lv=LIVE[t.symbol]
-        const curPx=lv?lv.price:(t.current_price||t.entry_price)
-        const sl=t.sl_price, tp1=t.tp_price, tp2=t.tp2_price||0
-        let prog=50, tp1Pos=100
-        const totalRng=tp2>0?(isLong?(tp2-sl):(sl-tp2)):(tp1>0?(isLong?(tp1-sl):(sl-tp1)):0)
-        if(sl&&tp1&&curPx&&totalRng>0){
-          const mv=isLong?(curPx-sl):(sl-curPx)
-          prog=Math.max(0,Math.min(100,mv/totalRng*100))
-          if(tp2>0){
-            const tp1Rng=isLong?(tp1-sl):(sl-tp1)
-            tp1Pos=Math.max(0,Math.min(99,tp1Rng/totalRng*100))
-          }
-        }
-        const barCol=prog>tp1Pos+5?'var(--green)':prog>tp1Pos/2?'var(--yellow)':'var(--red)'
-        const ep=t.entry_price||0
-        const notional=t.notional||0
-        // leverage ใน DB เก่าเก็บเป็น fraction — ถ้า < 1 ให้ใช้ 5 (leverage จริง)
-        const lev = (t.leverage && t.leverage >= 1) ? Math.round(t.leverage) : 5
-        const rawMargin=t.margin_usd||0
-        // margin_usd ใน DB เก่าเก็บ portfolio balance — ถ้า margin > notional ให้คำนวณจาก notional/lev
-        const margin = (rawMargin>0 && rawMargin<notional) ? rawMargin : notional/lev
-        const upnlLive = ep&&notional ? (isLong ? notional*(curPx-ep)/ep : notional*(ep-curPx)/ep) : pnl
-        const upnlCls=upnlLive>=0?'up':'dn', upnlSign=upnlLive>=0?'+':''
-        return`<div style="padding:10px 13px;border-bottom:1px solid var(--border);position:relative;overflow:hidden">
-          <div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:${isLong?'var(--green)':'var(--red)'}"></div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-            <div style="display:flex;align-items:center;gap:6px">
-              ${sideBadge(t.side)}
-              <span style="font-size:13px;font-weight:700;font-family:var(--mono)">${symDisp(t.symbol)}</span>
-              <span style="font-size:9px;background:rgba(247,147,26,.18);color:#f7931a;border-radius:3px;padding:1px 4px;font-weight:700">${lev}x</span>
-              ${(t.pyramid_count||1)>1?`<span style="font-size:9px;background:rgba(168,85,247,.2);color:#a855f7;border-radius:3px;padding:1px 4px;font-weight:700">×${t.pyramid_count} Pyramid</span>`:''}
-            </div>
-            <div style="text-align:right">
-              <div class="${upnlCls}" style="font-size:14px;font-weight:700;font-family:var(--mono)">${upnlSign}$${Math.abs(upnlLive).toFixed(2)}</div>
-              <div style="font-size:9px;color:var(--t2)">PnL (USDT)</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;font-size:10px;margin-bottom:5px;padding:3px 0;border-top:1px solid var(--s4);border-bottom:1px solid var(--s4)">
-            <span style="color:var(--t2)">Size <span style="color:var(--text);font-family:var(--mono)">$${numFmt(notional)}</span></span>
-            <span style="color:var(--t2)">│</span>
-            <span style="color:var(--t2)">Margin <span style="color:var(--text);font-family:var(--mono)">$${margin.toFixed(2)}</span></span>
-            <span style="color:var(--t2)">│</span>
-            <span style="color:var(--t2)">Lev <span style="color:#f7931a;font-family:var(--mono);font-weight:700">${lev}x</span></span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t2);margin-bottom:5px">
-            <span>Entry <span style="color:var(--text);font-family:var(--mono)">${pxFmt(t.entry_price)}</span></span>
-            <span>Now <b style="color:var(--text);font-family:var(--mono)">${pxFmt(curPx)}</b></span>
-            <span>${timeAgo(t.open_time)}</span>
-          </div>
-          <div style="position:relative;height:4px;background:var(--s4);border-radius:2px;margin-bottom:3px">
-            <div style="width:${prog}%;height:100%;background:${barCol};border-radius:2px;transition:width .4s"></div>
-            ${tp2>0?`<div style="position:absolute;left:${tp1Pos}%;top:-2px;width:2px;height:8px;background:var(--yellow);border-radius:1px;opacity:.85"></div>`:''}
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t2)">
-            <span class="dn">SL ${pxFmt(sl)}</span>
-            <span class="up" style="color:var(--yellow)">TP1 ${pxFmt(tp1)}</span>
-            <span class="up">${tp2>0?'TP2 '+pxFmt(tp2):(t.tp1_hit?'BE Lock ✓':'')}</span>
-          </div>
-        </div>`
-      }).join('')
-    }
+    else{posEl.innerHTML='<div class="pos-grid" style="grid-template-columns:1fr;padding:8px">'+open.map(t=>renderPositionCard(t)).join('')+'</div>'}
   }
 
   // Open trades map → cross-ref for entry/tp/sl
@@ -3188,121 +3218,7 @@ function renderSignals(){
   setText('sig-pos-cnt', pos.length+' open')
   if(posCard) posCard.style.display=pos.length?'':'none'
   if(posList && pos.length){
-    posList.innerHTML='<div class="pos-cards">'+pos.map(p=>{
-      const isLong=p.side==='LONG'
-      const lv=LIVE[p.symbol]
-      const curPx=lv?lv.price:(p.current_price||p.entry_price)
-      const ep=p.entry_price, sl=p.sl_price, tp1=p.tp_price, tp2=p.tp2_price
-      const notional=p.notional||0
-      // leverage ใน DB เก่าเก็บเป็น fraction — ถ้า < 1 ให้ใช้ 5
-      const lev=(p.leverage&&p.leverage>=1)?Math.round(p.leverage):5
-      const rawMargin=p.margin_usd||0
-      const margin=(rawMargin>0&&rawMargin<notional)?rawMargin:notional/lev
-      // PnL real-time
-      const upnl = ep&&notional ? (isLong?(curPx-ep)/ep:(ep-curPx)/ep)*notional : (p.pnl||0)
-      const upct  = notional>0 ? upnl/notional*100 : (p.pnl_pct||0)
-      const pnlCls=upnl>=0?'up':'dn', sign=upnl>=0?'+':''
-      // % to levels
-      const pctTo=(from,to)=>from&&to?((to-from)/Math.abs(from)*100):null
-      const toSLpct =isLong?pctTo(curPx,sl) :pctTo(sl,curPx)
-      const toTP1pct=isLong?pctTo(curPx,tp1):pctTo(tp1,curPx)
-      const fmtPct=v=>v===null?'—':`${v>=0?'+':''}${v.toFixed(2)}%`
-      // Progress bar SL → TP2 (TP1 = marker)
-      let prog=50, tp1Pos=100
-      const totalRng=tp2>0?(isLong?(tp2-sl):(sl-tp2)):(tp1>0?(isLong?(tp1-sl):(sl-tp1)):0)
-      if(sl&&tp1&&curPx&&totalRng>0){
-        const moved=isLong?(curPx-sl):(sl-curPx)
-        prog=Math.max(0,Math.min(100,moved/totalRng*100))
-        if(tp2>0){
-          const tp1Rng=isLong?(tp1-sl):(sl-tp1)
-          tp1Pos=Math.max(0,Math.min(99,tp1Rng/totalRng*100))
-        }
-      }
-      const barCol=prog>tp1Pos+5?'var(--green)':prog>tp1Pos/2?'var(--yellow)':'var(--red)'
-      return`<div class="pos-card ${isLong?'lng':'sht'}">
-
-        <!-- Header: symbol + lev + PnL -->
-        <div class="pc-head">
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            ${sideBadge(p.side)}
-            <span class="pc-sym">${symDisp(p.symbol)} Perp</span>
-            <span style="font-size:10px;font-weight:700;background:var(--s4);color:var(--t2);
-              border:1px solid var(--border);border-radius:3px;padding:1px 5px">${lev.toFixed(0)}x</span>
-          </div>
-          <div class="pc-pnl">
-            <div style="font-size:9px;color:var(--t2);text-align:right;margin-bottom:2px">PnL (USDT)</div>
-            <div class="pc-pnl-val ${pnlCls}">${sign}$${Math.abs(upnl).toFixed(2)}</div>
-            <div class="pc-pnl-pct ${pnlCls}">${sign}${upct.toFixed(2)}%</div>
-          </div>
-        </div>
-
-        <!-- Size / Margin / Leverage row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:0 13px 10px">
-          <div style="background:var(--s4);border-radius:4px;padding:6px 8px">
-            <div style="font-size:9px;color:var(--t2);margin-bottom:2px">Size (USDT)</div>
-            <div style="font-size:12px;font-weight:600;font-family:var(--mono)">$${notional.toFixed(2)}</div>
-          </div>
-          <div style="background:var(--s4);border-radius:4px;padding:6px 8px">
-            <div style="font-size:9px;color:var(--t2);margin-bottom:2px">Margin (USDT)</div>
-            <div style="font-size:12px;font-weight:600;font-family:var(--mono)">$${margin.toFixed(2)}</div>
-          </div>
-          <div style="background:var(--s4);border-radius:4px;padding:6px 8px">
-            <div style="font-size:9px;color:var(--t2);margin-bottom:2px">Leverage</div>
-            <div style="font-size:12px;font-weight:700;color:${isLong?'var(--green)':'var(--red)'}">${lev.toFixed(0)}x</div>
-          </div>
-        </div>
-
-        <!-- Entry / Mark price -->
-        <div class="pc-prices">
-          <div>
-            <div class="pc-price-lbl">Entry price</div>
-            <div class="pc-price-val t2">${pxFmt(ep)}</div>
-          </div>
-          <div>
-            <div class="pc-price-lbl">Mark price</div>
-            <div class="pc-price-val">${pxFmt(curPx)}</div>
-          </div>
-        </div>
-
-        <!-- SL / TP1 / TP2 -->
-        <div class="pc-levels">
-          <div class="pc-lv">
-            <div class="pc-lv-lbl">SL</div>
-            <div class="pc-lv-val dn">${pxFmt(sl)}</div>
-            <div class="pc-lv-pct dn" style="font-size:9px">${fmtPct(toSLpct)}</div>
-          </div>
-          <div class="pc-lv">
-            <div class="pc-lv-lbl">TP1${p.tp1_hit?' ✓':''}</div>
-            <div class="pc-lv-val up">${pxFmt(tp1)}</div>
-            <div class="pc-lv-pct up" style="font-size:9px">${fmtPct(toTP1pct)}</div>
-          </div>
-          <div class="pc-lv">
-            <div class="pc-lv-lbl">TP2</div>
-            <div class="pc-lv-val yl">${pxFmt(tp2)}</div>
-            <div class="pc-lv-pct t2" style="font-size:9px">—</div>
-          </div>
-        </div>
-
-        <!-- Progress bar SL → TP1 marker → TP2 -->
-        <div class="pc-bar-wrap">
-          <div class="pc-bar-lbl">
-            <span class="dn">SL</span>
-            <span style="color:var(--yellow);font-size:9px">TP1 ${tp1Pos.toFixed(0)}%</span>
-            <span class="up" style="color:${tp2>0?'var(--green)':'var(--t2)'}">${tp2>0?'TP2':'TP1'}</span>
-          </div>
-          <div class="pc-bar-track" style="position:relative">
-            <div class="pc-bar-fill" style="width:${prog}%;background:${barCol}"></div>
-            ${tp2>0?`<div style="position:absolute;left:${tp1Pos}%;top:0;width:2px;height:100%;background:var(--yellow);opacity:.9"></div>`:''}
-          </div>
-        </div>
-
-        <div class="pc-foot">
-          <span>Score <b>${p.score}</b> · RSI <b>${p.rsi}</b></span>
-          ${p.tp1_hit?'<span class="pc-tp1hit">BE Lock ✓</span>':''}
-          <span>${timeAgo(p.open_time)}</span>
-        </div>
-      </div>`
-    }).join('')+'</div>'
+    posList.innerHTML='<div class="pos-grid">'+pos.map(p=>renderPositionCard(p)).join('')+'</div>'
   }
 
   // ── Scanner Data ────────────────────────────────
@@ -3475,44 +3391,9 @@ function renderPositions(){
   if(!tb) return
 
   if(posTab==='open'){
-    if(thead) thead.innerHTML='<tr><th>Symbol</th><th>Side</th><th>Entry</th><th>Now</th><th>TP1</th><th>TP2</th><th>SL</th><th>Lev</th><th>Risk$</th><th>TP1?</th><th>TP2?</th><th>P&L %</th><th>P&L $</th><th>Opened</th></tr>'
-    if(open.length===0){tb.innerHTML='<tr><td colspan="14"><div class="empty">No open positions</div></td></tr>'}
-    else tb.innerHTML=open.map(t=>{
-      const pnlPct=t.pnl_pct||0
-      const pnl=t.pnl||0
-      const fut=isFutures(t.symbol)
-      const base=t.symbol?.replace('/USDT','')||'?'
-      const lv=LIVE[t.symbol]
-      const currPx=lv?lv.price:(t.current_price||t.entry_price)
-      const url=tvUrl(t.symbol)
-      const lev=t.leverage||0
-      const risk=t.risk_usd||0
-      const levStr=lev>0?`${lev.toFixed(1)}x`:'—'
-      const riskStr=risk>0?`$${risk.toFixed(2)}`:'—'
-      // TP2 hit = exit_type === 'TP2' (open trades ยังไม่ hit TP2)
-      const tp2Hit = false   // open trades ยังไม่ปิด
-      return`<tr style="${pnlPct>=1?'background:rgba(34,197,94,.04)':pnlPct<=-1?'background:rgba(244,63,94,.04)':''}">
-        <td class="txt">
-          <a href="${url}" target="_blank" style="color:inherit;text-decoration:none;font-weight:700;font-family:var(--mono)">
-            ${base}${fut?'<span style="font-size:9px;color:#f7931a">.P</span>':''}
-            ${fut?'<span style="font-size:8px;background:#f7931a22;color:#f7931a;border-radius:3px;padding:1px 3px;margin-left:3px">PERP</span>':'<span style="font-size:8px;color:var(--t2);border-radius:3px;padding:1px 3px;margin-left:3px">SPOT</span>'}
-          </a>
-        </td>
-        <td>${sideBadge(t.side)}</td>
-        <td style="font-family:var(--mono)">${pxFmt(t.entry_price)}</td>
-        <td style="font-family:var(--mono)">${pxFmt(currPx)}</td>
-        <td class="up" style="font-family:var(--mono)">${pxFmt(t.tp_price)}</td>
-        <td class="up" style="font-family:var(--mono);opacity:.7">${pxFmt(t.tp2_price)}</td>
-        <td class="dn" style="font-family:var(--mono)">${pxFmt(t.sl_price)}</td>
-        <td class="t2" style="font-size:11px">${levStr}</td>
-        <td class="t2" style="font-size:11px">${riskStr}</td>
-        <td>${t.tp1_hit?'<span class="up" style="font-size:11px">✅ Hit</span>':'<span class="t2">—</span>'}</td>
-        <td><span class="t2">—</span></td>
-        <td class="${pnlPct>=0?'up':'dn'}" style="font-weight:600">${(pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%'}</td>
-        <td class="${pnl>=0?'up':'dn'}" style="font-weight:600">${(pnl>=0?'+':'')+pnl.toFixed(2)}</td>
-        <td class="t2">${timeAgo(t.open_time)}</td>
-      </tr>`
-    }).join('')
+    if(thead) thead.innerHTML=''
+    if(open.length===0){tb.innerHTML='<tr><td colspan="2"><div class="empty">No open positions</div></td></tr>'}
+    else tb.innerHTML=`<tr><td colspan="2" style="padding:0"><div class="pos-grid" style="grid-template-columns:repeat(2,1fr)">${open.map(t=>renderPositionCard(t)).join('')}</div></td></tr>`
   } else {
     if(thead) thead.innerHTML='<tr><th>#</th><th>Symbol</th><th>Side</th><th>Score</th><th>Entry</th><th>Exit</th><th>Exit Type</th><th>TP1?</th><th>TP2?</th><th>Outcome</th><th>PnL $</th><th>PnL %</th><th>Regime</th><th>Duration</th></tr>'
     if(closed.length===0){tb.innerHTML='<tr><td colspan="14"><div class="empty">No closed trades</div></td></tr>'}
