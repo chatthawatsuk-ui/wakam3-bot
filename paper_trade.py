@@ -45,7 +45,7 @@ CORR_GROUPS = [
     {"RENDER/USDT","WLD/USDT","TAO/USDT","ICP/USDT","ONDO/USDT"},
 ]
 
-exchange = ccxt.okx({"enableRateLimit": True})
+exchange = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
 
 # ── HTF Reversal Cache — เก็บผล EMA7/30 4H ต่อ symbol (refresh ทุก 10 นาที) ──
 _htf_cache: dict = {}
@@ -762,11 +762,9 @@ def check_open_trades(conn):
 
     for t in trades:
         tid, sym, side, ep, sl, tp1, tp2, tp1_hit, qty, risk_usd, opened_at = t
-        px = get_price(sym)
-        if not px:
-            continue
 
         # ── Trade Timeout — ปิดอัตโนมัติถ้าค้างเกิน TRADE_TIMEOUT_HRS ──
+        # ตรวจก่อนดึง price เพื่อให้ timeout ทำงานได้แม้ดึง price ไม่ได้
         try:
             opened_dt = datetime.fromisoformat(opened_at)
             if opened_dt.tzinfo is None:
@@ -776,16 +774,21 @@ def check_open_trades(conn):
             hours_open = 0
 
         if hours_open > TRADE_TIMEOUT_HRS:
-            # คำนวณ PnL จริง ณ ราคาตลาด
-            if qty and qty > 0 and ep and ep > 0:
+            px = get_price(sym)
+            close_px = px if px else ep  # fallback to entry if price unavailable
+            if qty and qty > 0 and ep and ep > 0 and px:
                 diff = (px - ep) if side == "LONG" else (ep - px)
                 pnl  = qty * diff
             else:
                 pnl = 0
             outcome = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
-            _close(conn, tid, px, outcome, pnl,
+            _close(conn, tid, close_px, outcome, pnl,
                    reason=f"Timeout {TRADE_TIMEOUT_HRS}h ⏰")
             closed.append((tid, sym, outcome, pnl))
+            continue
+
+        px = get_price(sym)
+        if not px:
             continue
 
         hit_sl  = (side == "LONG"  and px <= sl) or (side == "SHORT" and px >= sl)
