@@ -226,13 +226,13 @@ def apply_pyramid(
 ) -> bool:
     try:
         trade = conn.execute(
-            "SELECT entry_px, qty, notional_usd, margin_usd, pyramid_level "
+            "SELECT entry_px, qty, notional_usd, margin_usd, pyramid_level, tp1_hit, sl_px "
             "FROM trades WHERE id=?", (trade_id,)
         ).fetchone()
         if not trade:
             return False
 
-        old_entry, old_qty, old_notional, old_margin, pyr_lvl = trade
+        old_entry, old_qty, old_notional, old_margin, pyr_lvl, tp1_hit, cur_sl = trade
         old_qty      = old_qty      or 0.0
         old_notional = old_notional or 0.0
         old_margin   = old_margin   or 0.0
@@ -251,6 +251,11 @@ def apply_pyramid(
         new_level      = pyr_lvl + 1
         new_sl         = params.get("suggested_sl")
 
+        # ถ้า TP1 hit แล้ว (BE lock) และไม่มี suggested_sl → ใช้ avg entry ใหม่เป็น BE
+        # เพื่อไม่ให้ sl_px ต่ำกว่า avg entry หลัง pyramid
+        if not new_sl and tp1_hit:
+            new_sl = round(avg_entry, 8)
+
         update = {
             "entry_px":      round(avg_entry,      8),
             "qty":           round(total_qty,       6),
@@ -266,7 +271,7 @@ def apply_pyramid(
                      list(update.values()) + [trade_id])
         conn.commit()
 
-        sl_info = f" | SL→{new_sl:.6g}" if new_sl and params.get("trail_sl_moved") else ""
+        sl_info = f" | SL→{new_sl:.6g}" if new_sl else ""
         print(
             f"  🔺 PYRAMID ไม้ {new_level} #{trade_id} "
             f"avg {old_entry:.6g}→{avg_entry:.6g} "
