@@ -2540,10 +2540,14 @@ function renderPositionCard(p){
   const pnlUp=pnlUsd>=0
   const pnlSign=pnlUp?'+':'-'
 
-  // Progress bar: SL (left 0%) → TP2 (right 100%)
-  // LONG: SL < Entry < TP1 < TP2  → ราคาสูงขึ้น = ขวา
-  // SHORT: SL > Entry > TP1 > TP2 → ราคาต่ำลง = ขวา (invert)
-  const barRef={sl,tp2:tp2||tp1*1.5}
+  // Progress bar: original SL (left 0%) → TP2 (right 100%)
+  // ใช้ original SL เป็นขอบซ้ายเสมอ (ไม่เปลี่ยนแม้ SL จะ trail ไป BE)
+  // Red marker = current SL (ถ้า SL_BE จะซ้อนกับ Entry)
+  const slPctOrig = p.sl_pct_orig||0
+  const origSl = slPctOrig>0
+    ? (isLong ? ep*(1-slPctOrig/100) : ep*(1+slPctOrig/100))
+    : sl  // fallback ถ้าไม่มีข้อมูล
+  const barRef={sl:origSl, tp2:tp2||tp1*1.5}
   function toPct(px){
     const lo=isLong?barRef.sl:barRef.tp2
     const hi=isLong?barRef.tp2:barRef.sl
@@ -2552,10 +2556,10 @@ function renderPositionCard(p){
     const raw=isLong?(px-lo)/range:(hi-px)/range
     return Math.max(0,Math.min(100,raw*100))
   }
-  const slPct    = toPct(sl)
-  const entryPct = toPct(ep)
-  const tp1Pct   = tp1?toPct(tp1):null
-  const curPct   = toPct(curPx)
+  const slMarkerPct = toPct(sl)    // current SL (อาจ trail ไปที่ BE)
+  const entryPct    = toPct(ep)
+  const tp1Pct      = tp1?toPct(tp1):null
+  const curPct      = toPct(curPx)
   const inProfit = isLong?curPx>ep:curPx<ep
   const fillLeft  = Math.min(entryPct,curPct)
   const fillWidth = Math.max(1,Math.abs(curPct-entryPct))
@@ -2585,7 +2589,7 @@ function renderPositionCard(p){
       </div>
       <div class="pos-bar ${inProfit?'up':'down'}">
         <div class="fill" style="left:${fillLeft.toFixed(1)}%;width:${fillWidth.toFixed(1)}%"></div>
-        <div class="marker m-sl" style="left:${slPct.toFixed(1)}%" title="SL"></div>
+        <div class="marker m-sl" style="left:${slMarkerPct.toFixed(1)}%" title="SL"></div>
         ${tp1Pct!==null?`<div class="marker m-tp1" style="left:${tp1Pct.toFixed(1)}%" title="TP1"></div>`:''}
         <div class="marker m-entry" style="left:${entryPct.toFixed(1)}%" title="Entry"></div>
         <div class="marker m-cur" style="left:${curPct.toFixed(1)}%;background:${inProfit?'var(--up)':'var(--down)'}" title="Now"></div>

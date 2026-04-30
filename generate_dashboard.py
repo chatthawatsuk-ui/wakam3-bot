@@ -1477,7 +1477,8 @@ def main():
 
     open_rows = conn.execute("""
         SELECT id, symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
-               tp1_hit, rsi, opened_at, notional_usd, leverage, margin_usd, risk_usd
+               tp1_hit, rsi, opened_at, notional_usd, leverage, margin_usd, risk_usd,
+               sl_pct, pyramid_level
         FROM trades WHERE status='OPEN' ORDER BY score DESC, id DESC
     """).fetchall()
 
@@ -1507,6 +1508,7 @@ def main():
             open_time = r["opened_at"]
             row_id   = r["id"]
             pyramid_count = int(r["pyramid_level"] or 1)
+            sl_pct_orig = float(r["sl_pct"] or 0)
         else:
             # merge: weighted avg entry, sum notional/margin/risk, latest SL/TP
             total_notional = sum(float(r["notional_usd"] or 0) for r in rows)
@@ -1516,20 +1518,22 @@ def main():
                 ep = float(rows[0]["entry_px"] or 0)
             # latest row (highest id) for SL/TP/lev/score/rsi
             latest = max(rows, key=lambda r: r["id"])
+            earliest = min(rows, key=lambda r: r["id"])
             sl       = float(latest["sl_px"]  or 0)
             tp1      = float(latest["tp1_px"] or 0)
             tp2      = float(latest["tp2_px"] or 0)
             lev      = float(latest["leverage"] or 0)
             score    = max(r["score"] or 0 for r in rows)
             rsi      = latest["rsi"]
-            open_time = min(r["opened_at"] for r in rows)  # earliest open
+            open_time = min(r["opened_at"] for r in rows)
             row_id    = latest["id"]
             notional  = total_notional
             risk_usd  = sum(float(r["risk_usd"]  or 0) for r in rows)
             raw_margin_sum = sum(float(r["margin_usd"] or 0) for r in rows)
             margin_disp = raw_margin_sum if (raw_margin_sum > 0 and raw_margin_sum < notional) else (notional / lev if lev > 0 else notional / 5)
             tp1_hit   = any(bool(r["tp1_hit"]) for r in rows)
-            pyramid_count = len(rows)
+            pyramid_count = max(int(r["pyramid_level"] or 1) for r in rows)
+            sl_pct_orig = float(earliest["sl_pct"] or 0)  # original SL% จาก first entry
 
         # ── Unrealized P&L ─────────────────────────────────────────────────
         lv      = live_prices.get(sym, {})
@@ -1567,6 +1571,7 @@ def main():
             "pnl":           round(pnl_usd, 2),
             "open_time":     open_time,
             "pyramid_count": pyramid_count,
+            "sl_pct_orig":   round(sl_pct_orig, 4),
         })
 
     # ── Level 2: Specialist Win Rate ─────────────────────────────────────────
