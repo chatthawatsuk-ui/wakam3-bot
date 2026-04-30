@@ -54,28 +54,35 @@ _htf_cache: dict = {}
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
     """
-    Position Sizing — margin 1% ของ Available × 20x leverage
-      margin_usd  = balance × RISK_PCT  (e.g. $1054 × 1% = $10.54)
-      leverage    = MAX_LEVERAGE = 20x
-      notional    = margin × leverage   (e.g. $10.54 × 20 = $210.80)
-      qty         = notional / entry_px
-      actual_risk = notional × sl_dist%  (ขาดทุนถ้าโดน SL — จุด SL กำหนดโดย agent)
+    Position Sizing — Risk-based: risk = 1% ของ balance เสมอ
+      risk_usd  = balance × RISK_PCT  (e.g. $870 × 1% = $8.70)
+      notional  = risk_usd / sl_dist  (ปรับขนาดตาม SL distance)
+      margin    = notional / MAX_LEVERAGE
 
-    Return: (qty, notional_usd, leverage, margin_usd, actual_risk_usd)
+    Cap: margin ≤ RISK_PCT × balance
+      → SL แคบ (tight): margin capped ที่ 1%, risk < 1% (under-risk แต่ safe)
+      → SL กว้าง (wide): notional ลด, risk = 1% เสมอ (แก้ bug over-risk)
     """
     sl_dist = abs(entry_px - sl_px) / entry_px
     sl_dist = max(sl_dist, 0.001)
 
-    margin_usd  = balance * RISK_PCT          # 1% ของยอดเงิน ณ เวลาปัจจุบัน
-    leverage    = float(MAX_LEVERAGE)         # 20x
-    notional    = margin_usd * leverage       # margin × 20
+    risk_usd   = balance * RISK_PCT                   # 1% fixed risk target
+    notional   = risk_usd / sl_dist                   # ideal size
+    margin_usd = notional / float(MAX_LEVERAGE)
+
+    # cap margin ที่ 1% ของ balance (ป้องกัน SL แคบ → position ใหญ่เกิน)
+    max_margin = balance * RISK_PCT
+    if margin_usd > max_margin:
+        margin_usd = max_margin
+        notional   = margin_usd * float(MAX_LEVERAGE)
+
     qty         = notional / entry_px
-    actual_risk = notional * sl_dist          # risk จริงถ้าโดน SL
+    actual_risk = notional * sl_dist
 
     return (
         qty,
         round(notional,     2),
-        round(leverage,     2),
+        round(float(MAX_LEVERAGE), 2),
         round(margin_usd,   2),
         round(actual_risk,  2),
     )
