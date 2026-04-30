@@ -723,11 +723,14 @@ def enforce_max_positions(conn):
 # ── HTF REVERSAL EXIT — Option C ──────────────────────────────────────────────
 # ออก trade เฉพาะตอน TP1 ยังไม่โดน (SL ยังเป็น original risk)
 # ถ้า TP1 โดนแล้ว SL อยู่ที่ Breakeven → ปล่อย SL จัดการเอง (ไม่ exit กลางทาง)
-# Ref: Makner EMA 7/30 system — "ถ้า 4H เปลี่ยนทิศ → cut ทันที"
+# Ref: Makner EMA 7/30 system — "ถ้า 1H เปลี่ยนทิศ → cut ทันที"
+
+_HTF_TF    = "1h"    # Higher timeframe สำหรับ reversal check (สูงกว่า signal TF 30m)
+_HTF_LIMIT = 60      # 60 candles = 60h ≈ 2.5 วัน (พอสำหรับ EMA30)
 
 def _get_htf_bull(symbol: str) -> bool:
     """
-    คำนวณ 4H EMA7 vs EMA30 — เหมือน agent_trend.py _htf_bias()
+    คำนวณ 1H EMA7 vs EMA30 เพื่อตรวจ trend reversal
     คืน True (EMA7>EMA30 = bull), False (bear), None (error/ข้อมูลไม่พอ)
     Cache 10 นาที/symbol เพื่อไม่ fetch ซ้ำในรอบเดียวกัน
     """
@@ -739,7 +742,7 @@ def _get_htf_bull(symbol: str) -> bool:
         return cached[0]
 
     try:
-        bars = exchange.fetch_ohlcv(symbol, "30m", limit=150)
+        bars = exchange.fetch_ohlcv(symbol, _HTF_TF, limit=_HTF_LIMIT)
         if not bars or len(bars) < 35:
             return None
 
@@ -874,7 +877,7 @@ def check_open_trades(conn):
                             pnl = 0
                         outcome  = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
                         htf_dir  = "BEARISH" if side == "LONG" else "BULLISH"
-                        reason   = f"HTF_REVERSAL (4H→{htf_dir})"
+                        reason   = f"HTF_REVERSAL (1H→{htf_dir})"
                         _close(conn, tid, px, outcome, pnl, reason=reason)
                         closed.append((tid, sym, outcome, pnl))
                         print(f"  🔄 #{tid} {sym} {side} HTF เปลี่ยนทิศ"
