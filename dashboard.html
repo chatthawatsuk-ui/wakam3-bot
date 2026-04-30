@@ -2547,7 +2547,9 @@ function renderPositionCard(p){
   const origSl = slPctOrig>0
     ? (isLong ? ep*(1-slPctOrig/100) : ep*(1+slPctOrig/100))
     : sl  // fallback ถ้าไม่มีข้อมูล
-  const barRef={sl:origSl, tp2:tp2||tp1*1.5}
+  // ถ้า sl จริงออกนอก origSl (เช่น slippage) ให้ใช้ sl จริงเป็น boundary แทน
+  const barSl = sl ? (isLong ? Math.min(origSl,sl) : Math.max(origSl,sl)) : origSl
+  const barRef={sl:barSl, tp2:tp2||tp1*1.5}
   function toPct(px){
     const lo=isLong?barRef.sl:barRef.tp2
     const hi=isLong?barRef.tp2:barRef.sl
@@ -2556,7 +2558,7 @@ function renderPositionCard(p){
     const raw=isLong?(px-lo)/range:(hi-px)/range
     return Math.max(0,Math.min(100,raw*100))
   }
-  const slMarkerPct = toPct(sl)    // current SL (อาจ trail ไปที่ BE)
+  const slMarkerPct = Math.max(1.5, toPct(sl))  // min 1.5% ป้องกัน marker หลุดซ้าย
   const entryPct    = toPct(ep)
   const tp1Pct      = tp1?toPct(tp1):null
   const curPct      = toPct(curPx)
