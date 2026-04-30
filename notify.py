@@ -494,7 +494,14 @@ if __name__ == "__main__":
             skip_count += 1
             continue
 
-        msg = signal_status_msg(sig, status_map.get(sym_side))
+        status_row = status_map.get(sym_side)
+        skip_reason = (status_row or {}).get("skip_reason", "")
+        if skip_reason == "PYRAMID_BLOCKED":
+            print(f"  [SKIP] {sig['symbol']} {sig['side']} — PYRAMID_BLOCKED ไม่ส่ง notification")
+            skip_count += 1
+            continue
+
+        msg = signal_status_msg(sig, status_row)
         ok  = send(msg)
         if ok:
             mark_notified(sig)
