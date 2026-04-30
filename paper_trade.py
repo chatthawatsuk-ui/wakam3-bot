@@ -249,11 +249,16 @@ def init_db():
 
 # ── GET CURRENT PRICE ─────────────────────────────────────────────────────────
 def get_price(symbol):
-    try:
-        t = exchange.fetch_ticker(symbol)
-        return float(t["last"])
-    except Exception:
-        return None
+    for sym in [symbol, symbol.split("/")[0] + "/USDT:USDT"]:
+        try:
+            t = exchange.fetch_ticker(sym)
+            px = float(t["last"])
+            if px > 0:
+                return px
+        except Exception:
+            continue
+    print(f"  [WARN] get_price: ดึงราคา {symbol} ไม่ได้")
+    return None
 
 
 def get_balance(conn):
