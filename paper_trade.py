@@ -802,6 +802,17 @@ def check_open_trades(conn):
         if not px:
             continue
 
+        # ── BE Guard: tp1_hit=1 → sl ต้องไม่แย่กว่า entry เสมอ ──────────────
+        # pyramid อาจขยับ avg entry ขึ้น ทำให้ sl (BE เดิม) ต่ำกว่า entry ใหม่
+        if tp1_hit:
+            be_broken = (side == "LONG" and sl < ep) or (side == "SHORT" and sl > ep)
+            if be_broken:
+                old_sl = sl
+                conn.execute("UPDATE trades SET sl_px=? WHERE id=?", (ep, tid))
+                conn.commit()
+                sl = ep  # ต้อง update ก่อน compute hit_sl ด้านล่าง
+                print(f"  🔧 #{tid} {sym} BE Guard: sl {old_sl:.8g} → entry {ep:.8g}")
+
         hit_sl  = (side == "LONG"  and px <= sl) or (side == "SHORT" and px >= sl)
         hit_tp1 = not tp1_hit and (
             (side == "LONG"  and px >= tp1) or (side == "SHORT" and px <= tp1))
@@ -809,16 +820,10 @@ def check_open_trades(conn):
             (side == "LONG"  and px >= tp2) or (side == "SHORT" and px <= tp2))
 
         # ── คำนวณ PnL จาก qty จริง ────────────────────────────
-        # ใช้ signed difference (tp1-ep, tp2-ep, sl-ep) ไม่ใช่ abs()
-        # pnl_from_qty จัดการ LONG/SHORT direction อัตโนมัติ
-        #
-        # LONG:  tp1>ep → (tp1-ep)>0 → profit ✓   sl<ep → (sl-ep)<0 → loss ✓
-        # SHORT: tp1<ep → (tp1-ep)<0 → pnl flipped → profit ✓
-        #        sl>ep  → (sl-ep)>0  → pnl flipped → loss ✓
         if qty and qty > 0 and ep and ep > 0:
-            sgn_tp1 = (tp1 - ep) if tp1 else 0   # negative for SHORT (tp1 < ep)
-            sgn_tp2 = (tp2 - ep) if tp2 else 0   # negative for SHORT
-            sgn_sl  = (sl  - ep) if sl  else 0   # negative for LONG, positive for SHORT
+            sgn_tp1 = (tp1 - ep) if tp1 else 0
+            sgn_tp2 = (tp2 - ep) if tp2 else 0
+            sgn_sl  = (sl  - ep) if sl  else 0
 
             def pnl_from_qty(units, price_diff):
                 return units * price_diff if side == "LONG" else -units * price_diff
@@ -826,15 +831,13 @@ def check_open_trades(conn):
             pnl_full_tp2     = (pnl_from_qty(qty * 0.5, sgn_tp1) +
                                  pnl_from_qty(qty * 0.5, sgn_tp2))
             pnl_full_sl      = pnl_from_qty(qty, sgn_sl)
-            # SL_BE: SL ย้ายมา entry → sl=ep → sgn_sl=0 → half at TP1 + half at 0
             pnl_sl_after_tp1 = (pnl_from_qty(qty * 0.5, sgn_tp1) +
                                  pnl_from_qty(qty * 0.5, sgn_sl))
         else:
-            # trades เก่า: ใช้ fixed risk_usd (ไม่ขึ้นกับ LONG/SHORT direction)
             r = risk_usd if risk_usd else balance * RISK_PCT
             pnl_full_tp2      =  r * 0.5 * TP1_R + r * 0.5 * TP2_R
             pnl_full_sl       = -r
-            pnl_sl_after_tp1  =  r * 0.5 * TP1_R   # half at TP1 profit, half at BE (0)
+            pnl_sl_after_tp1  =  r * 0.5 * TP1_R
 
         if hit_tp1:
             # ── Trailing Stop: ขยับ SL → Breakeven (entry_px) ──
