@@ -222,6 +222,7 @@ tr:hover td{background:rgba(255,255,255,.02)}
 .pos-bar.up .fill{background:linear-gradient(90deg,#16a34a,var(--up))}
 .pos-bar.down .fill{background:linear-gradient(90deg,#be123c,var(--down))}
 .pos-bar .marker{position:absolute;top:-3px;bottom:-3px;width:2px;border-radius:1px;transform:translateX(-50%)}
+.pos-bar .marker.m-sl{background:var(--down);z-index:1}
 .pos-bar .marker.m-entry{background:#eab308;z-index:3}
 .pos-bar .marker.m-tp1{background:rgba(255,255,255,0.85);z-index:2}
 .pos-bar .marker.m-cur{width:3px;z-index:4;top:-4px;bottom:-4px;border-radius:2px}
@@ -2551,6 +2552,7 @@ function renderPositionCard(p){
     const raw=isLong?(px-lo)/range:(hi-px)/range
     return Math.max(0,Math.min(100,raw*100))
   }
+  const slPct    = toPct(sl)
   const entryPct = toPct(ep)
   const tp1Pct   = tp1?toPct(tp1):null
   const curPct   = toPct(curPx)
@@ -2583,9 +2585,10 @@ function renderPositionCard(p){
       </div>
       <div class="pos-bar ${inProfit?'up':'down'}">
         <div class="fill" style="left:${fillLeft.toFixed(1)}%;width:${fillWidth.toFixed(1)}%"></div>
+        <div class="marker m-sl" style="left:${slPct.toFixed(1)}%" title="SL"></div>
         ${tp1Pct!==null?`<div class="marker m-tp1" style="left:${tp1Pct.toFixed(1)}%" title="TP1"></div>`:''}
         <div class="marker m-entry" style="left:${entryPct.toFixed(1)}%" title="Entry"></div>
-        <div class="marker m-cur ${inProfit?'up':'down'}" style="left:${curPct.toFixed(1)}%;background:${inProfit?'var(--up)':'var(--down)'}" title="Now"></div>
+        <div class="marker m-cur" style="left:${curPct.toFixed(1)}%;background:${inProfit?'var(--up)':'var(--down)'}" title="Now"></div>
       </div>
     </div>
     <div class="pos-targets">
