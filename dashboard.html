@@ -207,16 +207,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
   color:#eab308;font-size:10px;font-weight:700;font-family:var(--font-mono)}
 .pos-pyramid{display:inline-flex;padding:2px 6px;border-radius:4px;
   background:rgba(124,58,237,.3);border:1px solid rgba(124,58,237,.4);
-  color:#a78bfa;font-size:10px;font-weight:700;font-family:var(--font-mono);margin-left:auto}
-.pos-pnl-wrap{margin-left:auto;text-align:right;line-height:1.15}
+  color:#a78bfa;font-size:10px;font-weight:700;font-family:var(--font-mono)}
+.pos-pnl-wrap{margin-left:auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
 .pos-pnl{font-family:var(--font-mono);font-weight:700;font-size:16px;letter-spacing:-.01em}
 .pos-pnl.up{color:var(--up)}.pos-pnl.down{color:var(--down)}
-.pos-pnl-lab{font-size:9.5px;color:var(--text-4);letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-mono)}
-.pos-row{display:flex;align-items:center;gap:14px;font-family:var(--font-mono);color:var(--text-2);font-size:11.5px}
-.pos-row .lab{color:var(--text-4);margin-right:4px}
+.pos-pnl-lab{font-size:9px;color:var(--text-4);letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-mono)}
+.pos-row{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);color:var(--text-2);font-size:11.5px;flex-wrap:nowrap}
+.pos-row .lab{color:var(--text-4);margin-right:3px}
 .pos-row .v{color:var(--text);font-weight:500}
 .pos-row .lev-r{color:#eab308;font-weight:700}
-.pos-row .age{margin-left:auto;color:var(--text-4);font-size:11px}
+.pos-row .age{margin-left:auto;color:var(--text-4);font-size:11px;white-space:nowrap;flex-shrink:0}
 .pos-bar{position:relative;height:6px;background:var(--bg-3);border-radius:999px;overflow:visible;margin:4px 0}
 .pos-bar .fill{position:absolute;top:0;bottom:0;border-radius:999px;transition:width .4s,left .4s}
 .pos-bar.up .fill{background:linear-gradient(90deg,#16a34a,var(--up))}
@@ -2564,7 +2564,6 @@ function renderPositionCard(p){
       <span class="pos-side ${isLong?'long':'short'}">${p.side}</span>
       <span class="pos-sym">${sym}<span class="sfx">.P</span></span>
       <span class="pos-lev">${lev}x</span>
-      ${pyramid>=2?`<span class="pos-pyramid">×${pyramid} Pyramid</span>`:''}
       <div class="pos-pnl-wrap">
         <div class="pos-pnl ${pnlUp?'up':'down'}">${pnlSign}$${Math.abs(pnlUsd).toFixed(2)}</div>
         <div class="pos-pnl-lab">PnL (USDT)</div>
@@ -2574,6 +2573,7 @@ function renderPositionCard(p){
       ${notional>0?`<span><span class="lab">Size</span><span class="v">$${numFmt(notional)}</span></span><span style="color:var(--text-4)">|</span>`:''}
       ${margin>0?`<span><span class="lab">Margin</span><span class="v">$${margin.toFixed(2)}</span></span><span style="color:var(--text-4)">|</span>`:''}
       <span><span class="lab">Lev</span><span class="lev-r">${lev}x</span></span>
+      ${pyramid>=2?`<span style="color:var(--text-4)">|</span><span class="pos-pyramid">×${pyramid} Pyramid</span>`:''}
       <span class="age">${timeAgo(p.open_time)}</span>
     </div>
     <div>

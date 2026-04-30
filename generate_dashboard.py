@@ -1506,7 +1506,7 @@ def main():
             rsi      = r["rsi"]
             open_time = r["opened_at"]
             row_id   = r["id"]
-            pyramid_count = 1
+            pyramid_count = int(r["pyramid_level"] or 1)
         else:
             # merge: weighted avg entry, sum notional/margin/risk, latest SL/TP
             total_notional = sum(float(r["notional_usd"] or 0) for r in rows)
