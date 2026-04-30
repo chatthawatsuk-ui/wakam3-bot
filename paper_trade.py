@@ -584,22 +584,7 @@ def open_trade(conn, sig):
         log_signal(conn, sig, was_traded=False, skip_reason="DAILY_CAP", balance=balance)
         return None
 
-    # ── Guardrail 2: Correlation Check ──────────────────────────────────────
-    corr_ok, corr_reason = check_correlation(conn, sig["symbol"], sig["side"])
-    if not corr_ok:
-        print(f"  [GUARD] {sig['symbol']} — {corr_reason}")
-        log_signal(conn, sig, was_traded=False, skip_reason="CORR_LIMIT", balance=balance)
-        return None
-
-    # ── ตรวจ max open positions ──────────────────────────────────────────────
-    open_count = conn.execute(
-        "SELECT COUNT(*) FROM trades WHERE status='OPEN'").fetchone()[0]
-    if open_count >= MAX_OPEN:
-        print(f"  [SKIP] {sig['symbol']} — เปิดครบ {MAX_OPEN} positions แล้ว")
-        log_signal(conn, sig, was_traded=False, skip_reason="MAX_OPEN", balance=balance)
-        return None
-
-    # ── Pyramid check ─────────────────────────────────────────────────────────
+    # ── Pyramid check (ต้องอยู่ก่อน CORR check เพราะ pyramid ไม่นับ correlation ใหม่) ──
     open_trade_row = PM.get_open_trade(conn, sig["symbol"], sig.get("side", ""))
     if open_trade_row:
         current_px = float(sig.get("price", 0) or 0)
@@ -613,6 +598,29 @@ def open_trade(conn, sig):
             print(f"  [SKIP] {sig['symbol']} — {reason}")
             log_signal(conn, sig, was_traded=False, skip_reason="PYRAMID_BLOCKED", balance=balance)
             return None
+
+    # ── Opposite direction guard — ป้องกัน hedge (LONG+SHORT พร้อมกัน) ──────
+    opp_side = "SHORT" if sig.get("side") == "LONG" else "LONG"
+    open_opp = PM.get_open_trade(conn, sig["symbol"], opp_side)
+    if open_opp:
+        print(f"  [GUARD] {sig['symbol']} — opposite {opp_side} already open (ID={open_opp['id']})")
+        log_signal(conn, sig, was_traded=False, skip_reason="OPP_DIRECTION", balance=balance)
+        return None
+
+    # ── Guardrail 2: Correlation Check (เฉพาะ first entry ใหม่เท่านั้น) ─────
+    corr_ok, corr_reason = check_correlation(conn, sig["symbol"], sig["side"])
+    if not corr_ok:
+        print(f"  [GUARD] {sig['symbol']} — {corr_reason}")
+        log_signal(conn, sig, was_traded=False, skip_reason="CORR_LIMIT", balance=balance)
+        return None
+
+    # ── ตรวจ max open positions ──────────────────────────────────────────────
+    open_count = conn.execute(
+        "SELECT COUNT(*) FROM trades WHERE status='OPEN'").fetchone()[0]
+    if open_count >= MAX_OPEN:
+        print(f"  [SKIP] {sig['symbol']} — เปิดครบ {MAX_OPEN} positions แล้ว")
+        log_signal(conn, sig, was_traded=False, skip_reason="MAX_OPEN", balance=balance)
+        return None
 
     # ── First entry (ไม่มี position เดิม) ────────────────────────────────────
     entry_px = sig["price"]
