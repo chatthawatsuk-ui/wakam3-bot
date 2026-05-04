@@ -482,9 +482,7 @@ Rules for weights:
         return result
 
     except Exception as e:
-        import traceback
-        print(f"  [ERROR] _claude_weight_proposal failed: {type(e).__name__}: {e}")
-        traceback.print_exc()
+        print(f"  [WARN] _claude_weight_proposal: {e}")
         return None
 
 
