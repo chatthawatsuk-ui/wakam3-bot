@@ -120,7 +120,7 @@
       "side": "LONG",
       "score": 17,
       "entry_price": 452.86073729,
-      "current_price": 454.6,
+      "current_price": 454.4,
       "sl_price": 449.2,
       "tp_price": 455.58,
       "tp2_price": 457.9,
@@ -130,8 +130,8 @@
       "leverage": 20.0,
       "margin_usd": 14.1,
       "risk_usd": 1.21,
-      "pnl_pct": 0.38,
-      "pnl": 1.08,
+      "pnl_pct": 0.34,
+      "pnl": 0.96,
       "open_time": "2026-05-10T05:47:28.095826+00:00",
       "pyramid_count": 2,
       "sl_pct_orig": 0.641
@@ -190,7 +190,7 @@
       "sl_price": 95.56,
       "tp_price": 99.5,
       "tp2_price": 101.17,
-      "tp1_hit": false,
+      "tp1_hit": true,
       "rsi": 60.7,
       "notional": 282.11,
       "leverage": 20.0,
@@ -11720,7 +11720,7 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0056,
+      "funding_rate": 0.0058,
       "regime": "TRENDING",
       "ts": "2026-05-10T15:16:22.072683+00:00",
       "claude_reason": "positions_full (10/10) — ไม่รับ signal ใหม่"
@@ -11885,7 +11885,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0012,
+      "funding_rate": 0.0011,
       "regime": "RANGING",
       "ts": "2026-05-10T15:16:03.604080+00:00",
       "claude_reason": "score17 overextension outside TRENDING (WR 36% in backtest)"
@@ -11950,7 +11950,7 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 17,
-      "score_short": 11,
+      "score_short": 9,
       "best_score": 17,
       "score_pct": 37.8,
       "price": 4.071,
@@ -30889,9 +30889,9 @@
         "avg_pnl": 3.13
       },
       "MAX_OPEN": {
-        "n": 99,
+        "n": 101,
         "wr": 46.5,
-        "avg_pnl": 1.08
+        "avg_pnl": 1.04
       },
       "PYRAMID_BLOCKED": {
         "n": 72,
@@ -30939,32 +30939,6 @@
       "profit_factor": 1.7
     },
     "trades": [
-      {
-        "sym": "BCH/USDT",
-        "side": "SHORT",
-        "score": 16,
-        "ep": 451.5,
-        "entry_ts": "2026-05-07T18:32:30.104596+00:00",
-        "exit_type": "TIMEOUT",
-        "tp1_hit": 0,
-        "outcome": "WIN",
-        "pnl": 0.5,
-        "in_kz": false,
-        "regime": "TRENDING"
-      },
-      {
-        "sym": "LTC/USDT",
-        "side": "SHORT",
-        "score": 17,
-        "ep": 56.68,
-        "entry_ts": "2026-05-07T18:32:30.105831+00:00",
-        "exit_type": "SL",
-        "tp1_hit": 0,
-        "outcome": "LOSS",
-        "pnl": -3.36,
-        "in_kz": false,
-        "regime": "TRENDING"
-      },
       {
         "sym": "AVAX/USDT",
         "side": "SHORT",
@@ -32006,6 +31980,19 @@
         "regime": "TRENDING"
       },
       {
+        "sym": "ATOM/USDT",
+        "side": "SHORT",
+        "score": 11,
+        "ep": 1.934,
+        "entry_ts": "2026-05-09T15:17:18.459077+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -6.31,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "XRP/USDT",
         "side": "SHORT",
         "score": 10,
@@ -32210,6 +32197,19 @@
         "tp1_hit": 1,
         "outcome": "WIN",
         "pnl": 9.78,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
+        "sym": "CRO/USDT",
+        "side": "LONG",
+        "score": 17,
+        "ep": 0.07131,
+        "entry_ts": "2026-05-10T05:47:28.101638+00:00",
+        "exit_type": "TP2",
+        "tp1_hit": 1,
+        "outcome": "WIN",
+        "pnl": 4.41,
         "in_kz": false,
         "regime": "TRENDING"
       },
@@ -32592,6 +32592,20 @@
         "sym": "BNB/USDT"
       },
       {
+        "n": 9,
+        "n_win": 4,
+        "n_lose": 5,
+        "wr": 44.4,
+        "tp1r": 44.4,
+        "total_pnl": -3.25,
+        "avg_pnl": -0.36,
+        "dd": -17.7,
+        "sharpe": -1.59,
+        "kz_wr": null,
+        "profit_factor": 0.8,
+        "sym": "CRO/USDT"
+      },
+      {
         "n": 4,
         "n_win": 2,
         "n_lose": 2,
@@ -32632,20 +32646,6 @@
         "kz_wr": null,
         "profit_factor": 0.62,
         "sym": "XLM/USDT"
-      },
-      {
-        "n": 8,
-        "n_win": 3,
-        "n_lose": 5,
-        "wr": 37.5,
-        "tp1r": 37.5,
-        "total_pnl": -7.66,
-        "avg_pnl": -0.96,
-        "dd": -19.9,
-        "sharpe": -4.58,
-        "kz_wr": null,
-        "profit_factor": 0.52,
-        "sym": "CRO/USDT"
       },
       {
         "n": 6,
@@ -32760,17 +32760,17 @@
         "sym": "RAVE/USDT"
       },
       {
-        "n": 14,
+        "n": 15,
         "n_win": 2,
-        "n_lose": 12,
-        "wr": 14.3,
-        "tp1r": 14.3,
-        "total_pnl": -53.22,
-        "avg_pnl": -3.8,
-        "dd": -35.3,
-        "sharpe": -20.22,
+        "n_lose": 13,
+        "wr": 13.3,
+        "tp1r": 13.3,
+        "total_pnl": -59.53,
+        "avg_pnl": -3.97,
+        "dd": -36.9,
+        "sharpe": -21.39,
         "kz_wr": null,
-        "profit_factor": 0.06,
+        "profit_factor": 0.05,
         "sym": "ATOM/USDT"
       }
     ],
@@ -32819,9 +32819,9 @@
       },
       {
         "band": "9-11",
-        "n": 24,
-        "wr": 25.0,
-        "avg_pnl": -2.05
+        "n": 25,
+        "wr": 24.0,
+        "avg_pnl": -2.22
       },
       {
         "band": "12-14",
@@ -34197,21 +34197,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "ATOM/USDT",
-        "side": "SHORT",
-        "score": 11,
-        "entry_px": 1.943,
-        "sl_pct": 2.367,
-        "regime": "TRENDING",
-        "claude_reason": "positions_full (10/10) — ไม่รับ signal ใหม่",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-05-09T14:46:25.728173+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "TRUMP/USDT",
         "side": "SHORT",
         "score": 9,
@@ -34419,21 +34404,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-05-09T10:31:35.232762+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "AAVE/USDT",
-        "side": "SHORT",
-        "score": 12,
-        "entry_px": 95.73,
-        "sl_pct": 4.001,
-        "regime": "TRENDING",
-        "claude_reason": "pyramid_blocked — AAVE/USDT pos#1 trend=0/13 existing_pnl=-2.4% (ต้องการ trend≥10+pnl≥0% หรือ trend≥9+pnl>1%)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-05-09T10:31:23.686204+00:00",
         "resolved_at": null
       },
       {
