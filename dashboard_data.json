@@ -14145,7 +14145,7 @@
     {
       "symbol": "CRO/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SIGNAL",
       "side": "LONG",
       "score_long": 12,
       "score_short": 12,
@@ -32854,9 +32854,9 @@
     "n_skipped": 292,
     "skip_breakdown": {
       "CORR_LIMIT": {
-        "n": 71,
-        "wr": 40.8,
-        "avg_pnl": -0.34
+        "n": 72,
+        "wr": 40.3,
+        "avg_pnl": -0.37
       },
       "MAX_OPEN": {
         "n": 134,
@@ -32864,9 +32864,9 @@
         "avg_pnl": -0.28
       },
       "PYRAMID_BLOCKED": {
-        "n": 87,
-        "wr": 46.0,
-        "avg_pnl": 1.29
+        "n": 88,
+        "wr": 45.5,
+        "avg_pnl": 1.25
       }
     },
     "summary": {
@@ -34324,18 +34324,18 @@
         "sym": "AAVE/USDT"
       },
       {
-        "n": 9,
-        "n_win": 5,
-        "n_lose": 4,
-        "wr": 55.6,
-        "tp1r": 44.4,
-        "total_pnl": 14.13,
-        "avg_pnl": 1.57,
-        "dd": -12.5,
-        "sharpe": 3.87,
+        "n": 14,
+        "n_win": 7,
+        "n_lose": 7,
+        "wr": 50.0,
+        "tp1r": 42.9,
+        "total_pnl": 13.88,
+        "avg_pnl": 0.99,
+        "dd": -11.4,
+        "sharpe": 2.6,
         "kz_wr": null,
-        "profit_factor": 1.83,
-        "sym": "SOL/USDT"
+        "profit_factor": 1.51,
+        "sym": "HBAR/USDT"
       },
       {
         "n": 14,
@@ -34362,8 +34362,8 @@
         "dd": -26.5,
         "sharpe": 3.25,
         "kz_wr": null,
-        "profit_factor": 1.7,
-        "sym": "APT/USDT"
+        "profit_factor": 1.62,
+        "sym": "SOL/USDT"
       },
       {
         "n": 19,
@@ -34378,6 +34378,20 @@
         "kz_wr": null,
         "profit_factor": 1.14,
         "sym": "ICP/USDT"
+      },
+      {
+        "n": 8,
+        "n_win": 3,
+        "n_lose": 5,
+        "wr": 37.5,
+        "tp1r": 37.5,
+        "total_pnl": 10.33,
+        "avg_pnl": 1.29,
+        "dd": -26.5,
+        "sharpe": 2.41,
+        "kz_wr": null,
+        "profit_factor": 1.49,
+        "sym": "APT/USDT"
       },
       {
         "n": 14,
@@ -34813,9 +34827,9 @@
       },
       {
         "band": "21+",
-        "n": 20,
-        "wr": 60.0,
-        "avg_pnl": 3.8
+        "n": 21,
+        "wr": 57.1,
+        "avg_pnl": 3.51
       }
     ],
     "by_regime": [
@@ -36431,21 +36445,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "ETH/USDT",
-        "side": "SHORT",
-        "score": 11,
-        "entry_px": 2255.37,
-        "sl_pct": 0.874,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-05-14T09:46:06.326706+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "ONDO/USDT",
         "side": "LONG",
         "score": 9,
@@ -37104,7 +37103,9 @@
         "tp1_hit": 1,
         "created_at": "2026-05-12T16:31:48.069336+00:00",
         "resolved_at": null
-      },
+      }
+    ],
+    "resolved_trades": [
       {
         "symbol": "RAVE/USDT",
         "side": "SHORT",
@@ -37113,15 +37114,43 @@
         "sl_pct": 6.174,
         "regime": "RANGING",
         "claude_reason": "score19 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
+        "outcome": "WIN",
+        "exit_px": 0.6554,
+        "exit_reason": "TIMEOUT",
         "tp1_hit": 0,
         "created_at": "2026-05-12T14:47:00.351661+00:00",
-        "resolved_at": null
-      }
-    ],
-    "resolved_trades": [
+        "resolved_at": "2026-05-14T14:47:12.451406+00:00"
+      },
+      {
+        "symbol": "HBAR/USDT",
+        "side": "SHORT",
+        "score": 16,
+        "entry_px": 0.09275,
+        "sl_pct": 3.094,
+        "regime": "TRENDING",
+        "claude_reason": "positions_full (10/10) — ไม่รับ signal ใหม่",
+        "outcome": "LOSS",
+        "exit_px": 0.09571,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-05-13T13:01:25.620793+00:00",
+        "resolved_at": "2026-05-14T14:47:12.451406+00:00"
+      },
+      {
+        "symbol": "ETH/USDT",
+        "side": "SHORT",
+        "score": 11,
+        "entry_px": 2255.37,
+        "sl_pct": 0.874,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 2276.11,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-05-14T09:46:06.326706+00:00",
+        "resolved_at": "2026-05-14T14:47:12.451406+00:00"
+      },
       {
         "symbol": "HBAR/USDT",
         "side": "SHORT",
