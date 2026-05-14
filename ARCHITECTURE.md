@@ -204,6 +204,20 @@ Single HTML file, serve ผ่าน **GitHub Pages** (main branch)
 
 ---
 
+## Backtesting vs Live Reporting
+
+ระบบมีงานวิเคราะห์ผล 2 แบบที่แยกกันชัดเจน:
+
+| ระบบ | ใช้ทำอะไร | Trigger | กระทบ pipeline live หรือไม่ |
+|------|-----------|---------|------------------------------|
+| 3Y Backtest | Offline validation สำหรับ tune agent/filter ก่อนเปลี่ยน strategy | manual workflow หรือรัน script backtest โดยตรง | ไม่กระทบ live scan |
+| 7D Summary | รายงานผลจริงจาก production/paper trades ล่าสุด | weekly report workflow | อ่าน state จริงจาก `paper_trades.db` |
+
+3Y Backtest ไม่ใช่ production performance report และไม่ควรถูกนำไปปนกับ 7D Summary
+เวลาวิเคราะห์ผล live trading หรือ alert behavior.
+
+---
+
 ## GitHub Actions Workflow
 
 ```yaml

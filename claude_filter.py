@@ -50,7 +50,8 @@ HARD REJECT (non-negotiable — applied before this prompt):
 YOUR ROLE: Signals reaching you already passed all hard rules. Evaluate the CONTEXT — portfolio risk, market regime, signal quality — to make the final call.
 
 APPROVE when: TRENDING regime, score ≥ 9/45, SL ≥ 0.5%, liquidity sweep confirmed, portfolio not overexposed.
-REJECT when: 3+ open positions, daily PnL ≤ -3%, same symbol already open, or strong contextual reason.
+REJECT when: signal quality is poor, regime conflicts, RSI/funding context is unsafe, or daily PnL ≤ -3%.
+Do not reject only because positions are full or the same symbol is already open; those are execution controls handled after alerting.
 
 --- FEW-SHOT EXAMPLES ---
 
@@ -248,18 +249,22 @@ def _get_portfolio_context(symbol: str) -> dict:
             "same_symbol_count":    same_symbol_count,
             "same_symbol_entry_px": same_symbol_entry_px,
             "same_symbol_side":     same_symbol_side,
+            "db_available":         True,
+            "db_error":             "",
         }
-    except Exception:
+    except Exception as e:
         return {
             "balance": 1000.0,
-            "open_count": 10,
-            "open_summary": "unknown",
+            "open_count": 0,
+            "open_summary": "db_unavailable",
             "daily_pnl": 0.0,
             "daily_pnl_pct": 0.0,
             "same_symbol_open":     False,
             "same_symbol_count":    0,
             "same_symbol_entry_px": 0.0,
             "same_symbol_side":     "",
+            "db_available":         False,
+            "db_error":             str(e)[:120],
         }
 
 
@@ -273,17 +278,17 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         scan_result: dict จาก scan_symbol (มี htf_bull, in_discount, regime, ...)
 
     Returns:
-        (approved: bool, reason: str)
+        (approved: bool, reason: str, execution_meta: dict)
         ถ้า Claude ไม่พร้อม/error → (True, "filter_disabled") — ไม่ block signal
     """
     # ── Hard reject ก่อน (ไม่เสีย API call) ──────────────────────────────────
     rejected, hard_reason = _hard_reject(signal)
     if rejected:
-        return False, hard_reason
-
-    client = _init()
-    if client is None:
-        return True, "filter_disabled"
+        return False, hard_reason, {
+            "execution_allowed": True,
+            "execution_block_reason": "",
+            "db_available": True,
+        }
 
     # ── ดึง portfolio context ──────────────────────────────────────────────────
     symbol  = signal.get("symbol", "")
@@ -292,20 +297,33 @@ def ask(signal: dict, scan_result: dict) -> tuple:
     pnl_sign = "+" if ctx["daily_pnl"] >= 0 else ""
     same_sym = " ⚠️ SAME SYMBOL ALREADY OPEN" if ctx["same_symbol_open"] else ""
 
-    # ── Portfolio pre-checks — reject ก่อนถึง Claude (ไม่เสีย token) ────────
+    # ── Execution pre-checks — ห้าม block alert path ─────────────────────────
+    # latest_signals.json ใช้ทั้งแจ้ง Telegram และเปิด paper trade
+    # ดังนั้น portfolio/DB issues ต้องถูกส่งเป็น metadata ให้ paper_trade.py skip
+    # แต่ยังให้ Claude ประเมินคุณภาพ signal และ notify.py ส่ง alert ได้ตามปกติ
     MAX_POSITIONS  = 10
     MAX_PYRAMID    = 2   # สูงสุด 2 positions ต่อ symbol
+    execution_allowed = True
+    execution_block_reason = ""
+
+    if not ctx.get("db_available", True):
+        execution_allowed = False
+        execution_block_reason = "DB_UNAVAILABLE"
+        same_sym = " ⚠️ DB UNAVAILABLE - ALERT ONLY"
 
     # positions_full block เฉพาะ symbol ใหม่เท่านั้น — pyramid (same symbol) ข้ามได้
     if ctx["open_count"] >= MAX_POSITIONS and not ctx["same_symbol_open"]:
-        return False, f"positions_full ({ctx['open_count']}/{MAX_POSITIONS}) — ไม่รับ signal ใหม่"
+        execution_allowed = False
+        execution_block_reason = f"POSITIONS_FULL ({ctx['open_count']}/{MAX_POSITIONS})"
 
     # ── Pyramid check (แทน hard reject same_symbol) ──────────────────────────
     pyramid_note = ""
     if ctx["same_symbol_open"]:
         if ctx["same_symbol_count"] >= MAX_PYRAMID:
-            return False, (f"pyramid_max — {symbol} มี {ctx['same_symbol_count']} positions"
-                           f" แล้ว (max {MAX_PYRAMID})")
+            execution_allowed = False
+            execution_block_reason = (
+                f"PYRAMID_MAX ({ctx['same_symbol_count']}/{MAX_PYRAMID})"
+            )
 
         # คำนวณ PnL% ของ position เดิม โดยใช้ราคาปัจจุบัน (signal.price = ราคาตลาด)
         score_trend = signal.get("score_trend", 0)
@@ -325,14 +343,30 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         pyr_medium = (score_trend >= 9  and pnl_pct > 1.0)    # Trend ดี + กำไร > 1%
 
         if not (pyr_strong or pyr_medium):
-            return False, (f"pyramid_blocked — {symbol} pos#{ctx['same_symbol_count']}"
-                           f" trend={score_trend}/13 existing_pnl={pnl_pct:+.1f}%"
-                           f" (ต้องการ trend≥10+pnl≥0% หรือ trend≥9+pnl>1%)")
+            execution_allowed = False
+            execution_block_reason = (
+                f"PYRAMID_BLOCKED trend={score_trend}/13 pnl={pnl_pct:+.1f}%"
+            )
 
-        # ผ่าน! เป็น Pyramid trade
-        pyramid_note = (f" 🔺 PYRAMID #{ctx['same_symbol_count']+1}"
-                        f" (trend={score_trend}/13, existing_pnl={pnl_pct:+.1f}%)")
-        same_sym = pyramid_note
+        if execution_allowed:
+            pyramid_note = (f" 🔺 PYRAMID #{ctx['same_symbol_count']+1}"
+                            f" (trend={score_trend}/13, existing_pnl={pnl_pct:+.1f}%)")
+            same_sym = pyramid_note
+        else:
+            same_sym = f" ⚠️ {execution_block_reason}"
+
+    signal["execution_allowed"] = execution_allowed
+    signal["execution_block_reason"] = execution_block_reason
+
+    execution_meta = {
+        "execution_allowed": execution_allowed,
+        "execution_block_reason": execution_block_reason,
+        "db_available": ctx.get("db_available", True),
+    }
+
+    client = _init()
+    if client is None:
+        return True, "filter_disabled", execution_meta
 
     funding_rate = signal.get("funding_rate")
     funding_str  = f"{funding_rate:+.4f}%" if funding_rate is not None else "N/A"
@@ -396,7 +430,7 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         if not approved and suggested and suggested.lower() not in ("none", ""):
             full_reason += f" | suggest: {suggested}"
 
-        return approved, f"[{confidence}%] {full_reason}"
+        return approved, f"[{confidence}%] {full_reason}", execution_meta
 
     except Exception as e:
         # fallback: อย่า block signal ถ้า Claude error — แต่แจ้งเตือน Telegram
@@ -416,4 +450,4 @@ def ask(signal: dict, scan_result: dict) -> tuple:
                 )
             except Exception:
                 pass
-        return True, f"err:{str(e)[:60]}"
+        return True, f"err:{str(e)[:60]}", execution_meta

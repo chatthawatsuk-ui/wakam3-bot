@@ -33,6 +33,14 @@ from typing import Optional
 DB_PATH            = "paper_trades.db"
 MAX_LEVERAGE       = 20
 MAX_PYRAMID_LEVELS = 4
+_TRADE_UPDATE_COLUMNS = {
+    "entry_px",
+    "qty",
+    "notional_usd",
+    "margin_usd",
+    "pyramid_level",
+    "sl_px",
+}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PYRAMID LEVELS CONFIG
@@ -266,6 +274,10 @@ def apply_pyramid(
         if new_sl:
             update["sl_px"] = new_sl
 
+        invalid_cols = set(update) - _TRADE_UPDATE_COLUMNS
+        if invalid_cols:
+            raise ValueError(f"Invalid trade update columns: {sorted(invalid_cols)}")
+
         set_clause = ", ".join(f"{k}=?" for k in update)
         conn.execute(f"UPDATE trades SET {set_clause} WHERE id=?",
                      list(update.values()) + [trade_id])
@@ -291,8 +303,9 @@ def migrate_db(conn: sqlite3.Connection):
     try:
         conn.execute("ALTER TABLE trades ADD COLUMN pyramid_level INTEGER DEFAULT 1")
         conn.commit()
-    except Exception:
-        pass
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" not in str(e).lower():
+            raise
 
 
 # ══════════════════════════════════════════════════════════════════════════════

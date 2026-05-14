@@ -52,10 +52,13 @@ def _load_watchlist(path=_WL_PATH):
 
 SYMBOLS = _load_watchlist()
 
-TF_PRIMARY = "30m"   # TF เดียวสำหรับทุกอย่าง — signal + gate (TF ใครTF)
+TF_PRIMARY = "30m"   # TF เดียวสำหรับ signal + gate — intentional 30m-only scan
 CANDLES    = 500     # 30m warmup window
 
-# legacy aliases — signal_scanner signature ใช้ df_1h, df_4h (ส่ง TF เดียวกัน)
+# Intentional aliases: downstream agents keep legacy parameter names
+# (df_1h/df_4h) for bias inputs, but this production pipeline evaluates
+# them on the same 30m primary timeframe. Do not change these to 1h/4h
+# unless the strategy is retuned for true multi-timeframe signals.
 TF_1H = TF_PRIMARY
 TF_4H = TF_PRIMARY
 
