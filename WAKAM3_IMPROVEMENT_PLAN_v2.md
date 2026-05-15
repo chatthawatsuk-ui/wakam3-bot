@@ -24,6 +24,23 @@
 
 -----
 
+> ### ⚠️ หมายเหตุ: ไฟล์นี้ยังไม่ได้ sync ลง OneDrive
+>
+> **สถานะ:** ไฟล์นี้อยู่บน GitHub branch `claude/continue-bot-dev-HMOhL` เท่านั้น — ยังไม่ได้ copy เข้า OneDrive folder `K Drive/Crypto/Wakam3_AI_Trade/`
+>
+> **เหตุผลที่ยังไม่ได้ sync:**
+> Session นี้รันใน **cloud container** (Linux ephemeral environment ที่ `/home/user/wakam3-bot`) ไม่มี OneDrive desktop sync client ติดตั้งอยู่
+> Microsoft SharePoint MCP tools ที่มีใน session นี้เป็น **read-only** (`sharepoint_search`, `sharepoint_folder_search`, `read_resource`) — ไม่มี upload/write tool → ไม่สามารถ push ไฟล์เข้า SharePoint/OneDrive โดยตรงจาก cloud container ได้
+>
+> **วิธี sync เข้า OneDrive:**
+> 1. Download `WAKAM3_IMPROVEMENT_PLAN_v2.md` จาก GitHub branch `claude/continue-bot-dev-HMOhL`
+> 2. Copy เข้า folder `K Drive/Crypto/Wakam3_AI_Trade/` บน OneDrive ที่ sync กับ PC/Mac ของท่าน Kamp
+> 3. หรือ `git pull` branch นี้บน machine ที่ OneDrive sync อยู่ แล้ว copy ไฟล์เข้า OneDrive folder ด้วยตนเอง
+>
+> **หลัง sync แล้ว: ลบ note นี้ออกทั้งหมด** (ตั้งแต่บรรทัด `⚠️ หมายเหตุ` จนถึง `ลบ note นี้ออกทั้งหมด`) เพื่อให้ไฟล์ OneDrive สะอาด
+
+-----
+
 ## 1. Philosophy
 
 |Layer              |Role                                                        |Cadence               |
