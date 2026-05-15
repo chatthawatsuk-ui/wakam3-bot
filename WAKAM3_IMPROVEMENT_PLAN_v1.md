@@ -20,6 +20,10 @@ Weekly = observation only.
 Monthly = structured analysis → proposal → human approval.  
 No system auto-applies changes without explicit `/approve_*` command from Telegram.
 
+> **Weekly Lock Reminder:**
+> Weekly is **monitor-only permanently**. Weekly must not generate `pending_*.json` approval files.
+> Monthly is the first layer with approval authority. This is a hard design constraint, not a temporary state.
+
 ---
 
 ## 2. System Overview (as of 2026-05-15)
@@ -324,7 +328,187 @@ return True, f"err:{str(e)[:60]}", execution_meta
 
 ---
 
-## 14. Open Questions
+## 14. Day 0 Reset Procedure
+
+Before deploying safety fixes (P1–P3), perform a controlled Day 0 reset to establish a clean baseline.
+
+### Pre-reset: Archive
+
+1. Export current `paper_trades.db` → `archive/paper_trades_pre_day0_YYYY-MM-DD.db`
+2. Copy all JSON output files → `archive/json_state_pre_day0/`
+   - `latest_signals.json`, `scan_results.json`, `dashboard_data.json`, `weights.json`, `regime_state.json`, `notified_signals.json`
+3. Copy `condition_points.json` and `regime_weights.json` → `archive/config_pre_day0/`
+4. Record git commit hash at time of archive
+
+### Reset scope (bot state/output only)
+
+| Reset | Action |
+|-------|--------|
+| `paper_trades.db` | Delete and let bot recreate empty |
+| `latest_signals.json` | Delete |
+| `scan_results.json` | Delete |
+| `dashboard_data.json` | Delete |
+| `notified_signals.json` | Delete |
+| `pending_*.json` | Delete |
+| `winrate_snapshot.json` | Delete |
+| Portfolio balance | Resets to initial paper balance |
+
+### Explicitly out of reset scope
+
+| Protected | Reason |
+|-----------|--------|
+| `historical_data/` | 3-year OHLCV input data — never touched |
+| All `.parquet` files | Raw OHLCV archives — immutable |
+| `download_history.py` | Data infrastructure — no reset needed |
+| 3Y backtest input data | `backtest_3y.csv`, `backtest_mtf.csv`, etc. — input, not output |
+| `backtest_*.py` | Backtest infrastructure — code, not state |
+| `watchlist_custom.json` | Symbol config — not state |
+| `condition_points.json` | Config — backed up pre-reset, then updated by safety fixes |
+| `weights.json` | Config — backed up pre-reset, then kept or updated |
+
+### Archive usage policy
+
+Archived pre-reset data is for **directional reference only**. Do not use it as an apples-to-apples baseline for post-fix comparisons because:
+- Pre-fix PnL has accounting noise (TP1-partial bug was active)
+- Pre-fix signals included wide-SL trades that would now be rejected
+- Scoring thresholds will change
+
+**Official baseline starts after Day 0 reset** with all safety fixes deployed.
+
+---
+
+## 15. Rollback Trigger Matrix
+
+If safety fixes cause unexpected degradation, use this matrix to decide rollback.
+
+### Emergency halt + immediate rollback
+
+| Trigger | Threshold | Action |
+|---------|-----------|--------|
+| Drawdown | DD > 15% in first 7 days post-reset | Halt bot, rollback all changes, investigate |
+| Liquidation | Any position liquidated (margin call) | Halt bot, rollback all changes, investigate |
+
+### Review triggers (investigate, rollback if warranted)
+
+| Trigger | Threshold | Action |
+|---------|-----------|--------|
+| Signal rate collapse | Drops > 80–90% from pre-fix baseline | Review filter thresholds; may need MIN_SCORE or SL_CAP adjustment |
+| Win rate crash | 14-day WR drops > 15 points with sample ≥ 30 trades | Investigate signal quality; rollback if no clear cause |
+| 30-day Sharpe | Sharpe < −0.5 with sample ≥ 50 trades | Review overall strategy fit; rollback if structural |
+| 30-day DD | Max DD > 12% sustained | Review position sizing and SL behavior |
+
+### Rollback procedure
+
+1. Snapshot current state (same procedure as Day 0 archive)
+2. `git revert` safety fix commits (P1/P2/P3) — do NOT force-push
+3. Restore `condition_points.json` and config from `archive/config_pre_day0/`
+4. Reset bot state (new Day 0)
+5. Document rollback reason in `proposals/rollback_log.md`
+
+### Config change discipline
+
+- **Every config change** requires a snapshot before applying
+- Snapshot = copy of affected files + git commit hash + timestamp
+- Never apply two config changes in the same run without intermediate snapshot
+
+### Rollback anti-patterns (do NOT do)
+
+- Rolling back because of 3-day losing streak with sample < 15 trades
+- Rolling back a single parameter while keeping others (creates untested combination)
+- Rolling back without archiving current state first
+- Partial rollback of P1 SL cap while keeping P2 MIN_SCORE increase
+
+---
+
+## 16. Sample Sufficiency Strategy
+
+After safety fixes deploy, trade count may drop sharply because:
+- SL cap rejects wide-stop signals
+- Higher MIN_SCORE rejects low-confidence signals
+- Haiku fail-safe rejects during API downtime
+
+### Normalized metrics (use regardless of sample size)
+
+| Metric | Formula/Definition | Purpose |
+|--------|-------------------|---------|
+| PnL/trade | Total PnL ÷ trade count | Core efficiency metric |
+| Expected Value (EV) | (WR × avg_win) − ((1−WR) × avg_loss) | Per-trade edge |
+| Average R | Mean R-multiple across closed trades | Risk-adjusted return |
+| Profit Factor | Gross profit ÷ gross loss | Win/loss ratio by dollar |
+| Sharpe Ratio | Mean return ÷ std(returns), annualized | Risk-adjusted performance |
+| Win Rate + Wilson CI | WR with confidence interval for small samples | Avoids overconfidence on small N |
+
+### Sample categories
+
+| Category | Definition | Purpose |
+|----------|-----------|---------|
+| **Condition exposure sample** | Number of times scanner evaluated a symbol-candle combination | Measures filter selectivity |
+| **Executed trade sample** | Number of trades opened and closed | Measures execution quality |
+
+These are tracked separately because a high exposure sample with low trade count means filters are working (rejecting more).
+
+### Monthly proposal gate
+
+No parameter change may be proposed unless ALL of these are met:
+
+| Gate | Requirement |
+|------|-------------|
+| Duration | ≥ 30 days since last change |
+| Cooldown | ≥ 60 days since last parameter change of same type |
+| Condition exposure | ≥ 100 evaluations |
+| Executed trades | ≥ 50 closed trades |
+| EV check | EV is negative OR underperforms baseline by > 10% |
+| Change limit | Max 3–5 parameter changes per monthly proposal |
+
+If gates are not met, the monthly report documents current metrics but makes no proposal.
+
+---
+
+## 17. Success Metrics
+
+### 30-day health check (post Day 0)
+
+| Metric | Requirement |
+|--------|-------------|
+| Max drawdown | Not worse than pre-fix 30-day DD |
+| Signal rate | Not collapsed (> 20% of pre-fix rate) |
+| PnL/trade | Improves vs pre-fix baseline (directional comparison) |
+| Liquidation count | = 0 |
+
+These are pass/fail gates. Failure on any metric triggers investigation per Section 15 Rollback Trigger Matrix.
+
+### 90-day target (directional, not hard gates)
+
+| Metric | Target | Note |
+|--------|--------|------|
+| Sharpe Ratio | > 0 | Positive risk-adjusted return |
+| Win Rate | > 40%, Wilson CI lower bound > 35% | Statistically significant edge |
+| Max Drawdown | < 10% | Capital preservation |
+| Profit Factor | > 1.2 | Winners outpace losers |
+| PnL/trade | > 0 | Positive expectation |
+
+> **Note:** If executed trade sample is < 50 at 90 days, treat these as **directional indicators**, not hard gates. Small samples have wide confidence intervals — do not over-react to metrics that may be noise.
+
+---
+
+## 18. Out of Scope
+
+The following items are explicitly excluded from this improvement plan:
+
+| Item | Reason |
+|------|--------|
+| Live trading (real money) | Paper system must prove safety metrics first |
+| New agents | Current 5-agent architecture is sufficient; adding agents adds complexity without proven need |
+| New symbols beyond current watchlist | 35 symbols is adequate coverage; more symbols = more noise |
+| Dashboard redesign | UI is secondary to trading logic correctness |
+| Historical data changes | `historical_data/` is immutable input — never modified |
+| ML/AI model components | No neural nets, no model training — keep system rule-based and auditable |
+| Quarterly framework implementation | Quarterly review cadence is defined in Section 1 but not built yet; monthly must prove itself first |
+| Broad codebase refactor | Fix safety issues only; refactoring is separate initiative |
+
+---
+
+## 19. Open Questions
 
 1. **Signal distribution at score 9-13:** Before implementing P2, query `signal_log` to understand what % of current signals fall in the 9-13 range. Raising MIN_SCORE to 14 without this data risks silencing too many valid signals or too few bad ones.
 
@@ -340,7 +524,7 @@ return True, f"err:{str(e)[:60]}", execution_meta
 
 ---
 
-## 15. Validation Checklist (run before any commit)
+## 20. Validation Checklist (run before any commit)
 
 ```bash
 # Compile check — no syntax errors
