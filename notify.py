@@ -59,6 +59,8 @@ def _proposal_link(proposal):
 def _period_label(proposal):
     period = proposal.get("period") or {}
     cutoff = period.get("cutoff")
+    until = period.get("until")
+    mode = period.get("mode")
     days = period.get("days", 7)
     if not cutoff:
         return f"{days}d"
@@ -66,9 +68,20 @@ def _period_label(proposal):
         dt = datetime.fromisoformat(cutoff)
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
-        return f"since {dt.strftime('%Y-%m-%d %H:%M UTC')} (max {days}d)"
+        if until:
+            end = datetime.fromisoformat(until)
+            if end.tzinfo is None:
+                end = end.replace(tzinfo=timezone.utc)
+            label = f"{dt.strftime('%Y-%m-%d %H:%M UTC')} → {end.strftime('%Y-%m-%d %H:%M UTC')}"
+        else:
+            label = f"since {dt.strftime('%Y-%m-%d %H:%M UTC')}"
+        if mode == "manual":
+            return f"{label} · manual preview"
+        if mode == "schedule":
+            return f"{label} · scheduled weekly"
+        return label
     except Exception:
-        return f"since last report (max {days}d)"
+        return f"weekly window ({days}d)"
 
 
 def _performance_verdict(signal_review, trade_review, backtest_summary):
@@ -87,6 +100,54 @@ def _performance_verdict(signal_review, trade_review, backtest_summary):
     else:
         verdict = "ระบบพอใช้ได้ ยังไม่ต้องปรับแรง ให้ปรับเฉพาะเงื่อนไขที่สถิติชัด"
     return verdict
+
+
+def _detailed_report_analysis(proposal, signal_review, trade_review, backtest_summary):
+    period = proposal.get("period") or {}
+    basis = period.get("basis") or ""
+    mode = period.get("mode") or "manual"
+    total = int((signal_review or {}).get("total") or 0)
+    traded = int((signal_review or {}).get("traded") or 0)
+    skipped = int((signal_review or {}).get("skipped") or 0)
+    traded_pct = (traded / total * 100) if total else 0
+    skipped_pct = (skipped / total * 100) if total else 0
+    trade_wr = float((trade_review or {}).get("wr") or 0)
+    trade_pnl = float((trade_review or {}).get("total_pnl") or 0)
+    live_wr = float((backtest_summary or {}).get("wr") or 0)
+    live_pnl = float((backtest_summary or {}).get("total_pnl") or 0)
+
+    if mode == "manual":
+        mode_text = "รอบนี้เป็น manual preview ใช้ช่วงข้อมูลของ weekly cycle ปัจจุบัน การกดเทสจะไม่รีเซ็ตฐานรายงานจริง"
+    else:
+        mode_text = "รอบนี้เป็น scheduled weekly report ใช้ข้อมูลของรอบสัปดาห์อัตโนมัติเต็มรอบ"
+
+    lines = [
+        "",
+        "🧭 <b>สรุปแบบเต็ม</b>",
+        f"  ช่วงข้อมูล: {escape(basis)}",
+        f"  โหมดรายงาน: {escape(mode_text)}",
+    ]
+    if total:
+        lines += [
+            f"  Signal ทั้งหมด {total} ตัว แบ่งเป็นเปิด paper trade {traded} ตัว ({traded_pct:.1f}%) และ skip {skipped} ตัว ({skipped_pct:.1f}%)",
+            "  จุดที่ต้องดู: ถ้า skipped สูงมาก แปลว่าระบบมี signal ออกเยอะ แต่ execution guard / position limit / filter กันไว้เยอะ",
+        ]
+    if trade_review:
+        pnl_word = "บวก" if trade_pnl >= 0 else "ลบ"
+        lines += [
+            f"  เฉพาะไม้ที่เปิดจริง: {trade_review.get('n', 0)} trades, WR {trade_wr:.1f}%, PnL {pnl_word} ${trade_pnl:.2f}",
+            "  ถ้า WR ต่ำกว่า 45% หรือ PnL ติดลบ ควรปรับแบบลดความเสี่ยงก่อน ไม่ควรเพิ่มความถี่การเข้าไม้",
+        ]
+    if backtest_summary:
+        pnl_word = "บวก" if live_pnl >= 0 else "ลบ"
+        lines += [
+            f"  Live Paper Results: WR {live_wr:.1f}%, PnL {pnl_word} ${live_pnl:.2f}, Sharpe {backtest_summary.get('sharpe', 0)}",
+            "  ส่วนนี้คือผลจริงจาก paper trading ไม่ใช่ 3Y offline backtest จึงใช้ตัดสินใจการปรับรายสัปดาห์",
+        ]
+    lines += [
+        f"  ข้อสรุป: {escape(_performance_verdict(signal_review, trade_review, backtest_summary))}",
+    ]
+    return lines
 
 
 def _condition_plain_text(cond, v):
@@ -256,11 +317,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
         ]
 
     if signal_review or trade_review or backtest_summary:
-        lines += [
-            "",
-            "🧭 <b>สรุปอ่านง่าย</b>",
-            f"  {escape(_performance_verdict(signal_review, trade_review, backtest_summary))}",
-        ]
+        lines += _detailed_report_analysis(proposal, signal_review, trade_review, backtest_summary)
 
     # Level 4
     l4      = proposal.get("level4", {})

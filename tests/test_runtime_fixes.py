@@ -2,6 +2,7 @@ import os
 import sqlite3
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from unittest import mock
 
 import claude_filter
@@ -9,6 +10,7 @@ import generate_dashboard
 import paper_trade
 import position_manager
 import signal_scanner
+import weekly_report
 
 
 class RuntimeFixTests(unittest.TestCase):
@@ -169,6 +171,26 @@ class RuntimeFixTests(unittest.TestCase):
         self.assertTrue(generate_dashboard._command_seen(commands, "/approve_conditions"))
         self.assertTrue(generate_dashboard._command_seen(commands, "/approve_regime"))
         self.assertFalse(generate_dashboard._command_seen(commands, "/approve_weights"))
+
+    def test_manual_weekly_report_uses_current_sunday_anchor(self):
+        now = datetime(2026, 5, 15, 10, 0, tzinfo=timezone.utc)
+
+        start, end, basis, mode = weekly_report._report_window(7, now=now, mode="manual")
+
+        self.assertEqual(mode, "manual")
+        self.assertEqual(start, datetime(2026, 5, 10, 16, 0, tzinfo=timezone.utc))
+        self.assertEqual(end, now)
+        self.assertIn("manual preview", basis)
+
+    def test_scheduled_weekly_report_uses_previous_full_cycle(self):
+        now = datetime(2026, 5, 17, 16, 5, tzinfo=timezone.utc)
+
+        start, end, basis, mode = weekly_report._report_window(7, now=now, mode="schedule")
+
+        self.assertEqual(mode, "schedule")
+        self.assertEqual(start, datetime(2026, 5, 10, 16, 0, tzinfo=timezone.utc))
+        self.assertEqual(end, datetime(2026, 5, 17, 16, 0, tzinfo=timezone.utc))
+        self.assertIn("scheduled weekly cycle", basis)
 
 
 if __name__ == "__main__":

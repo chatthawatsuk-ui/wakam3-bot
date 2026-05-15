@@ -61,6 +61,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Scheduled runs always force-send; manual dispatch uses the force_report input
+          REPORT_MODE: ${{ github.event_name == 'schedule' && 'schedule' || 'manual' }}
           FORCE_REPORT: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.force_report }}
           REPORT_DAYS: ${{ github.event_name == 'schedule' && '7' || github.event.inputs.days }}
         run: python weekly_report.py

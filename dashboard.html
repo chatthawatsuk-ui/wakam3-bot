@@ -1942,6 +1942,15 @@ let currentPage='dash',labFilterMode='all',posTab='open'
 const CUSTOM_PRICES={}  // cache ราคา custom symbols ที่ fetch จาก OKX public API
 const FALLBACK_AGENT_NOTES=[{
   date:'2026-05-15',
+  title:'7D Report Window Fix',
+  items:[
+    'Manual Weekly Report เป็น preview เท่านั้น ไม่ขยับ baseline ของรายงานอัตโนมัติ',
+    'Manual run ใช้ข้อมูลตั้งแต่ Sunday 23:00 TH ของรอบปัจจุบัน ไม่ใช่หลัง report ล่าสุด',
+    'Scheduled Sunday 23:00 TH จะสรุปรอบก่อนหน้าเต็มสัปดาห์ และบันทึก baseline แยกจาก manual',
+    'Telegram summary ขยายเป็นสรุปแบบเต็ม พร้อม context ว่าเป็น manual preview หรือ scheduled weekly',
+  ],
+},{
+  date:'2026-05-15',
   title:'Weekly Report + Approval Flow',
   items:[
     'Weekly Report อธิบาย Level 4/5/6 ละเอียดขึ้น พร้อมผลกระทบก่อน approve',

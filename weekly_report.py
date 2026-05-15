@@ -27,6 +27,8 @@ PENDING_REGIME     = "pending_regime_weights.json"
 DB_PATH       = "paper_trades.db"
 PROPOSALS_DIR = "proposals"
 MIN_SIGNALS   = 10    # ขั้นต่ำก่อนเสนอปรับ
+WEEKLY_REPORT_WEEKDAY_UTC = 6   # Sunday (Python: Monday=0)
+WEEKLY_REPORT_HOUR_UTC    = 16  # 23:00 Asia/Bangkok
 
 
 def _report_days() -> int:
@@ -36,28 +38,57 @@ def _report_days() -> int:
         return 7
 
 
-def _report_cutoff(days: int = 7) -> datetime:
-    """เริ่มรายงานจาก last Telegram sent ถ้าอยู่ในกรอบ days; ไม่งั้นย้อนหลัง days วัน."""
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    sent_flag = os.path.join(PROPOSALS_DIR, "last_telegram_sent.json")
-    try:
-        if os.path.exists(sent_flag):
-            with open(sent_flag) as f:
-                flag = json.load(f)
-            last_sent = datetime.fromisoformat(flag.get("sent_at", ""))
-            if last_sent.tzinfo is None:
-                last_sent = last_sent.replace(tzinfo=timezone.utc)
-            cutoff = max(cutoff, last_sent)
-    except Exception:
-        pass
-    return cutoff
+def _report_mode() -> str:
+    mode = (os.environ.get("REPORT_MODE") or os.environ.get("GITHUB_EVENT_NAME") or "manual").lower()
+    return "schedule" if mode == "schedule" else "manual"
 
 
-def _build_signal_trade_reviews(cutoff: datetime, days: int):
+def _latest_weekly_anchor(now: datetime) -> datetime:
+    """คืนเวลา Sunday 16:00 UTC ล่าสุด ซึ่งตรงกับ Sunday 23:00 เวลาไทย."""
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    now = now.astimezone(timezone.utc)
+    days_since = (now.weekday() - WEEKLY_REPORT_WEEKDAY_UTC) % 7
+    anchor = (now - timedelta(days=days_since)).replace(
+        hour=WEEKLY_REPORT_HOUR_UTC,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+    if anchor > now:
+        anchor -= timedelta(days=7)
+    return anchor
+
+
+def _report_window(days: int = 7, now=None, mode=None):
+    """
+    Manual report ใช้รอบสัปดาห์ปัจจุบัน และไม่ขยับ baseline
+    Scheduled report ใช้รอบก่อนหน้าเต็มสัปดาห์
+    """
+    now = now or datetime.now(timezone.utc)
+    mode = mode or _report_mode()
+    anchor = _latest_weekly_anchor(now)
+    if mode == "schedule":
+        start = anchor - timedelta(days=7)
+        end = anchor
+        basis = "scheduled weekly cycle: previous Sunday 23:00 TH → this Sunday 23:00 TH"
+    else:
+        start = anchor
+        end = now
+        basis = "manual preview: current weekly cycle since Sunday 23:00 TH; manual runs do not reset baseline"
+
+    return start, end, basis, mode
+
+
+def _build_signal_trade_reviews(cutoff: datetime, until: datetime, days: int):
     """สรุปทุก signal หลัง report ล่าสุด ภายในกรอบ days วัน."""
     try:
         import generate_dashboard as GD
-        live_perf = GD.load_live_performance(days=days, since_iso=cutoff.isoformat())
+        live_perf = GD.load_live_performance(
+            days=days,
+            since_iso=cutoff.isoformat(),
+            until_iso=until.isoformat(),
+        )
         if not live_perf or not live_perf.get("available"):
             return {}, {}
 
@@ -575,11 +606,13 @@ def generate_weekly_report():
     os.makedirs(PROPOSALS_DIR, exist_ok=True)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     report_days = _report_days()
-    report_cutoff = _report_cutoff(report_days)
+    report_cutoff, report_until, report_basis, report_mode = _report_window(report_days)
 
     print("=" * 60)
     print("📋 WEEKLY REPORT — PROPOSAL ONLY")
     print(f"   วันที่: {today}")
+    print(f"   โหมด: {report_mode}")
+    print(f"   ช่วงข้อมูล: {report_cutoff.strftime('%Y-%m-%d %H:%M UTC')} → {report_until.strftime('%Y-%m-%d %H:%M UTC')}")
     print("⚠️  ระบบนี้เสนอเท่านั้น — ต้องคอนเฟิมก่อนปรับใช้จริง")
     print("=" * 60)
 
@@ -653,8 +686,9 @@ def generate_weekly_report():
             con_bt = sqlite3.connect(DB_PATH)
             rows_bt = con_bt.execute(
                 "SELECT pnl_usd, outcome FROM trades "
-                "WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?",
-                (report_cutoff.isoformat(),)
+                "WHERE status='CLOSED' AND outcome IS NOT NULL "
+                "AND closed_at >= ? AND closed_at < ?",
+                (report_cutoff.isoformat(), report_until.isoformat())
             ).fetchall()
             con_bt.close()
             if rows_bt:
@@ -682,7 +716,7 @@ def generate_weekly_report():
     except Exception:
         pass
 
-    signal_review, trade_review = _build_signal_trade_reviews(report_cutoff, report_days)
+    signal_review, trade_review = _build_signal_trade_reviews(report_cutoff, report_until, report_days)
     if signal_review:
         print(f"\n📡 Signal Review (since {report_cutoff.strftime('%Y-%m-%d %H:%M UTC')})")
         print(f"   Signals={signal_review['total']} Traded={signal_review['traded']} Skipped={signal_review['skipped']} WR={signal_review['wr']}%")
@@ -706,7 +740,9 @@ def generate_weekly_report():
         "period":           {
             "days": report_days,
             "cutoff": report_cutoff.isoformat(),
-            "basis": "signals since last Telegram report, capped by REPORT_DAYS",
+            "until": report_until.isoformat(),
+            "mode": report_mode,
+            "basis": report_basis,
         },
         "signal_review":    signal_review,
         "trade_review":     trade_review,
@@ -750,7 +786,11 @@ def generate_weekly_report():
 def _send_telegram(proposal, backtest_summary=None):
     """ส่ง Weekly Report สรุปไป Telegram — ส่งได้แค่ครั้งเดียวต่อสัปดาห์"""
     # ── Dedup: ตรวจว่าส่งไปแล้วในรอบ 6 วันที่ผ่านมาหรือยัง ──────────────────
-    SENT_FLAG = os.path.join(PROPOSALS_DIR, "last_telegram_sent.json")
+    mode = (proposal.get("period") or {}).get("mode") or _report_mode()
+    SENT_FLAG = os.path.join(
+        PROPOSALS_DIR,
+        "last_weekly_scheduled_sent.json" if mode == "schedule" else "last_manual_report_sent.json",
+    )
     force = os.environ.get("FORCE_REPORT", "").lower() in ("1", "true", "yes")
     try:
         if not force and os.path.exists(SENT_FLAG):
@@ -806,10 +846,14 @@ def _send_telegram(proposal, backtest_summary=None):
             ok2 = N.send(wp_msg)
             print(f"  Telegram Weight Proposal: {'✅ ส่งแล้ว' if ok2 else '❌ ส่งไม่ได้'}")
 
-        # บันทึกเวลาส่งล่าสุด → ป้องกันส่งซ้ำในรอบ 6 วัน
+        # Manual report เป็น preview/test: บันทึกแยก ไม่เอาไปเป็น baseline ของรอบ weekly จริง
         if ok:
             with open(SENT_FLAG, "w") as f:
-                json.dump({"sent_at": datetime.now(timezone.utc).isoformat()}, f)
+                json.dump({
+                    "sent_at": datetime.now(timezone.utc).isoformat(),
+                    "mode": mode,
+                    "period": proposal.get("period", {}),
+                }, f, ensure_ascii=False, indent=2)
     except Exception as e:
         print(f"  [WARN] Telegram send: {e}")
 

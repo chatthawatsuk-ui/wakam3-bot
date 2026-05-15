@@ -27,6 +27,16 @@ DEFAULT_WATCHLIST = [
 AGENT_TEAM_NOTES = [
     {
         "date": "2026-05-15",
+        "title": "7D Report Window Fix",
+        "items": [
+            "Manual Weekly Report เป็น preview เท่านั้น ไม่ขยับ baseline ของรายงานอัตโนมัติ",
+            "Manual run ใช้ข้อมูลตั้งแต่ Sunday 23:00 TH ของรอบปัจจุบัน ไม่ใช่หลัง report ล่าสุด",
+            "Scheduled Sunday 23:00 TH จะสรุปรอบก่อนหน้าเต็มสัปดาห์ และบันทึก baseline แยกจาก manual",
+            "Telegram summary ขยายเป็นสรุปแบบเต็ม พร้อม context ว่าเป็น manual preview หรือ scheduled weekly",
+        ],
+    },
+    {
+        "date": "2026-05-15",
         "title": "Weekly Report + Approval Flow",
         "items": [
             "Weekly Report อธิบาย Level 4/5/6 ละเอียดขึ้น พร้อมผลกระทบก่อน approve",
@@ -1092,7 +1102,7 @@ def _load_custom_symbols():
     return _load_watchlist_symbols()
 
 
-def load_live_performance(days: int = 7, since_iso: str = None):
+def load_live_performance(days: int = 7, since_iso: str = None, until_iso: str = None):
     """
     📡 Weekly Performance — วิเคราะห์ทุก Signal ที่ระบบออก (ไม่ใช่แค่ที่เทรด)
     อ่านจาก signal_log (Claude-approved ทุกตัว ไม่ว่าจะถูก skip หรือเทรด)
@@ -1110,10 +1120,20 @@ def load_live_performance(days: int = 7, since_iso: str = None):
             since_dt = datetime.fromisoformat(since_iso)
             if since_dt.tzinfo is None:
                 since_dt = since_dt.replace(tzinfo=timezone.utc)
-            window_start = max(window_start, since_dt)
+            window_start = since_dt
         except Exception:
             pass
     CUTOFF = window_start
+    window_end = datetime.now(timezone.utc)
+    if until_iso:
+        try:
+            until_dt = datetime.fromisoformat(until_iso)
+            if until_dt.tzinfo is None:
+                until_dt = until_dt.replace(tzinfo=timezone.utc)
+            window_end = until_dt
+        except Exception:
+            pass
+    UNTIL = window_end
 
     if not os.path.exists(DB_PATH):
         return {"available": False, "label": "live_perf",
@@ -1143,8 +1163,9 @@ def load_live_performance(days: int = 7, since_iso: str = None):
                 FROM signal_log
                 WHERE outcome != 'PENDING'
                   AND logged_at >= ?
+                  AND logged_at < ?
                 ORDER BY logged_at ASC
-            """, (CUTOFF.isoformat(),)).fetchall()
+            """, (CUTOFF.isoformat(), UNTIL.isoformat())).fetchall()
 
             # ── อ่าน pnl_usd จาก trades สำหรับ signals ที่ was_traded=1 ───
             # (ใช้ราคาจริงจาก paper trade แทนการประมาณ)
@@ -1152,8 +1173,9 @@ def load_live_performance(days: int = 7, since_iso: str = None):
             rows_tp = conn.execute("""
                 SELECT symbol, side, pnl_usd, opened_at
                 FROM trades
-                WHERE status='CLOSED' AND pnl_usd IS NOT NULL AND opened_at >= ?
-            """, (CUTOFF.isoformat(),)).fetchall()
+                WHERE status='CLOSED' AND pnl_usd IS NOT NULL
+                  AND opened_at >= ? AND opened_at < ?
+            """, (CUTOFF.isoformat(), UNTIL.isoformat())).fetchall()
             for r in rows_tp:
                 key = (r["symbol"], r["side"])
                 traded_pnl.setdefault(key, []).append(r["pnl_usd"] or 0)
@@ -1176,9 +1198,10 @@ def load_live_performance(days: int = 7, since_iso: str = None):
                            {_col('regime')},
                            {_col('exit_reason')}
                     FROM trades
-                    WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?
+                    WHERE status='CLOSED' AND outcome IS NOT NULL
+                      AND closed_at >= ? AND closed_at < ?
                     ORDER BY closed_at ASC
-                """, (CUTOFF.isoformat(),)).fetchall()
+                """, (CUTOFF.isoformat(), UNTIL.isoformat())).fetchall()
                 conn.close()
 
                 if not rows_fb:
