@@ -833,6 +833,149 @@ class RuntimeFixTests(unittest.TestCase):
                 }
                 self.assertFalse(notify.is_already_notified(sig))
 
+    # ── Monthly Report: Calendar Month ──────────────────────────
+
+    def test_previous_month_range_normal(self):
+        """_previous_month_range on 2026-05-15 → April 2026."""
+        now = datetime(2026, 5, 15, 10, 0, 0, tzinfo=timezone.utc)
+        since, until, label = monthly_report._previous_month_range(now)
+        self.assertEqual(label, "2026-04")
+        self.assertEqual(since, datetime(2026, 4, 1, tzinfo=timezone.utc))
+        self.assertEqual(until, datetime(2026, 5, 1, tzinfo=timezone.utc))
+
+    def test_previous_month_range_january(self):
+        """_previous_month_range on 2026-01-01 → December 2025."""
+        now = datetime(2026, 1, 1, 0, 10, 0, tzinfo=timezone.utc)
+        since, until, label = monthly_report._previous_month_range(now)
+        self.assertEqual(label, "2025-12")
+        self.assertEqual(since, datetime(2025, 12, 1, tzinfo=timezone.utc))
+        self.assertEqual(until, datetime(2026, 1, 1, tzinfo=timezone.utc))
+
+    def test_previous_month_range_february(self):
+        """_previous_month_range on 2026-03-01 → February (28 days)."""
+        now = datetime(2026, 3, 1, 0, 10, 0, tzinfo=timezone.utc)
+        since, until, label = monthly_report._previous_month_range(now)
+        self.assertEqual(label, "2026-02")
+        self.assertEqual(since, datetime(2026, 2, 1, tzinfo=timezone.utc))
+        self.assertEqual(until, datetime(2026, 3, 1, tzinfo=timezone.utc))
+        self.assertEqual((until - since).days, 28)
+
+    def test_previous_month_range_leap_year(self):
+        """_previous_month_range on 2028-03-01 → February (29 days, leap year)."""
+        now = datetime(2028, 3, 1, 0, 10, 0, tzinfo=timezone.utc)
+        since, until, label = monthly_report._previous_month_range(now)
+        self.assertEqual(label, "2028-02")
+        self.assertEqual((until - since).days, 29)
+
+    def test_month_range_specific(self):
+        """_month_range('2026-04') → April 1-30."""
+        since, until, label = monthly_report._month_range("2026-04")
+        self.assertEqual(label, "2026-04")
+        self.assertEqual(since, datetime(2026, 4, 1, tzinfo=timezone.utc))
+        self.assertEqual(until, datetime(2026, 5, 1, tzinfo=timezone.utc))
+        self.assertEqual((until - since).days, 30)
+
+    def test_month_range_invalid_format(self):
+        """_month_range with bad format → ValueError."""
+        with self.assertRaises(ValueError):
+            monthly_report._month_range("2026")
+        with self.assertRaises(ValueError):
+            monthly_report._month_range("2026-13")
+
+    def test_build_report_month_metadata(self):
+        """build_report_month sets mode=calendar-month and month label."""
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "test.db")
+            conn = sqlite3.connect(db_path)
+            conn.execute("""CREATE TABLE trades (
+                id INTEGER PRIMARY KEY, symbol TEXT, side TEXT,
+                entry_px REAL, exit_px REAL, pnl_usd REAL,
+                outcome TEXT, exit_reason TEXT, score REAL,
+                opened_at TEXT, closed_at TEXT, tp1_hit INTEGER,
+                tp1_px REAL, qty REAL, notional_usd REAL,
+                regime TEXT, status TEXT)""")
+            conn.execute("""CREATE TABLE signal_log (
+                symbol TEXT, side TEXT, score REAL, was_traded INTEGER,
+                skip_reason TEXT, logged_at TEXT, outcome TEXT)""")
+            conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL)")
+            conn.execute("INSERT INTO portfolio VALUES (1, 1000.0)")
+            conn.commit()
+            conn.close()
+
+            with mock.patch.object(monthly_report, "DB_PATH", db_path):
+                since = datetime(2026, 4, 1, tzinfo=timezone.utc)
+                until = datetime(2026, 5, 1, tzinfo=timezone.utc)
+                report = monthly_report.build_report_month(since, until, "2026-04")
+
+            meta = report["metadata"]
+            self.assertEqual(meta["mode"], "calendar-month")
+            self.assertEqual(meta["month"], "2026-04")
+            self.assertEqual(meta["days"], 30)
+            self.assertTrue(meta["db_available"])
+
+    def test_save_report_calendar_filename(self):
+        """save_report uses YYYY-MM_monthly_report.json for calendar month."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(monthly_report, "REPORTS_DIR", tmp):
+                report = {
+                    "metadata": {
+                        "generated_at": "2026-05-01T00:10:00+00:00",
+                        "days": 30, "month": "2026-04",
+                        "mode": "calendar-month",
+                        "period_start": "2026-04-01T00:00:00+00:00",
+                        "period_end": "2026-05-01T00:00:00+00:00",
+                        "balance": 1000.0,
+                        "phase": "v0-report-only", "db_available": True,
+                    },
+                    "trade_summary": monthly_report.calc_trade_metrics([]),
+                    "signal_summary": monthly_report.calc_signal_metrics([]),
+                    "safety_summary": {},
+                    "thai_explanation": "test",
+                }
+                path = monthly_report.save_report(report)
+                self.assertTrue(path.endswith("2026-04_monthly_report.json"))
+                self.assertTrue(os.path.exists(path))
+
+    def test_save_report_days_filename_unchanged(self):
+        """save_report still uses old format for --days mode."""
+        with tempfile.TemporaryDirectory() as tmp:
+            with mock.patch.object(monthly_report, "REPORTS_DIR", tmp):
+                report = {
+                    "metadata": {
+                        "generated_at": "2026-05-15T10:00:00+00:00",
+                        "days": 30,
+                        "period_start": "2026-04-15T10:00:00+00:00",
+                        "period_end": "2026-05-15T10:00:00+00:00",
+                        "balance": 1000.0,
+                        "phase": "v0-report-only", "db_available": True,
+                    },
+                    "trade_summary": monthly_report.calc_trade_metrics([]),
+                    "signal_summary": monthly_report.calc_signal_metrics([]),
+                    "safety_summary": {},
+                    "thai_explanation": "test",
+                }
+                path = monthly_report.save_report(report)
+                self.assertTrue(path.endswith("2026-05-15_30d_report.json"))
+
+    def test_telegram_message_calendar_month_title(self):
+        """format_telegram_message shows month label for calendar-month mode."""
+        report = {
+            "metadata": {
+                "days": 30, "month": "2026-04",
+                "mode": "calendar-month",
+                "period_start": "2026-04-01T00:00:00+00:00",
+                "period_end": "2026-05-01T00:00:00+00:00",
+                "balance": 1000.0,
+            },
+            "trade_summary": monthly_report.calc_trade_metrics([]),
+            "signal_summary": monthly_report.calc_signal_metrics([]),
+            "safety_summary": {},
+            "thai_explanation": "test",
+        }
+        msg = monthly_report.format_telegram_message(report)
+        self.assertIn("2026-04", msg)
+        self.assertNotIn("30 วัน", msg)
+
 
 if __name__ == "__main__":
     unittest.main()

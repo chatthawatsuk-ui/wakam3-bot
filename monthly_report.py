@@ -9,9 +9,11 @@ Usage:
     python3 monthly_report.py                   # default 30 days
     python3 monthly_report.py --days 14         # custom period
     python3 monthly_report.py --telegram        # send to Telegram
-    python3 monthly_report.py --days 30 --telegram
+    python3 monthly_report.py --previous-month  # full previous calendar month
+    python3 monthly_report.py --month 2026-04   # specific calendar month
 """
 import argparse
+import calendar
 import json
 import os
 import sqlite3
@@ -20,6 +22,34 @@ from pathlib import Path
 
 DB_PATH = "paper_trades.db"
 REPORTS_DIR = "reports/monthly"
+
+
+# ═══════════════════════════════════════════════════════════════
+# CALENDAR MONTH HELPERS
+# ═══════════════════════════════════════════════════════════════
+
+def _previous_month_range(now=None):
+    now = now or datetime.now(timezone.utc)
+    first_this = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    last_day = first_this - timedelta(days=1)
+    first_prev = last_day.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    label = f"{first_prev.year}-{first_prev.month:02d}"
+    return first_prev, first_this, label
+
+
+def _month_range(month_str):
+    parts = month_str.strip().split("-")
+    if len(parts) != 2:
+        raise ValueError(f"Invalid month format: {month_str!r} — expected YYYY-MM")
+    year, month = int(parts[0]), int(parts[1])
+    if month < 1 or month > 12:
+        raise ValueError(f"Invalid month: {month}")
+    first = datetime(year, month, 1, tzinfo=timezone.utc)
+    _, last_day = calendar.monthrange(year, month)
+    end = datetime(year, month, last_day, 23, 59, 59, tzinfo=timezone.utc) + timedelta(seconds=1)
+    end = end.replace(hour=0, minute=0, second=0, microsecond=0)
+    label = f"{year}-{month:02d}"
+    return first, end, label
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -42,7 +72,7 @@ def _fetch_closed_trades(conn, since_iso, until_iso):
                   tp1_hit, tp1_px, qty, notional_usd, regime
            FROM trades
            WHERE status = 'CLOSED'
-             AND closed_at >= ? AND closed_at <= ?
+             AND closed_at >= ? AND closed_at < ?
            ORDER BY closed_at""",
         (since_iso, until_iso),
     ).fetchall()
@@ -56,7 +86,7 @@ def _fetch_signal_log(conn, since_iso, until_iso):
             """SELECT symbol, side, score, was_traded, skip_reason,
                       logged_at, outcome
                FROM signal_log
-               WHERE logged_at >= ? AND logged_at <= ?
+               WHERE logged_at >= ? AND logged_at < ?
                ORDER BY logged_at""",
             (since_iso, until_iso),
         ).fetchall()
@@ -260,7 +290,10 @@ def format_telegram_message(report):
     explanation = report["thai_explanation"]
 
     lines = []
-    lines.append(f"📊 <b>Monthly Report ({meta['days']} วัน)</b>")
+    if meta.get("mode") == "calendar-month":
+        lines.append(f"📊 <b>Monthly Report — {meta['month']}</b>")
+    else:
+        lines.append(f"📊 <b>Monthly Report ({meta['days']} วัน)</b>")
     lines.append(f"📅 {meta['period_start'][:10]} → {meta['period_end'][:10]}")
     lines.append(f"🏷 report-only (ไม่ปรับค่า)")
     lines.append("")
@@ -369,12 +402,73 @@ def build_report(days=30, now=None):
     }
 
 
+def build_report_month(since, until, month_label, now=None):
+    now = now or datetime.now(timezone.utc)
+    since_iso = since.isoformat()
+    until_iso = until.isoformat()
+    days = (until - since).days
+
+    conn = _connect_db()
+    if not conn:
+        return {
+            "metadata": {
+                "generated_at": now.isoformat(),
+                "days": days,
+                "month": month_label,
+                "mode": "calendar-month",
+                "period_start": since_iso,
+                "period_end": until_iso,
+                "balance": None,
+                "phase": "v0-report-only",
+                "db_available": False,
+            },
+            "trade_summary": calc_trade_metrics([]),
+            "signal_summary": calc_signal_metrics([]),
+            "safety_summary": {},
+            "thai_explanation": "ไม่พบไฟล์ paper_trades.db — ไม่สามารถสร้างรายงานได้",
+        }
+
+    trades = _fetch_closed_trades(conn, since_iso, until_iso)
+    signals = _fetch_signal_log(conn, since_iso, until_iso)
+    balance = _fetch_balance(conn)
+    conn.close()
+
+    trade_m = calc_trade_metrics(trades)
+    signal_m = calc_signal_metrics(signals)
+    safety_m = calc_safety_metrics(signal_m.get("skip_reasons", {}))
+    explanation = generate_thai_explanation(trade_m, signal_m, safety_m, balance, days)
+
+    return {
+        "metadata": {
+            "generated_at": now.isoformat(),
+            "days": days,
+            "month": month_label,
+            "mode": "calendar-month",
+            "period_start": since_iso,
+            "period_end": until_iso,
+            "balance": balance,
+            "phase": "v0-report-only",
+            "db_available": True,
+        },
+        "trade_summary": trade_m,
+        "signal_summary": signal_m,
+        "safety_summary": safety_m,
+        "thai_explanation": explanation,
+    }
+
+
 def save_report(report):
     Path(REPORTS_DIR).mkdir(parents=True, exist_ok=True)
-    ts = report["metadata"]["generated_at"][:10]
-    days = report["metadata"]["days"]
+    meta = report["metadata"]
 
-    json_path = os.path.join(REPORTS_DIR, f"{ts}_{days}d_report.json")
+    if meta.get("mode") == "calendar-month":
+        fname = f"{meta['month']}_monthly_report.json"
+    else:
+        ts = meta["generated_at"][:10]
+        days = meta["days"]
+        fname = f"{ts}_{days}d_report.json"
+
+    json_path = os.path.join(REPORTS_DIR, fname)
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
     print(f"[MONTHLY] JSON → {json_path}")
@@ -389,10 +483,24 @@ def main():
     parser = argparse.ArgumentParser(description="Monthly Report v0 (report-only)")
     parser.add_argument("--days", type=int, default=30, help="Report period in days (default: 30)")
     parser.add_argument("--telegram", action="store_true", help="Send summary to Telegram")
+    parser.add_argument("--previous-month", action="store_true", help="Report for previous full calendar month")
+    parser.add_argument("--month", type=str, default=None, help="Report for specific month (YYYY-MM)")
     args = parser.parse_args()
 
-    print(f"[MONTHLY] Building {args.days}-day report...")
-    report = build_report(days=args.days)
+    if args.previous_month and args.month:
+        parser.error("Cannot use --previous-month and --month together")
+
+    if args.previous_month:
+        since, until, label = _previous_month_range()
+        print(f"[MONTHLY] Building report for {label} (previous month)...")
+        report = build_report_month(since, until, label)
+    elif args.month:
+        since, until, label = _month_range(args.month)
+        print(f"[MONTHLY] Building report for {label}...")
+        report = build_report_month(since, until, label)
+    else:
+        print(f"[MONTHLY] Building {args.days}-day report...")
+        report = build_report(days=args.days)
 
     json_path = save_report(report)
 
