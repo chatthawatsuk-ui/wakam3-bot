@@ -274,7 +274,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
     lines = [
         "================================",
         f"📋 <b>WEEKLY REPORT — {today}</b>",
-        "⚠️ Proposal Only (ต้องคอนเฟิมก่อนปรับ)",
+        "👁 Weekly Watchlist Only (ยังไม่เปิดให้ approve)",
         "================================",
     ]
 
@@ -324,15 +324,17 @@ def weekly_report_msg(proposal, backtest_summary=None):
     props   = l4.get("proposals", {})
     changes = {k: v for k, v in props.items()
                if isinstance(v, dict) and v.get("proposed") != v.get("current")}
-    lines += ["", "🔬 <b>Level 4 — Condition Analysis</b>"]
+    approval_enabled = bool(proposal.get("approval_enabled"))
+
+    lines += ["", "🔬 <b>Level 4 — Condition Watchlist</b>"]
     if changes:
-        lines.append(f"📌 เสนอปรับ {len(changes)} conditions:")
+        lines.append(f"👁 พบ {len(changes)} conditions ที่ควรจับตา:")
         for cond, v in changes.items():
             lines.append(_condition_plain_text(cond, v))
         lines += [
             "  แปลแบบง่าย: เงื่อนไขกลุ่มนี้เคยช่วยดันคะแนนให้เข้า trade แต่ผล 7 วันล่าสุดแพ้บ่อย",
-            "  ถ้าอนุมัติ: signal ที่พึ่งเงื่อนไขเหล่านี้มาก ๆ จะผ่านยากขึ้น ระบบจะคัดไม้เข้มขึ้น",
-            "  ถ้าไม่อนุมัติ: ระบบยังใช้คะแนนเดิมทั้งหมด ไม่มีอะไรเปลี่ยนเอง",
+            "  Weekly จะใช้เป็น watchlist เท่านั้น ยังไม่สร้าง pending approval จากข้อมูล 7 วัน",
+            "  ต้องรอ Monthly sample gate/cooldown ก่อนค่อยเสนอปรับ condition points จริง",
         ]
     else:
         lines.append("  ✅ ไม่มีการเปลี่ยนแปลงแนะนำ")
@@ -355,7 +357,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
                     f"SMC {p.get('W_SMC',0):.3f}, Osc {p.get('W_OSC',0):.3f}"
                 )
             lines.append("  แปลแบบง่าย: ตอนตลาดมี trend ระบบจะเชื่อ Trend มากสุด และลด SMC เพราะสถิติ SMC เฉลี่ยยังอ่อน")
-            lines.append("  ถ้าอนุมัติ: scan ถัดไปจะเลือกชุด weight ตาม regime ปัจจุบันของตลาด")
+            lines.append("  Weekly จะใช้เป็น watchlist เท่านั้น ยังไม่ปรับ regime weights จาก sample 7 วัน")
     else:
         lines.append("  ⚠️ ข้อมูลไม่พอ (รอ 10+ trades)")
 
@@ -377,20 +379,18 @@ def weekly_report_msg(proposal, backtest_summary=None):
             "  หน้าที่: ให้ Claude Haiku อ่านภาพรวมทั้งหมดแล้วเสนอ core weights ของ Trend/SMC/Osc แบบมีเหตุผล",
             "  core weights คือค่าน้ำหนักกลางของ agent ทั้ง 3 ตัว ไม่ใช่ condition points และไม่ใช่ regime weights",
             "  สถานะตอนนี้: ยังไม่ได้วิเคราะห์ เพราะไม่มี/ยังไม่ได้เติม Anthropic API credit หรือ key",
-            "  ดังนั้น /approve_weights ตอนนี้ยังไม่มีอะไรให้อนุมัติ รอให้ Level 6 สร้าง pending_weights.json ก่อน",
+            "  ดังนั้นคำสั่งอนุมัติ weights ตอนนี้ยังไม่มีอะไรให้ใช้ รอให้ Level 6 สร้าง pending_weights.json ก่อน",
             "  ตอนนี้ใช้สถิติ rule-based จาก Level 4/5 ไปก่อน",
         ]
 
     condition_count = len(changes)
     lines += [
         "",
-        "✅ <b>วิธีอนุมัติ</b>",
-        f"  /approve_conditions = ใช้การปรับ {condition_count} conditions ใน Level 4",
-        "  /approve_regime = ใช้น้ำหนักแยกตามสภาพตลาดใน Level 5",
-        "  /approve_weights = ใช้ core weights จาก Level 6 เฉพาะตอนมี AI proposal แล้วเท่านั้น",
-        "  หลังพิมพ์ Telegram จะยังไม่ตอบทันที ระบบจะอ่านคำสั่งตอน workflow scan/dashboard รอบถัดไป",
-        "  เมื่ออัปเดตสำเร็จ bot จะส่งข้อความยืนยัน และ GitHub Actions จะ commit ไฟล์ config ใหม่กลับ repo",
-        "  ถ้ายังไม่มั่นใจ ไม่ต้องพิมพ์อะไร ระบบจะยังไม่ปรับเอง",
+        "✅ <b>สถานะการอนุมัติ</b>",
+        "  Weekly report รอบนี้เป็น monitoring/watchlist เท่านั้น",
+        "  ไม่ต้องใช้คำสั่งอนุมัติ condition/regime จากข้อมูล 7 วัน",
+        "  การปรับ condition points จะย้ายไป Monthly framework ที่มี sample gate + cooldown",
+        "  การอนุมัติ weights ใช้เฉพาะตอนมี AI proposal ที่สร้าง pending_weights.json แล้วเท่านั้น",
         "",
         "================================",
         f"💾 รายละเอียดเต็ม → <a href=\"{proposal_url}\">proposal JSON</a>",

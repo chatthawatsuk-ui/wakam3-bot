@@ -368,7 +368,7 @@ def propose_regime_weights(regime_data):
 # ══════════════════════════════════════════════════════════════
 # LEVEL 6 — CLAUDE HAIKU WEIGHT PROPOSAL
 # ══════════════════════════════════════════════════════════════
-def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summary=None, tf_data=None):
+def _claude_weight_proposal(specialist_wr, regime_data, cond_wr, backtest_summary=None, tf_data=None, save_pending=True):
     """
     ใช้ Claude Haiku วิเคราะห์ข้อมูลทั้งหมด → เสนอ weights + วิเคราะห์เชิงลึก
     บันทึก pending_weights.json (รอ /approve_weights จาก Telegram)
@@ -528,13 +528,16 @@ Rules for weights:
             "reason":          f"Claude Haiku ({proposal.get('confidence','?')}): {proposal.get('reasoning', '')}",
         }
 
-        # บันทึก pending_weights.json
-        with open(PENDING_WEIGHTS, "w") as f:
-            json.dump(result, f, indent=2, ensure_ascii=False)
+        if save_pending:
+            with open(PENDING_WEIGHTS, "w") as f:
+                json.dump(result, f, indent=2, ensure_ascii=False)
         print(f"  🤖 Claude Haiku เสนอ Weights — "
               f"Trend:{t} SMC:{s} Osc:{o} [{result['confidence']}]")
         print(f"     เหตุผล: {result['reasoning']}")
-        print(f"  💾 บันทึก → {PENDING_WEIGHTS} (รอ /approve_weights ทาง Telegram)")
+        if save_pending:
+            print(f"  💾 บันทึก → {PENDING_WEIGHTS} (รอ /approve_weights ทาง Telegram)")
+        else:
+            print("  👁 Weekly monitor only — ไม่สร้าง pending_weights.json")
 
         return result
 
@@ -548,12 +551,15 @@ Rules for weights:
 # ══════════════════════════════════════════════════════════════
 # PENDING HELPERS — L4 + L5
 # ══════════════════════════════════════════════════════════════
-def _save_pending_conditions(cond_prop):
+def _save_pending_conditions(cond_prop, enabled=True):
     """บันทึก pending_condition_points.json จาก L4 proposals"""
     changes = {k: v for k, v in cond_prop.items()
                if isinstance(v, dict) and v.get("proposed") != v.get("current")}
     if not changes:
         print("      (ไม่มี condition เปลี่ยนแปลง — ข้าม pending)")
+        return
+    if not enabled:
+        print(f"  👁 Weekly WATCHLIST only — พบ {len(changes)} condition(s), ไม่สร้าง {PENDING_CONDITIONS}")
         return
     pending = {
         "generated": datetime.now(timezone.utc).isoformat(),
@@ -572,9 +578,12 @@ def _save_pending_conditions(cond_prop):
     print(f"  💾 บันทึก → {PENDING_CONDITIONS} (รอ /approve_conditions ทาง Telegram)")
 
 
-def _save_pending_regime(regime_prop):
+def _save_pending_regime(regime_prop, enabled=True):
     """บันทึก pending_regime_weights.json จาก L5 proposals"""
     if not regime_prop:
+        return
+    if not enabled:
+        print(f"  👁 Weekly WATCHLIST only — ไม่สร้าง {PENDING_REGIME}")
         return
     pending = {
         "generated": datetime.now(timezone.utc).isoformat(),
@@ -593,6 +602,13 @@ def _save_pending_regime(regime_prop):
     print(f"  💾 บันทึก → {PENDING_REGIME} (รอ /approve_regime ทาง Telegram)")
 
 
+def _clear_weekly_pending_files():
+    for path in [PENDING_WEIGHTS, PENDING_CONDITIONS, PENDING_REGIME]:
+        if os.path.exists(path):
+            os.remove(path)
+            print(f"  🧹 ลบ weekly pending เดิม → {path}")
+
+
 # ══════════════════════════════════════════════════════════════
 # GENERATE WEEKLY REPORT
 # ══════════════════════════════════════════════════════════════
@@ -607,13 +623,16 @@ def generate_weekly_report():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     report_days = _report_days()
     report_cutoff, report_until, report_basis, report_mode = _report_window(report_days)
+    approval_enabled = os.environ.get("WEEKLY_APPROVAL_ENABLED", "").lower() in ("1", "true", "yes")
+    if not approval_enabled:
+        _clear_weekly_pending_files()
 
     print("=" * 60)
     print("📋 WEEKLY REPORT — PROPOSAL ONLY")
     print(f"   วันที่: {today}")
     print(f"   โหมด: {report_mode}")
     print(f"   ช่วงข้อมูล: {report_cutoff.strftime('%Y-%m-%d %H:%M UTC')} → {report_until.strftime('%Y-%m-%d %H:%M UTC')}")
-    print("⚠️  ระบบนี้เสนอเท่านั้น — ต้องคอนเฟิมก่อนปรับใช้จริง")
+    print("👁 Weekly report เป็น monitor/watchlist เท่านั้น — ไม่สร้าง pending approval")
     print("=" * 60)
 
     # ── Level 4: Condition win rates ──────────────────────────
@@ -627,13 +646,13 @@ def generate_weekly_report():
         cond_prop = propose_condition_points(cond_wr)
         changes = {k: v for k, v in cond_prop.items() if v["proposed"] != v["current"]}
         print(f"   ✅ วิเคราะห์ {len(cond_wr)} conditions")
-        print(f"   📌 เสนอปรับ {len(changes)} conditions:")
+        print(f"   👁 WATCHLIST {len(changes)} conditions:")
         for cond, v in changes.items():
             arrow = "↑" if v["proposed"] > v["current"] else "↓"
             print(f"      {arrow} {cond}: {v['current']} → {v['proposed']} ({v['reason']})")
         if not changes:
             print("      ✅ ไม่มีการเปลี่ยนแปลงที่แนะนำในสัปดาห์นี้")
-    _save_pending_conditions(cond_prop)
+    _save_pending_conditions(cond_prop, enabled=approval_enabled)
 
     # ── Level 5: Regime performance ───────────────────────────
     print("\n🌐 Level 5 — Market Regime Performance")
@@ -646,11 +665,11 @@ def generate_weekly_report():
         regime_prop = propose_regime_weights(regime_data)
         for regime, d in regime_data.items():
             print(f"   {regime}: {d['count']} trades, win_rate={d['win_rate']:.1%}")
-        print("\n   📌 เสนอ Weights ต่อ Regime:")
+        print("\n   👁 WATCHLIST Weights ต่อ Regime:")
         for regime, p in regime_prop.items():
             print(f"      {regime}: Trend={p['W_TREND']:.3f} SMC={p['W_SMC']:.3f} Osc={p['W_OSC']:.3f}")
             print(f"        → {p['reason']}")
-    _save_pending_regime(regime_prop)
+    _save_pending_regime(regime_prop, enabled=approval_enabled)
 
     # ── Level 6: Claude Haiku Weight Proposal ────────────────
     print("\n🤖 Level 6 — Claude Haiku Weight Proposal")
@@ -730,13 +749,15 @@ def generate_weekly_report():
         cond_wr if "error" not in cond_wr else {},
         bt_summary,
         None,
+        save_pending=approval_enabled,
     )
 
     # ── บันทึก Proposal ───────────────────────────────────────
     proposal = {
         "generated":        today,
-        "status":           "PENDING_CONFIRMATION",
-        "warning":          "⚠️ PROPOSAL ONLY — ต้องได้รับการคอนเฟิมจากเจ้าของก่อนปรับใช้จริง",
+        "status":           "MONITOR_ONLY",
+        "warning":          "👁 WEEKLY WATCHLIST ONLY — ไม่สร้าง pending approval; ใช้ Monthly framework สำหรับ tuning",
+        "approval_enabled":  approval_enabled,
         "period":           {
             "days": report_days,
             "cutoff": report_cutoff.isoformat(),
@@ -771,10 +792,10 @@ def generate_weekly_report():
     print(f"\n💾 บันทึก → {path}")
     print(f"💾 บันทึก → {latest}")
     print("\n" + "=" * 60)
-    print("⚠️  กรุณา Review และ Confirm ก่อนนำไปใช้")
-    print("   L6 Weights         → /approve_weights ทาง Telegram")
-    print("   L4 Condition Points → /approve_conditions ทาง Telegram")
-    print("   L5 Regime Weights   → /approve_regime ทาง Telegram")
+    print("👁 Weekly monitor only: ไม่ต้อง approve จากรายงาน 7 วัน")
+    print("   L4 Condition Points → WATCHLIST เท่านั้น")
+    print("   L5 Regime Weights   → WATCHLIST เท่านั้น")
+    print("   L6 Weights          → ไม่สร้าง pending จาก weekly")
     print("=" * 60)
 
     # ── ส่ง Telegram ──────────────────────────────────────────────────────────

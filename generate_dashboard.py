@@ -27,6 +27,16 @@ DEFAULT_WATCHLIST = [
 AGENT_TEAM_NOTES = [
     {
         "date": "2026-05-15",
+        "title": "Weekly Approvals Disabled + TP1 Audit",
+        "items": [
+            "Weekly report เปลี่ยนเป็น monitoring/watchlist เท่านั้น ไม่สร้าง pending approval จากข้อมูล 7 วัน",
+            "ลบ weekly pending เก่าอัตโนมัติ เพื่อกันการ approve condition/regime จาก sample สั้น",
+            "แก้ TP1 accounting path: timeout/forced close หลัง TP1 ใช้ partial PnL 50% TP1 + 50% close price",
+            "Condition/regime tuning จะย้ายไป Monthly framework พร้อม sample gate และ cooldown",
+        ],
+    },
+    {
+        "date": "2026-05-15",
         "title": "7D Report Window Fix",
         "items": [
             "Manual Weekly Report เป็น preview เท่านั้น ไม่ขยับ baseline ของรายงานอัตโนมัติ",

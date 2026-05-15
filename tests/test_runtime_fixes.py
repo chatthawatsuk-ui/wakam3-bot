@@ -192,6 +192,69 @@ class RuntimeFixTests(unittest.TestCase):
         self.assertEqual(end, datetime(2026, 5, 17, 16, 0, tzinfo=timezone.utc))
         self.assertIn("scheduled weekly cycle", basis)
 
+    def test_tp1_timeout_uses_partial_close_accounting(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                conn = sqlite3.connect(":memory:")
+                conn.execute(
+                    "CREATE TABLE trades ("
+                    "id INTEGER PRIMARY KEY, symbol TEXT, side TEXT, entry_px REAL, "
+                    "sl_px REAL, tp1_px REAL, tp2_px REAL, tp1_hit INTEGER, qty REAL, "
+                    "risk_usd REAL, opened_at TEXT, status TEXT, exit_px REAL, outcome TEXT, "
+                    "pnl_usd REAL, closed_at TEXT, exit_reason TEXT, leverage REAL, notional_usd REAL)"
+                )
+                conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL, updated TEXT)")
+                conn.execute("INSERT INTO portfolio VALUES (1, 1000, '')")
+                old_opened = "2026-05-01T00:00:00+00:00"
+                conn.execute(
+                    "INSERT INTO trades VALUES ("
+                    "1, 'BTC/USDT', 'LONG', 100, 100, 112, 120, 1, 1, 10, ?, "
+                    "'OPEN', NULL, NULL, NULL, NULL, NULL, 20, 200)"
+                    ,
+                    (old_opened,),
+                )
+                conn.commit()
+
+                with mock.patch("paper_trade.get_price", return_value=90):
+                    with mock.patch("paper_trade.datetime") as dt_mock:
+                        dt_mock.now.return_value = datetime(2026, 5, 4, tzinfo=timezone.utc)
+                        dt_mock.fromisoformat.side_effect = datetime.fromisoformat
+                        dt_mock.timezone = timezone
+                        paper_trade.check_open_trades(conn)
+
+                row = conn.execute(
+                    "SELECT outcome, pnl_usd, exit_reason FROM trades WHERE id=1"
+                ).fetchone()
+                balance = conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()[0]
+            finally:
+                os.chdir(old_cwd)
+
+        self.assertEqual(row, ("WIN", 1.0, "TIMEOUT"))
+        self.assertEqual(balance, 1001.0)
+
+    def test_weekly_report_monitor_only_clears_pending_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            old_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                for path in [
+                    weekly_report.PENDING_WEIGHTS,
+                    weekly_report.PENDING_CONDITIONS,
+                    weekly_report.PENDING_REGIME,
+                ]:
+                    with open(path, "w") as f:
+                        f.write("{}")
+
+                weekly_report._clear_weekly_pending_files()
+
+                self.assertFalse(os.path.exists(weekly_report.PENDING_WEIGHTS))
+                self.assertFalse(os.path.exists(weekly_report.PENDING_CONDITIONS))
+                self.assertFalse(os.path.exists(weekly_report.PENDING_REGIME))
+            finally:
+                os.chdir(old_cwd)
+
 
 if __name__ == "__main__":
     unittest.main()

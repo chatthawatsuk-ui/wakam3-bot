@@ -711,7 +711,7 @@ def enforce_max_positions(conn):
     คิด PnL จริง — outcome = WIN/LOSS/VOID ตามผลจริง
     """
     opens = conn.execute("""
-        SELECT id, symbol, side, score, entry_px, qty
+        SELECT id, symbol, side, score, entry_px, qty, tp1_px, tp1_hit
         FROM trades WHERE status='OPEN'
         ORDER BY score DESC, id ASC
     """).fetchall()
@@ -723,11 +723,10 @@ def enforce_max_positions(conn):
     # ปิดตัวที่ score ต่ำที่สุด (ท้ายสุดของ list)
     to_close = opens[-excess:]
     for t in to_close:
-        tid, sym, side, score, ep, qty = t
+        tid, sym, side, score, ep, qty, tp1, tp1_hit = t
         px = get_price(sym)
         if px and px > 0 and qty and qty > 0 and ep and ep > 0:
-            diff = (px - ep) if side == "LONG" else (ep - px)
-            pnl  = qty * diff
+            pnl = _position_close_pnl(side, qty, ep, px, tp1, tp1_hit)
             outcome = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
         else:
             px      = ep   # ไม่ได้ราคา ใช้ entry แทน
@@ -737,6 +736,25 @@ def enforce_max_positions(conn):
                reason=f"MaxPos forced close (score={score})")
         print(f"  [CLOSE] #{tid} {sym} {side} score={score} → {outcome} ${pnl:.2f} (เกิน MAX_OPEN={MAX_OPEN})")
     return excess
+
+
+def _pnl_from_qty(side, units, entry_px, exit_px):
+    diff = (exit_px - entry_px) if side == "LONG" else (entry_px - exit_px)
+    return units * diff
+
+
+def _pnl_after_tp1(side, qty, entry_px, tp1_px, exit_px):
+    first_half = _pnl_from_qty(side, qty * 0.5, entry_px, tp1_px)
+    second_half = _pnl_from_qty(side, qty * 0.5, entry_px, exit_px)
+    return first_half + second_half
+
+
+def _position_close_pnl(side, qty, entry_px, exit_px, tp1_px=None, tp1_hit=0):
+    if not qty or qty <= 0 or not entry_px or entry_px <= 0:
+        return 0
+    if tp1_hit and tp1_px:
+        return _pnl_after_tp1(side, qty, entry_px, tp1_px, exit_px)
+    return _pnl_from_qty(side, qty, entry_px, exit_px)
 
 
 # ── HTF REVERSAL EXIT — Option C ──────────────────────────────────────────────
@@ -806,11 +824,7 @@ def check_open_trades(conn):
         if hours_open > TRADE_TIMEOUT_HRS:
             px = get_price(sym)
             close_px = px if px else ep  # fallback to entry if price unavailable
-            if qty and qty > 0 and ep and ep > 0 and px:
-                diff = (px - ep) if side == "LONG" else (ep - px)
-                pnl  = qty * diff
-            else:
-                pnl = 0
+            pnl = _position_close_pnl(side, qty, ep, close_px, tp1, tp1_hit) if px else 0
             outcome = "WIN" if pnl > 0 else ("LOSS" if pnl < 0 else "VOID")
             _close(conn, tid, close_px, outcome, pnl,
                    reason=f"Timeout {TRADE_TIMEOUT_HRS}h ⏰")
@@ -840,18 +854,9 @@ def check_open_trades(conn):
 
         # ── คำนวณ PnL จาก qty จริง ────────────────────────────
         if qty and qty > 0 and ep and ep > 0:
-            sgn_tp1 = (tp1 - ep) if tp1 else 0
-            sgn_tp2 = (tp2 - ep) if tp2 else 0
-            sgn_sl  = (sl  - ep) if sl  else 0
-
-            def pnl_from_qty(units, price_diff):
-                return units * price_diff if side == "LONG" else -units * price_diff
-
-            pnl_full_tp2     = (pnl_from_qty(qty * 0.5, sgn_tp1) +
-                                 pnl_from_qty(qty * 0.5, sgn_tp2))
-            pnl_full_sl      = pnl_from_qty(qty, sgn_sl)
-            pnl_sl_after_tp1 = (pnl_from_qty(qty * 0.5, sgn_tp1) +
-                                 pnl_from_qty(qty * 0.5, sgn_sl))
+            pnl_full_tp2     = _pnl_after_tp1(side, qty, ep, tp1, tp2)
+            pnl_full_sl      = _pnl_from_qty(side, qty, ep, sl)
+            pnl_sl_after_tp1 = _pnl_after_tp1(side, qty, ep, tp1, sl)
         else:
             r = risk_usd if risk_usd else balance * RISK_PCT
             pnl_full_tp2      =  r * 0.5 * TP1_R + r * 0.5 * TP2_R
