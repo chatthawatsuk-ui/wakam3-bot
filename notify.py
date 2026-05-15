@@ -542,14 +542,19 @@ def is_already_notified(sig):
     key  = _signal_key(sig)
     if key not in data:
         return False
-    # ตรวจ timestamp ด้วย — ถ้าหมด 6h TTL แล้ว ให้ส่งใหม่ได้
+    stored_ts = data[key]
     cutoff = (datetime.now(timezone.utc) - timedelta(hours=6)).isoformat()
-    return data[key] >= cutoff
+    if stored_ts < cutoff:
+        return False
+    sig_ts = sig.get("ts") or ""
+    if not sig_ts:
+        return True
+    return sig_ts <= stored_ts
 
 
 def mark_notified(sig):
     data = _load_notified()
-    data[_signal_key(sig)] = datetime.now(timezone.utc).isoformat()
+    data[_signal_key(sig)] = sig.get("ts") or datetime.now(timezone.utc).isoformat()
     _save_notified(data)
 
 

@@ -9,6 +9,7 @@ from unittest import mock
 import claude_filter
 import generate_dashboard
 import monthly_report
+import notify
 import paper_trade
 import position_manager
 import signal_scanner
@@ -757,6 +758,78 @@ class RuntimeFixTests(unittest.TestCase):
         self.assertIn("-15.50", msg)
         self.assertIn("SL_REJECT", msg)
         self.assertIn("report-only", msg)
+
+
+    # ── Telegram signal dedupe tests ────────────────────────────────
+
+    def _setup_dedupe(self, tmp, notified_data=None):
+        """Helper: set up temp notified_signals.json for dedupe tests."""
+        path = os.path.join(tmp, "notified_signals.json")
+        if notified_data:
+            with open(path, "w") as f:
+                json.dump(notified_data, f)
+        return path
+
+    def test_dedupe_same_ts_suppressed(self):
+        """Same symbol+side with same timestamp → suppressed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            ts = "2026-05-15T10:00:00+00:00"
+            path = self._setup_dedupe(tmp, {"ADA/USDT_SHORT": ts})
+            with mock.patch("notify.NOTIFIED_PATH", path):
+                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": ts}
+                self.assertTrue(notify.is_already_notified(sig))
+
+    def test_dedupe_older_ts_suppressed(self):
+        """Same symbol+side with older signal timestamp → suppressed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stored_ts = "2026-05-15T10:00:00+00:00"
+            path = self._setup_dedupe(tmp, {"ADA/USDT_SHORT": stored_ts})
+            with mock.patch("notify.NOTIFIED_PATH", path):
+                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": "2026-05-15T09:00:00+00:00"}
+                self.assertTrue(notify.is_already_notified(sig))
+
+    def test_dedupe_newer_ts_allowed(self):
+        """Same symbol+side with newer signal timestamp → allowed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stored_ts = "2026-05-15T05:32:00+00:00"
+            path = self._setup_dedupe(tmp, {"ADA/USDT_SHORT": stored_ts})
+            with mock.patch("notify.NOTIFIED_PATH", path):
+                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": "2026-05-15T11:01:00+00:00"}
+                self.assertFalse(notify.is_already_notified(sig))
+
+    def test_dedupe_mark_stores_sig_ts(self):
+        """mark_notified stores sig['ts'], not current UTC time."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = self._setup_dedupe(tmp)
+            sig_ts = "2026-05-15T11:01:00+00:00"
+            with mock.patch("notify.NOTIFIED_PATH", path):
+                notify.mark_notified({"symbol": "BTC/USDT", "side": "LONG", "ts": sig_ts})
+                with open(path) as f:
+                    data = json.load(f)
+            self.assertEqual(data["BTC/USDT_LONG"], sig_ts)
+
+    def test_dedupe_missing_ts_suppressed(self):
+        """Key exists but signal has no ts → suppressed to avoid spam."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stored_ts = datetime.now(timezone.utc).isoformat()
+            path = self._setup_dedupe(tmp, {"ETH/USDT_LONG": stored_ts})
+            with mock.patch("notify.NOTIFIED_PATH", path):
+                sig = {"symbol": "ETH/USDT", "side": "LONG"}
+                self.assertTrue(notify.is_already_notified(sig))
+
+    def test_dedupe_ai_filter_newer_ts_allowed(self):
+        """AI_FILTER_UNAVAILABLE alert-only signal with newer ts → allowed."""
+        with tempfile.TemporaryDirectory() as tmp:
+            stored_ts = "2026-05-15T05:00:00+00:00"
+            path = self._setup_dedupe(tmp, {"SOL/USDT_SHORT": stored_ts})
+            with mock.patch("notify.NOTIFIED_PATH", path):
+                sig = {
+                    "symbol": "SOL/USDT", "side": "SHORT",
+                    "ts": "2026-05-15T11:00:00+00:00",
+                    "execution_allowed": False,
+                    "execution_block_reason": "AI_FILTER_UNAVAILABLE",
+                }
+                self.assertFalse(notify.is_already_notified(sig))
 
 
 if __name__ == "__main__":
