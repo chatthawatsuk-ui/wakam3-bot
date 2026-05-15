@@ -9,14 +9,6 @@ on:
         description: 'ย้อนหลังกี่วัน (default: 7)'
         required: false
         default: '7'
-      tf:
-        description: 'TF ที่ต้องการ เช่น "1H 4H" (เว้นว่าง = 15m/30m/1H/4H/1D)'
-        required: false
-        default: ''
-      symbols:
-        description: 'Symbols (เว้นว่าง = 10 ตัวหลัก)'
-        required: false
-        default: ''
       force_report:
         description: 'บังคับส่ง Telegram แม้ส่งไปแล้วใน 6 วัน (manual default: true)'
         required: false
@@ -52,27 +44,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Backtest
+      - name: Prepare Weekly Report Window
         run: |
-          CMD="python backtest_live.py"
-
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            echo "Scheduled weekly run — 10 symbols, 7 days, 15m/30m/1H/4H/1D"
-            CMD="$CMD --days 7"
+            echo "Scheduled weekly report — live signal/trade log, 7 days max"
           else
-            if [ -n "${{ github.event.inputs.days }}" ]; then
-              CMD="$CMD --days ${{ github.event.inputs.days }}"
-            fi
-            if [ -n "${{ github.event.inputs.tf }}" ]; then
-              CMD="$CMD --tf ${{ github.event.inputs.tf }}"
-            fi
-            if [ -n "${{ github.event.inputs.symbols }}" ]; then
-              CMD="$CMD --symbols ${{ github.event.inputs.symbols }}"
-            fi
+            echo "Manual weekly report — live signal/trade log, days=${{ github.event.inputs.days }}"
           fi
-
-          echo "Running: $CMD"
-          $CMD
 
       - name: Update Dashboard Data
         run: python generate_dashboard.py
@@ -84,13 +62,14 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Scheduled runs always force-send; manual dispatch uses the force_report input
           FORCE_REPORT: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.force_report }}
+          REPORT_DAYS: ${{ github.event_name == 'schedule' && '7' || github.event.inputs.days }}
         run: python weekly_report.py
 
-      - name: Commit backtest results
+      - name: Commit weekly report results
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f backtest_live.csv dashboard_data.json proposals/ 2>/dev/null || true
+          git add -f dashboard_data.json proposals/ 2>/dev/null || true
           git diff --staged --stat
           if git diff --staged --quiet; then
             echo "Nothing to commit"

@@ -1105,7 +1105,7 @@ def _load_custom_symbols():
     return _load_watchlist_symbols()
 
 
-def load_live_performance():
+def load_live_performance(days: int = 7, since_iso: str = None):
     """
     📡 Weekly Performance — วิเคราะห์ทุก Signal ที่ระบบออก (ไม่ใช่แค่ที่เทรด)
     อ่านจาก signal_log (Claude-approved ทุกตัว ไม่ว่าจะถูก skip หรือเทรด)
@@ -1117,7 +1117,16 @@ def load_live_performance():
     # ใช้ sizing เดียวกับ paper_trade.py: margin=1% ของ balance × 20x leverage
     RISK_PCT   = 0.01   # 1% ของ balance ณ เวลาปัจจุบัน
     LEVERAGE   = 20.0   # leverage 20x ทุก position
-    CUTOFF = datetime.now(timezone.utc) - timedelta(days=7)
+    window_start = datetime.now(timezone.utc) - timedelta(days=days)
+    if since_iso:
+        try:
+            since_dt = datetime.fromisoformat(since_iso)
+            if since_dt.tzinfo is None:
+                since_dt = since_dt.replace(tzinfo=timezone.utc)
+            window_start = max(window_start, since_dt)
+        except Exception:
+            pass
+    CUTOFF = window_start
 
     if not os.path.exists(DB_PATH):
         return {"available": False, "label": "live_perf",
@@ -1352,7 +1361,7 @@ def load_live_performance():
             "generated":       datetime.now(timezone.utc).isoformat(),
             "date_from":       date_from,
             "date_to":         date_to,
-            "period":          f"All Signals · 7d ({date_from or '?'} → {date_to or 'now'})",
+            "period":          f"All Signals · since {CUTOFF.strftime('%Y-%m-%d %H:%M UTC')} ({date_from or '?'} → {date_to or 'now'})",
             "total_rows":      total_sig,
             "n_traded":        n_traded,
             "n_skipped":       n_skipped,

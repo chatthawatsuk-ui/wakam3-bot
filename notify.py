@@ -134,7 +134,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
             f"💰 Total PnL: {pnl_sign}${trade_review.get('total_pnl', 0)}",
         ]
 
-    # Backtest summary
+    # Live paper-trade summary
     if backtest_summary:
         s = backtest_summary
         pnl_sign = "+" if (s.get("total_pnl") or 0) >= 0 else ""
@@ -142,7 +142,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
         pnl_icon = "🟢" if (s.get("total_pnl") or 0) >= 0 else "🔴"
         lines += [
             "",
-            "📊 <b>Backtest (Walk-Forward)</b>",
+            "📊 <b>Live Paper Results</b>",
             f"🔵 Trades   : {s.get('n', 0)}",
             f"{wr_icon} Win Rate  : {s.get('wr', 0)}%",
             f"{pnl_icon} Total PnL : {pnl_sign}${s.get('total_pnl', 0)}",
