@@ -98,8 +98,8 @@ class RuntimeFixTests(unittest.TestCase):
 
     # ── P3 Claude fail-safe regression tests ───────────────────────────────
 
-    def test_claude_api_exception_blocks_execution_allows_alert(self):
-        """API exception → approved=True (alert), execution_allowed=False, reason=AI_FILTER_UNAVAILABLE"""
+    def test_claude_api_exception_bypasses_continues_execution(self):
+        """P3 V2 bypass: API exception → approved=True, execution_allowed=True, ai_filter_bypassed=True"""
         signal = {
             "symbol": "BTC/USDT", "side": "LONG", "score": 14, "sl_pct": 1.2,
             "rsi": 55, "score_trend": 10, "price": 100.0, "sl": 98.8,
@@ -117,34 +117,50 @@ class RuntimeFixTests(unittest.TestCase):
 
         with mock.patch("claude_filter._get_portfolio_context", return_value=ctx):
             with mock.patch("claude_filter._init", return_value=mock_client):
-                approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
+                with mock.patch("claude_filter._log_bypass_event") as mock_log:
+                    approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
 
-        self.assertTrue(approved, "alert path must stay open")
-        self.assertIn("err:", reason)
-        self.assertFalse(meta["execution_allowed"])
-        self.assertEqual(meta["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
-        self.assertFalse(signal["execution_allowed"])
-        self.assertEqual(signal["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
+        self.assertTrue(approved, "bypass path must keep signal approved")
+        self.assertTrue(reason.startswith("bypass:"))
+        self.assertTrue(meta.get("ai_filter_bypassed"))
+        self.assertEqual(meta.get("bypass_reason"), "timeout")
+        self.assertTrue(meta.get("execution_allowed", True),
+                        "P3 bypass must NOT block execution")
+        self.assertTrue(signal.get("ai_filter_bypassed"))
+        self.assertEqual(signal.get("bypass_reason"), "timeout")
+        mock_log.assert_called_once_with("timeout", signal_id="", symbol="BTC/USDT")
 
-    def test_no_api_key_blocks_execution_allows_alert(self):
-        """No ANTHROPIC_API_KEY → approved=True (alert), execution blocked"""
+    def test_no_api_key_bypasses_continues_execution(self):
+        """P3 V2 bypass: no ANTHROPIC_API_KEY → bypass, signal continues"""
         signal = {
             "symbol": "ETH/USDT", "side": "SHORT", "score": 12, "sl_pct": 1.5,
             "rsi": 45, "score_trend": 8, "price": 3000.0, "sl": 3045.0,
             "tp1": 2964.0, "tp2": 2940.0, "regime": "TRENDING",
         }
+        ctx = {
+            "balance": 1000.0, "open_count": 0, "open_summary": "none",
+            "daily_pnl": 0.0, "daily_pnl_pct": 0.0,
+            "same_symbol_open": False, "same_symbol_count": 0,
+            "same_symbol_entry_px": 0.0, "same_symbol_side": "",
+            "db_available": True, "db_error": "",
+        }
 
-        with mock.patch("claude_filter._init", return_value=None):
-            approved, reason, meta = claude_filter.ask(signal, {"htf_bull": False})
+        with mock.patch("claude_filter._get_portfolio_context", return_value=ctx):
+            with mock.patch("claude_filter._init", return_value=None):
+                with mock.patch("claude_filter._log_bypass_event") as mock_log:
+                    approved, reason, meta = claude_filter.ask(signal, {"htf_bull": False})
 
-        self.assertTrue(approved, "alert path must stay open")
-        self.assertEqual(reason, "filter_disabled")
-        self.assertFalse(meta["execution_allowed"])
-        self.assertEqual(meta["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
-        self.assertFalse(signal["execution_allowed"])
+        self.assertTrue(approved, "bypass path must keep signal approved")
+        self.assertEqual(reason, "bypass:api_key_missing")
+        self.assertTrue(meta.get("ai_filter_bypassed"))
+        self.assertEqual(meta.get("bypass_reason"), "api_key_missing")
+        self.assertTrue(meta.get("execution_allowed", True),
+                        "P3 bypass must NOT block execution")
+        self.assertTrue(signal.get("ai_filter_bypassed"))
+        mock_log.assert_called_once_with("api_key_missing", signal_id="", symbol="ETH/USDT")
 
-    def test_claude_invalid_json_blocks_execution_allows_alert(self):
-        """Claude returns garbage → json.loads fails → execution blocked"""
+    def test_claude_invalid_json_bypasses_continues_execution(self):
+        """P3 V2 bypass: invalid JSON → bypass with reason=invalid_response"""
         signal = {
             "symbol": "SOL/USDT", "side": "LONG", "score": 16, "sl_pct": 2.0,
             "rsi": 58, "score_trend": 11, "price": 150.0, "sl": 147.0,
@@ -164,12 +180,56 @@ class RuntimeFixTests(unittest.TestCase):
 
         with mock.patch("claude_filter._get_portfolio_context", return_value=ctx):
             with mock.patch("claude_filter._init", return_value=mock_client):
-                approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
+                with mock.patch("claude_filter._log_bypass_event"):
+                    approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
 
-        self.assertTrue(approved, "alert path must stay open")
-        self.assertIn("err:", reason)
-        self.assertFalse(meta["execution_allowed"])
-        self.assertEqual(meta["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
+        self.assertTrue(approved, "bypass path must keep signal approved")
+        self.assertTrue(reason.startswith("bypass:"))
+        self.assertTrue(meta.get("ai_filter_bypassed"))
+        self.assertTrue(meta.get("execution_allowed", True))
+
+    def test_bypass_event_logged_to_db(self):
+        """P3 V2: _log_bypass_event creates table + inserts row in paper_trades.db"""
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "paper_trades.db")
+            with mock.patch.object(
+                claude_filter.os.path, "dirname", return_value=tmp,
+            ):
+                claude_filter._log_bypass_event(
+                    "api_key_missing", signal_id="sig1", symbol="BTC/USDT"
+                )
+                claude_filter._log_bypass_event(
+                    "timeout", signal_id="sig2", symbol="ETH/USDT"
+                )
+
+            conn = sqlite3.connect(db_path)
+            rows = conn.execute(
+                "SELECT reason, signal_id, symbol FROM bypass_events ORDER BY id"
+            ).fetchall()
+            conn.close()
+
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0], ("api_key_missing", "sig1", "BTC/USDT"))
+        self.assertEqual(rows[1], ("timeout", "sig2", "ETH/USDT"))
+
+    def test_classify_bypass_reason(self):
+        """P3 V2: exception → reason code mapping"""
+        self.assertEqual(
+            claude_filter._classify_bypass_reason(Exception("Request timed out")),
+            "timeout",
+        )
+        self.assertEqual(
+            claude_filter._classify_bypass_reason(Exception("credit exhausted")),
+            "credit_exhausted",
+        )
+        self.assertEqual(
+            claude_filter._classify_bypass_reason(Exception("Invalid JSON")),
+            "invalid_response",
+        )
+        self.assertEqual(
+            claude_filter._classify_bypass_reason(Exception("503 Service Unavailable")),
+            "http_error",
+        )
 
     def test_reject_scan_marks_status_and_reason(self):
         result = {"status": "SIGNAL"}
