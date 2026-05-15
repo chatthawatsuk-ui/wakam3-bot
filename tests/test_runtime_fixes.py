@@ -234,6 +234,151 @@ class RuntimeFixTests(unittest.TestCase):
         self.assertEqual(row, ("WIN", 1.0, "TIMEOUT"))
         self.assertEqual(balance, 1001.0)
 
+    # ── TP1 partial-close accounting regression tests ──────────────────────
+
+    def _make_tp1_trade_db(self):
+        """Helper: in-memory DB with one OPEN LONG trade where tp1_hit=1.
+        entry=100, sl=100(BE), tp1=112, tp2=120, qty=1, balance=1000."""
+        conn = sqlite3.connect(":memory:")
+        conn.execute(
+            "CREATE TABLE trades ("
+            "id INTEGER PRIMARY KEY, symbol TEXT, side TEXT, entry_px REAL, "
+            "sl_px REAL, tp1_px REAL, tp2_px REAL, tp1_hit INTEGER, qty REAL, "
+            "risk_usd REAL, opened_at TEXT, status TEXT, exit_px REAL, outcome TEXT, "
+            "pnl_usd REAL, closed_at TEXT, exit_reason TEXT, leverage REAL, notional_usd REAL)"
+        )
+        conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL, updated TEXT)")
+        conn.execute("INSERT INTO portfolio VALUES (1, 1000, '')")
+        opened = "2026-05-01T00:00:00+00:00"
+        conn.execute(
+            "INSERT INTO trades VALUES ("
+            "1, 'BTC/USDT', 'LONG', 100, 100, 112, 120, 1, 1, 10, ?, "
+            "'OPEN', NULL, NULL, NULL, NULL, NULL, 20, 200)",
+            (opened,),
+        )
+        conn.commit()
+        return conn
+
+    def test_tp1_tp2_uses_partial_close_accounting(self):
+        """TP1 hit → TP2 hit: PnL = 0.5×(112-100) + 0.5×(120-100) = 6+10 = 16"""
+        with tempfile.TemporaryDirectory() as tmp:
+            old_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                conn = self._make_tp1_trade_db()
+                with mock.patch("paper_trade.get_price", return_value=120):
+                    with mock.patch("paper_trade.datetime") as dt_mock:
+                        dt_mock.now.return_value = datetime(2026, 5, 2, tzinfo=timezone.utc)
+                        dt_mock.fromisoformat.side_effect = datetime.fromisoformat
+                        dt_mock.timezone = timezone
+                        paper_trade.check_open_trades(conn)
+
+                row = conn.execute(
+                    "SELECT outcome, pnl_usd, exit_reason FROM trades WHERE id=1"
+                ).fetchone()
+                balance = conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()[0]
+            finally:
+                os.chdir(old_cwd)
+
+        self.assertEqual(row[0], "WIN")
+        self.assertAlmostEqual(row[1], 16.0)
+        self.assertEqual(row[2], "TP2")
+        self.assertAlmostEqual(balance, 1016.0)
+
+    def test_tp1_sl_be_uses_partial_close_accounting(self):
+        """TP1 hit → SL at BE (entry=100): PnL = 0.5×(112-100) + 0.5×(100-100) = 6+0 = 6"""
+        with tempfile.TemporaryDirectory() as tmp:
+            old_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                conn = self._make_tp1_trade_db()
+                with mock.patch("paper_trade.get_price", return_value=100):
+                    with mock.patch("paper_trade.datetime") as dt_mock:
+                        dt_mock.now.return_value = datetime(2026, 5, 2, tzinfo=timezone.utc)
+                        dt_mock.fromisoformat.side_effect = datetime.fromisoformat
+                        dt_mock.timezone = timezone
+                        paper_trade.check_open_trades(conn)
+
+                row = conn.execute(
+                    "SELECT outcome, pnl_usd, exit_reason FROM trades WHERE id=1"
+                ).fetchone()
+                balance = conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()[0]
+            finally:
+                os.chdir(old_cwd)
+
+        self.assertEqual(row[0], "WIN")
+        self.assertAlmostEqual(row[1], 6.0)
+        self.assertEqual(row[2], "SL_BE")
+        self.assertAlmostEqual(balance, 1006.0)
+
+    def test_tp1_forced_close_uses_partial_close_accounting(self):
+        """TP1 hit → forced close at px=95: PnL = 0.5×(112-100) + 0.5×(95-100) = 6+(-2.5) = 3.5"""
+        conn = sqlite3.connect(":memory:")
+        conn.execute(
+            "CREATE TABLE trades ("
+            "id INTEGER PRIMARY KEY, symbol TEXT, side TEXT, entry_px REAL, "
+            "sl_px REAL, tp1_px REAL, tp2_px REAL, tp1_hit INTEGER, qty REAL, "
+            "score INTEGER, risk_usd REAL, opened_at TEXT, status TEXT, exit_px REAL, "
+            "outcome TEXT, pnl_usd REAL, closed_at TEXT, exit_reason TEXT, "
+            "leverage REAL, notional_usd REAL)"
+        )
+        conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL, updated TEXT)")
+        conn.execute("INSERT INTO portfolio VALUES (1, 1000, '')")
+        conn.execute(
+            "INSERT INTO trades VALUES ("
+            "1, 'BTC/USDT', 'LONG', 100, 100, 112, 120, 1, 1, "
+            "5, 10, '2026-05-01T00:00:00+00:00', 'OPEN', NULL, NULL, NULL, NULL, NULL, 20, 200)"
+        )
+        conn.commit()
+
+        pnl = paper_trade._position_close_pnl("LONG", 1, 100, 95, tp1_px=112, tp1_hit=1)
+
+        self.assertAlmostEqual(pnl, 3.5)
+        expected_outcome = "WIN"
+        self.assertEqual("WIN" if pnl > 0 else "LOSS", expected_outcome)
+
+    def test_tp1_max_position_close_uses_partial_close_accounting(self):
+        """enforce_max_positions with tp1_hit=1: uses _position_close_pnl with tp1 partial accounting."""
+        with tempfile.TemporaryDirectory() as tmp:
+            old_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                conn = sqlite3.connect(":memory:")
+                conn.execute(
+                    "CREATE TABLE trades ("
+                    "id INTEGER PRIMARY KEY, symbol TEXT, side TEXT, entry_px REAL, "
+                    "sl_px REAL, tp1_px REAL, tp2_px REAL, tp1_hit INTEGER, qty REAL, "
+                    "score INTEGER, risk_usd REAL, opened_at TEXT, status TEXT, exit_px REAL, "
+                    "outcome TEXT, pnl_usd REAL, closed_at TEXT, exit_reason TEXT, "
+                    "leverage REAL, notional_usd REAL)"
+                )
+                conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL, updated TEXT)")
+                conn.execute("INSERT INTO portfolio VALUES (1, 1000, '')")
+                for i in range(1, 12):
+                    conn.execute(
+                        "INSERT INTO trades VALUES ("
+                        "?, 'SYM' || ?||'/USDT', 'LONG', 100, 100, 112, 120, ?, 1, "
+                        "?, 10, '2026-05-01T00:00:00+00:00', 'OPEN', NULL, NULL, NULL, NULL, NULL, 20, 200)",
+                        (i, i, 1 if i == 1 else 0, i),
+                    )
+                conn.commit()
+
+                with mock.patch("paper_trade.get_price", return_value=95):
+                    closed_count = paper_trade.enforce_max_positions(conn)
+
+                row = conn.execute(
+                    "SELECT outcome, pnl_usd, exit_reason FROM trades WHERE id=1"
+                ).fetchone()
+                balance = conn.execute("SELECT balance FROM portfolio WHERE id=1").fetchone()[0]
+            finally:
+                os.chdir(old_cwd)
+
+        self.assertEqual(closed_count, 1)
+        self.assertEqual(row[0], "WIN")
+        self.assertAlmostEqual(row[1], 3.5)
+        self.assertEqual(row[2], "MAX_POS")
+        self.assertAlmostEqual(balance, 1003.5)
+
     def test_weekly_report_monitor_only_clears_pending_files(self):
         with tempfile.TemporaryDirectory() as tmp:
             old_cwd = os.getcwd()
