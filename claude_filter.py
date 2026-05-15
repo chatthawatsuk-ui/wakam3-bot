@@ -3,7 +3,7 @@
 ใช้ Claude Haiku ประเมิน context ก่อน APPROVE/REJECT
 
 ราคา: ~$0.001 ต่อ call | Prompt caching ลดต้นทุน ~90%
-ถ้าไม่มี ANTHROPIC_API_KEY → fallback approve ทุกอัน (ไม่ block)
+ถ้าไม่มี ANTHROPIC_API_KEY หรือ API error → alert ยังส่ง แต่ execution ถูก block (fail-safe)
 """
 import os, json, sqlite3, datetime
 
@@ -279,7 +279,7 @@ def ask(signal: dict, scan_result: dict) -> tuple:
 
     Returns:
         (approved: bool, reason: str, execution_meta: dict)
-        ถ้า Claude ไม่พร้อม/error → (True, "filter_disabled") — ไม่ block signal
+        ถ้า Claude ไม่พร้อม/error → (True, "filter_disabled"/"err:...") — alert ยังส่ง แต่ execution_allowed=False
     """
     # ── Hard reject ก่อน (ไม่เสีย API call) ──────────────────────────────────
     rejected, hard_reason = _hard_reject(signal)
@@ -366,6 +366,10 @@ def ask(signal: dict, scan_result: dict) -> tuple:
 
     client = _init()
     if client is None:
+        execution_meta["execution_allowed"] = False
+        execution_meta["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
+        signal["execution_allowed"] = False
+        signal["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
         return True, "filter_disabled", execution_meta
 
     funding_rate = signal.get("funding_rate")
@@ -433,7 +437,13 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         return approved, f"[{confidence}%] {full_reason}", execution_meta
 
     except Exception as e:
-        # fallback: อย่า block signal ถ้า Claude error — แต่แจ้งเตือน Telegram
+        # fail-safe: block execution but allow alert/Telegram path
+        execution_meta["execution_allowed"] = False
+        execution_meta["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
+        signal["execution_allowed"] = False
+        signal["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
+
+        #  อย่า block alert path ถ้า Claude error แต่ต้อง block execution
         global _api_warn_ts
         import time
         now = time.time()
@@ -444,7 +454,7 @@ def ask(signal: dict, scan_result: dict) -> tuple:
                 notify.send(
                     "⚠️ <b>[DEGRADED] Claude Filter API Down</b>\n"
                     f"Error: {str(e)[:100]}\n"
-                    "▸ Fallback: signals ผ่านทั้งหมด (filter disabled)\n"
+                    "▸ Fallback: execution blocked (fail-safe)\n"
                     "▸ Hard-reject rules ยังทำงานปกติ\n"
                     "▸ ตรวจสอบ: ANTHROPIC_API_KEY และ API status"
                 )

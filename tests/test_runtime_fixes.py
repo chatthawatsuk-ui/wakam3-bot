@@ -1,3 +1,4 @@
+import json
 import os
 import sqlite3
 import tempfile
@@ -14,6 +15,22 @@ import weekly_report
 
 
 class RuntimeFixTests(unittest.TestCase):
+    def _make_mock_claude_client(self, decision="APPROVE", confidence=85):
+        """Helper: mock Anthropic client that returns a valid JSON response."""
+        resp_json = json.dumps({
+            "decision": decision, "confidence": confidence,
+            "reason": "test", "risk_notes": "none", "suggested_adjustment": "none",
+        })
+        mock_client = mock.MagicMock()
+        mock_resp = mock.MagicMock()
+        mock_resp.content = [mock.MagicMock(text=resp_json)]
+        mock_resp.usage = mock.MagicMock(
+            input_tokens=100, output_tokens=20,
+            cache_read_input_tokens=0, cache_creation_input_tokens=0,
+        )
+        mock_client.messages.create.return_value = mock_resp
+        return mock_client
+
     def test_db_context_failure_keeps_alert_but_blocks_execution(self):
         signal = {
             "symbol": "BTC/USDT",
@@ -29,12 +46,13 @@ class RuntimeFixTests(unittest.TestCase):
             "regime": "TRENDING",
         }
 
+        mock_client = self._make_mock_claude_client()
         with mock.patch("claude_filter.sqlite3.connect", side_effect=sqlite3.DatabaseError("broken db")):
-            with mock.patch("claude_filter._init", return_value=None):
-                approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
+            with mock.patch("claude_filter._init", return_value=mock_client):
+                with mock.patch("claude_filter._log_api_usage"):
+                    approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
 
         self.assertTrue(approved)
-        self.assertEqual(reason, "filter_disabled")
         self.assertFalse(meta["execution_allowed"])
         self.assertEqual(meta["execution_block_reason"], "DB_UNAVAILABLE")
         self.assertFalse(signal["execution_allowed"])
@@ -66,14 +84,90 @@ class RuntimeFixTests(unittest.TestCase):
             "db_available": True,
         }
 
+        mock_client = self._make_mock_claude_client()
         with mock.patch("claude_filter._get_portfolio_context", return_value=ctx):
-            with mock.patch("claude_filter._init", return_value=None):
-                approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
+            with mock.patch("claude_filter._init", return_value=mock_client):
+                with mock.patch("claude_filter._log_api_usage"):
+                    approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
 
         self.assertTrue(approved)
-        self.assertEqual(reason, "filter_disabled")
         self.assertFalse(meta["execution_allowed"])
         self.assertEqual(meta["execution_block_reason"], "POSITIONS_FULL (10/10)")
+
+    # ── P3 Claude fail-safe regression tests ───────────────────────────────
+
+    def test_claude_api_exception_blocks_execution_allows_alert(self):
+        """API exception → approved=True (alert), execution_allowed=False, reason=AI_FILTER_UNAVAILABLE"""
+        signal = {
+            "symbol": "BTC/USDT", "side": "LONG", "score": 14, "sl_pct": 1.2,
+            "rsi": 55, "score_trend": 10, "price": 100.0, "sl": 98.8,
+            "tp1": 101.4, "tp2": 102.4, "regime": "TRENDING",
+        }
+        ctx = {
+            "balance": 1000.0, "open_count": 0, "open_summary": "none",
+            "daily_pnl": 0.0, "daily_pnl_pct": 0.0,
+            "same_symbol_open": False, "same_symbol_count": 0,
+            "same_symbol_entry_px": 0.0, "same_symbol_side": "",
+            "db_available": True, "db_error": "",
+        }
+        mock_client = mock.MagicMock()
+        mock_client.messages.create.side_effect = Exception("API timeout")
+
+        with mock.patch("claude_filter._get_portfolio_context", return_value=ctx):
+            with mock.patch("claude_filter._init", return_value=mock_client):
+                approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
+
+        self.assertTrue(approved, "alert path must stay open")
+        self.assertIn("err:", reason)
+        self.assertFalse(meta["execution_allowed"])
+        self.assertEqual(meta["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
+        self.assertFalse(signal["execution_allowed"])
+        self.assertEqual(signal["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
+
+    def test_no_api_key_blocks_execution_allows_alert(self):
+        """No ANTHROPIC_API_KEY → approved=True (alert), execution blocked"""
+        signal = {
+            "symbol": "ETH/USDT", "side": "SHORT", "score": 12, "sl_pct": 1.5,
+            "rsi": 45, "score_trend": 8, "price": 3000.0, "sl": 3045.0,
+            "tp1": 2964.0, "tp2": 2940.0, "regime": "TRENDING",
+        }
+
+        with mock.patch("claude_filter._init", return_value=None):
+            approved, reason, meta = claude_filter.ask(signal, {"htf_bull": False})
+
+        self.assertTrue(approved, "alert path must stay open")
+        self.assertEqual(reason, "filter_disabled")
+        self.assertFalse(meta["execution_allowed"])
+        self.assertEqual(meta["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
+        self.assertFalse(signal["execution_allowed"])
+
+    def test_claude_invalid_json_blocks_execution_allows_alert(self):
+        """Claude returns garbage → json.loads fails → execution blocked"""
+        signal = {
+            "symbol": "SOL/USDT", "side": "LONG", "score": 16, "sl_pct": 2.0,
+            "rsi": 58, "score_trend": 11, "price": 150.0, "sl": 147.0,
+            "tp1": 153.6, "tp2": 156.0, "regime": "TRENDING",
+        }
+        ctx = {
+            "balance": 1000.0, "open_count": 0, "open_summary": "none",
+            "daily_pnl": 0.0, "daily_pnl_pct": 0.0,
+            "same_symbol_open": False, "same_symbol_count": 0,
+            "same_symbol_entry_px": 0.0, "same_symbol_side": "",
+            "db_available": True, "db_error": "",
+        }
+        mock_client = mock.MagicMock()
+        mock_resp = mock.MagicMock()
+        mock_resp.content = [mock.MagicMock(text="not valid json {{{")]
+        mock_client.messages.create.return_value = mock_resp
+
+        with mock.patch("claude_filter._get_portfolio_context", return_value=ctx):
+            with mock.patch("claude_filter._init", return_value=mock_client):
+                approved, reason, meta = claude_filter.ask(signal, {"htf_bull": True})
+
+        self.assertTrue(approved, "alert path must stay open")
+        self.assertIn("err:", reason)
+        self.assertFalse(meta["execution_allowed"])
+        self.assertEqual(meta["execution_block_reason"], "AI_FILTER_UNAVAILABLE")
 
     def test_reject_scan_marks_status_and_reason(self):
         result = {"status": "SIGNAL"}
