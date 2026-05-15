@@ -3,7 +3,17 @@
 ใช้ Claude Haiku ประเมิน context ก่อน APPROVE/REJECT
 
 ราคา: ~$0.001 ต่อ call | Prompt caching ลดต้นทุน ~90%
-ถ้าไม่มี ANTHROPIC_API_KEY หรือ API error → alert ยังส่ง แต่ execution ถูก block (fail-safe)
+
+============================================================
+AI FILTER DECISION PLAN — see WAKAM3_IMPROVEMENT_PLAN_v2.md Section 19
+Status: Phase 1 (Hold) — bypass mode active until credit added
+P3 = BYPASS on API failure (NOT reject) — Section 8
+  - API down / no key / credit exhausted → bypass Haiku layer
+  - signal continues to execution via rule-based filters
+  - tag AI_FILTER_BYPASSED + log to bypass_events table
+Do NOT remove or modify Haiku integration until Phase 3 decision
+Last review: 2026-05-15
+============================================================
 """
 import os, json, sqlite3, datetime
 
@@ -121,6 +131,45 @@ def _log_api_usage(usage, approved: bool):
             json.dump(data, f, indent=2)
     except Exception:
         pass
+
+
+def _log_bypass_event(reason: str, signal_id: str = "", symbol: str = ""):
+    """บันทึก bypass event ลง paper_trades.db ตาราง bypass_events
+    Used for Phase 2 measurement (V2 Section 19.8)
+    Reasons: api_key_missing | credit_exhausted | timeout | http_error | invalid_response
+    """
+    db_path = os.path.join(os.path.dirname(__file__), "paper_trades.db")
+    try:
+        conn = sqlite3.connect(db_path, timeout=5)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bypass_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT DEFAULT CURRENT_TIMESTAMP,
+                reason TEXT,
+                signal_id TEXT,
+                symbol TEXT
+            )
+        """)
+        conn.execute(
+            "INSERT INTO bypass_events (reason, signal_id, symbol) VALUES (?, ?, ?)",
+            (reason, signal_id, symbol),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+
+def _classify_bypass_reason(exc: Exception) -> str:
+    """แปลง exception เป็น reason code สำหรับ bypass_events"""
+    msg = str(exc).lower()
+    if "timeout" in msg or "timed out" in msg:
+        return "timeout"
+    if "credit" in msg or "quota" in msg or "billing" in msg:
+        return "credit_exhausted"
+    if "json" in msg or "expecting" in msg:
+        return "invalid_response"
+    return "http_error"
 
 
 def _init():
@@ -366,11 +415,14 @@ def ask(signal: dict, scan_result: dict) -> tuple:
 
     client = _init()
     if client is None:
-        execution_meta["execution_allowed"] = False
-        execution_meta["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
-        signal["execution_allowed"] = False
-        signal["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
-        return True, "filter_disabled", execution_meta
+        # ── P3 BYPASS (V2 Section 8) — no API key → bypass, continue execution ──
+        bypass_reason = "api_key_missing"
+        execution_meta["ai_filter_bypassed"] = True
+        execution_meta["bypass_reason"] = bypass_reason
+        signal["ai_filter_bypassed"] = True
+        signal["bypass_reason"] = bypass_reason
+        _log_bypass_event(bypass_reason, signal_id="", symbol=symbol)
+        return True, f"bypass:{bypass_reason}", execution_meta
 
     funding_rate = signal.get("funding_rate")
     funding_str  = f"{funding_rate:+.4f}%" if funding_rate is not None else "N/A"
@@ -437,13 +489,15 @@ def ask(signal: dict, scan_result: dict) -> tuple:
         return approved, f"[{confidence}%] {full_reason}", execution_meta
 
     except Exception as e:
-        # fail-safe: block execution but allow alert/Telegram path
-        execution_meta["execution_allowed"] = False
-        execution_meta["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
-        signal["execution_allowed"] = False
-        signal["execution_block_reason"] = "AI_FILTER_UNAVAILABLE"
+        # ── P3 BYPASS (V2 Section 8) — API error → bypass, continue execution ──
+        bypass_reason = _classify_bypass_reason(e)
+        execution_meta["ai_filter_bypassed"] = True
+        execution_meta["bypass_reason"] = bypass_reason
+        signal["ai_filter_bypassed"] = True
+        signal["bypass_reason"] = bypass_reason
+        _log_bypass_event(bypass_reason, signal_id="", symbol=symbol)
 
-        #  อย่า block alert path ถ้า Claude error แต่ต้อง block execution
+        # Informational alert (ไม่ block) — throttle 1/hour
         global _api_warn_ts
         import time
         now = time.time()
@@ -452,12 +506,12 @@ def ask(signal: dict, scan_result: dict) -> tuple:
             try:
                 import notify
                 notify.send(
-                    "⚠️ <b>[DEGRADED] Claude Filter API Down</b>\n"
-                    f"Error: {str(e)[:100]}\n"
-                    "▸ Fallback: execution blocked (fail-safe)\n"
-                    "▸ Hard-reject rules ยังทำงานปกติ\n"
+                    "ℹ️ <b>[INFO] Claude Filter Bypassed</b>\n"
+                    f"Reason: {bypass_reason} ({str(e)[:80]})\n"
+                    "▸ System continues on rule-based filters\n"
+                    "▸ Hard-reject rules + P1/P2/P4-P6 active\n"
                     "▸ ตรวจสอบ: ANTHROPIC_API_KEY และ API status"
                 )
             except Exception:
                 pass
-        return True, f"err:{str(e)[:60]}", execution_meta
+        return True, f"bypass:{bypass_reason}", execution_meta
