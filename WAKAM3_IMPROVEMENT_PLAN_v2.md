@@ -1097,6 +1097,37 @@ Append-only notes on actual code changes made during this plan cycle. Each entry
 
 **Side note (governance):** During this session there was also a `tests/test_runtime_fixes.py` change committed without prior ท่าน Kamp confirm (commit `8388e0a` — fixing two dedupe tests that had hardcoded timestamps that fell outside the 6h dedupe window once wall-clock passed 16:00 UTC on 2026-05-15). The fix itself was correct (relative `datetime.now() - timedelta(...)` instead of hardcoded `"2026-05-15T10:00:00+00:00"`), but the action sequence violated kamp-profile Rule #2 (must wait for confirm before acting). Decision on revert vs keep is pending ท่าน Kamp's call — see chat session for context.
 
+---
+
+### 2026-05-15 — Session: P3 Fix Deploy to main (hotfix)
+
+**Branch:** `main` (cherry-pick from `claude/continue-bot-dev-HMOhL`)
+
+**Context:** หลัง P3 V2 bypass deploy แล้ว ท่าน Kamp รายงานว่า signal ส่งมาแต่ position ยังไม่เปิด ตรวจสอบ `signal_log` ใน DB พบว่าทุก entry ยังเป็น `skip=AI_FILTER_UNAVAILABLE` ต่อเนื่อง สาเหตุ: P3 fix ถูก push ขึ้น dev branch `claude/continue-bot-dev-HMOhL` แต่ GitHub Actions workflow รันบน `main` branch → `main` ยังมี `claude_filter.py` เวอร์ชันเก่าที่ block execution อยู่
+
+**หลักฐาน (จาก `paper_trades.db` signal_log):**
+- 09:02 UTC: `skip=POSITIONS_FULL (10/10)` — ก่อนหน้านี้ trade เปิดได้ปกติจนเต็ม 10
+- 09:47–13:02 UTC: ทุก signal เป็น `skip=AI_FILTER_UNAVAILABLE` — P3 bug กลับมาหลัง positions บางส่วนปิดลง เหลือ 8 OPEN
+
+**Root cause:** code fix อยู่บน branch ผิด (dev ไม่ใช่ main)
+
+**Action taken (ท่าน Kamp confirm แล้ว):**
+1. Cherry-pick commits `8388e0a`, `eb2f9e9`, `60043cb` จาก dev branch เข้า `main`
+2. ตรวจสอบ 46/46 tests ผ่านบน main ก่อน push
+3. Push ไปยัง `origin/main` — effective ตั้งแต่รอบถัดไป (~15 นาที)
+
+**Commits merged to main:**
+- `e5e1375` — test: make dedupe tests time-independent
+- `dd4336e` — feat: P3 V2 bypass on Haiku API failure
+- `d00004e` — docs(v2): add OneDrive sync note
+
+**State หลัง deploy:**
+- `claude_filter.py` บน main = bypass mode ✅
+- `bypass_events` table จะถูกสร้างอัตโนมัติใน run แรกที่ bypass เกิดขึ้น
+- Signal log จะเปลี่ยนจาก `skip=AI_FILTER_UNAVAILABLE` → position เปิดได้ตามปกติ
+- Open positions ณ เวลา deploy: 8/10 (POL, SHIB, ETH, ADA, LINK, XLM, TRX, PEPE — ทั้งหมด SHORT)
+- Daily PnL ณ เวลา deploy: -$11.79
+
 -----
 
-*Document reflects codebase state as of 2026-05-15 post-P3-V2-deploy. Update Section 4 and Section 13 as items are completed. Update Section 22 Decision Log on every milestone. Append to Section 24 on every session that touches code.*
+*Document reflects codebase state as of 2026-05-15 post-P3-hotfix-to-main. Update Section 4 and Section 13 as items are completed. Update Section 22 Decision Log on every milestone. Append to Section 24 on every session that touches code.*
