@@ -63,6 +63,22 @@ def load_weights():
 W_TREND, W_SMC, W_OSC = load_weights()
 
 
+def _get_weights_for_regime(regime: str):
+    """
+    คืน (W_TREND, W_SMC, W_OSC) ตาม regime ปัจจุบัน
+    fallback to global weights.json ถ้าไม่มี regime_weights.json
+    """
+    try:
+        from config_loader import load_regime_weights as _lrw
+        rw = _lrw()
+        w = rw.get(regime) or rw.get("UNKNOWN")
+        if w:
+            return float(w["trend"]), float(w["smc"]), float(w["osc"])
+    except Exception:
+        pass
+    return W_TREND, W_SMC, W_OSC
+
+
 def _fmt_price(px):
     """
     round ราคาให้เหมาะกับขนาด — ป้องกัน PEPE/SHIB/FLR กลายเป็น 0.0
@@ -99,22 +115,24 @@ def _add_column_if_missing(cur, table, col, definition, allowed_cols):
             raise
 
 
-def _weighted_score(trend_s, smc_s, osc_s, liq_s=0, fund_s=0):
+def _weighted_score(trend_s, smc_s, osc_s, liq_s=0, fund_s=0, regime="UNKNOWN"):
     """
-    Core 3 agents: normalize (÷ new MAX_SCORE) → weighted sum → ×31
-      Trend MAX = 13 (ปรับจาก 11 → เพิ่ม ADX + BB squeeze)
-      SMC   MAX = 10 (เดิม)
-      Osc   MAX = 11 (ปรับจาก 9 → เพิ่ม OBV SMA20 + SMA50)
+    Core 3 agents: normalize (÷ MAX_SCORE) → weighted sum → ×31
+      Trend MAX = dynamic (default 13)
+      SMC   MAX = dynamic (default 12)
+      Osc   MAX = dynamic (default 16)
 
     Bonus agents (direct add, ไม่ normalize):
       Liquidity: up to +8  → total MAX = 31 + 8 = 39
       Funding:   up to +6  → total MAX = 45
 
+    Weights ปรับตาม regime ถ้ามี regime_weights.json
     KZ ไม่ใช่ bonus แล้ว — ใช้เป็น context ใน claude_filter แทน
     """
-    combined = (trend_s / TREND.MAX_SCORE) * W_TREND + \
-               (smc_s   / SMC.MAX_SCORE)   * W_SMC   + \
-               (osc_s   / OSC.MAX_SCORE)   * W_OSC
+    wt, ws, wo = _get_weights_for_regime(regime)
+    combined = (trend_s / TREND.MAX_SCORE) * wt + \
+               (smc_s   / SMC.MAX_SCORE)   * ws + \
+               (osc_s   / OSC.MAX_SCORE)   * wo
     core = round(combined * 31)
     return core + int(liq_s) + int(fund_s)
 
@@ -181,8 +199,8 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
     fund_s_ = f_rep["score_short"] if f_rep else 0
 
     # ── Signal Scanner ชั่งน้ำหนัก → total score (max 45) ───────
-    sl = _weighted_score(trend_l, smc_l,  osc_l,  liq_l,  fund_l)
-    ss = _weighted_score(trend_s, smc_s_, osc_s_, liq_s_, fund_s_)
+    sl = _weighted_score(trend_l, smc_l,  osc_l,  liq_l,  fund_l,  regime=regime)
+    ss = _weighted_score(trend_s, smc_s_, osc_s_, liq_s_, fund_s_, regime=regime)
 
     best      = max(sl, ss)
     best_side = "LONG" if sl >= ss else "SHORT"

@@ -4,10 +4,16 @@ Pine Script source: WaKam3.pine (Smart Money Concepts © LuxAlgo)
 
 MAX_SCORE = 12  (CHoCH+4, BOS+2, QM+2, Zone+2, Mitigation+2 — Equilibrium ลบออก)
 """
+from config_loader import load_condition_points as _load_pts
+_PT = _load_pts()
+
 NAME      = "SMC Agent"
 EMOJI     = "🏦"
-MAX_SCORE = 12
 SWING_LB  = 10
+MAX_SCORE = (
+    _PT["bos_bull_base"] + _PT["bos_bull_disp"] + _PT["choch_bull"] +
+    _PT["qm_bull"] + _PT["in_discount"] + _PT["mitigation_bull"]
+)
 
 
 def _detect_displacement(df, lookback=3, atr_mult=1.2):
@@ -94,26 +100,24 @@ def _add_indicators(df):
 
 def _score_long(r):
     s = 0
-    # BOS: +2 ถ้ามี displacement ยืนยัน / +1 ถ้าไม่มี
     if r["bos_bull"]:
-        s += 2 if r["bull_displacement"] else 1
-    if r["choch_bull"]:      s += 4   # เพิ่มจาก +3 — primary reversal signal
-    if r["qm_bull"]:         s += 2
-    if r["in_discount"]:     s += 2
-    if r["mitigation_bull"]: s += 2   # ใหม่
-    # Equilibrium ลบออก — zone หลีกเลี่ยง ไม่ควร score บวก
-    return s   # max 12
+        s += _PT["bos_bull_base"] + (_PT["bos_bull_disp"] if r["bull_displacement"] else 0)
+    if r["choch_bull"]:      s += _PT["choch_bull"]
+    if r["qm_bull"]:         s += _PT["qm_bull"]
+    if r["in_discount"]:     s += _PT["in_discount"]
+    if r["mitigation_bull"]: s += _PT["mitigation_bull"]
+    return s
 
 
 def _score_short(r):
     s = 0
     if r["bos_bear"]:
-        s += 2 if r["bear_displacement"] else 1
-    if r["choch_bear"]:      s += 4
-    if r["qm_bear"]:         s += 2
-    if r["in_premium"]:      s += 2
-    if r["mitigation_bear"]: s += 2
-    return s   # max 12
+        s += _PT["bos_bear_base"] + (_PT["bos_bear_disp"] if r["bear_displacement"] else 0)
+    if r["choch_bear"]:      s += _PT["choch_bear"]
+    if r["qm_bear"]:         s += _PT["qm_bear"]
+    if r["in_premium"]:      s += _PT["in_premium"]
+    if r["mitigation_bear"]: s += _PT["mitigation_bear"]
+    return s
 
 
 def run(df_1h, df_4h=None):

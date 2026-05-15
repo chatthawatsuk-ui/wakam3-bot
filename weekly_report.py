@@ -20,7 +20,9 @@ Level 5 — Market Regime Detection
 import os, json, sqlite3
 from datetime import datetime, timezone
 
-PENDING_WEIGHTS = "pending_weights.json"
+PENDING_WEIGHTS    = "pending_weights.json"
+PENDING_CONDITIONS = "pending_condition_points.json"
+PENDING_REGIME     = "pending_regime_weights.json"
 
 DB_PATH       = "paper_trades.db"
 PROPOSALS_DIR = "proposals"
@@ -489,6 +491,54 @@ Rules for weights:
 
 
 # ══════════════════════════════════════════════════════════════
+# PENDING HELPERS — L4 + L5
+# ══════════════════════════════════════════════════════════════
+def _save_pending_conditions(cond_prop):
+    """บันทึก pending_condition_points.json จาก L4 proposals"""
+    changes = {k: v for k, v in cond_prop.items()
+               if isinstance(v, dict) and v.get("proposed") != v.get("current")}
+    if not changes:
+        print("      (ไม่มี condition เปลี่ยนแปลง — ข้าม pending)")
+        return
+    pending = {
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "status":    "PENDING_CONFIRMATION",
+        "changes": {
+            k: {
+                "current":  v["current"],
+                "proposed": v["proposed"],
+                "reason":   v.get("reason", ""),
+            }
+            for k, v in changes.items()
+        },
+    }
+    with open(PENDING_CONDITIONS, "w") as f:
+        json.dump(pending, f, indent=2, ensure_ascii=False)
+    print(f"  💾 บันทึก → {PENDING_CONDITIONS} (รอ /approve_conditions ทาง Telegram)")
+
+
+def _save_pending_regime(regime_prop):
+    """บันทึก pending_regime_weights.json จาก L5 proposals"""
+    if not regime_prop:
+        return
+    pending = {
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "status":    "PENDING_CONFIRMATION",
+        "weights": {
+            regime: {
+                "trend": p["W_TREND"],
+                "smc":   p["W_SMC"],
+                "osc":   p["W_OSC"],
+            }
+            for regime, p in regime_prop.items()
+        },
+    }
+    with open(PENDING_REGIME, "w") as f:
+        json.dump(pending, f, indent=2, ensure_ascii=False)
+    print(f"  💾 บันทึก → {PENDING_REGIME} (รอ /approve_regime ทาง Telegram)")
+
+
+# ══════════════════════════════════════════════════════════════
 # GENERATE WEEKLY REPORT
 # ══════════════════════════════════════════════════════════════
 def generate_weekly_report():
@@ -524,6 +574,7 @@ def generate_weekly_report():
             print(f"      {arrow} {cond}: {v['current']} → {v['proposed']} ({v['reason']})")
         if not changes:
             print("      ✅ ไม่มีการเปลี่ยนแปลงที่แนะนำในสัปดาห์นี้")
+    _save_pending_conditions(cond_prop)
 
     # ── Level 5: Regime performance ───────────────────────────
     print("\n🌐 Level 5 — Market Regime Performance")
@@ -540,6 +591,7 @@ def generate_weekly_report():
         for regime, p in regime_prop.items():
             print(f"      {regime}: Trend={p['W_TREND']:.3f} SMC={p['W_SMC']:.3f} Osc={p['W_OSC']:.3f}")
             print(f"        → {p['reason']}")
+    _save_pending_regime(regime_prop)
 
     # ── Level 6: Claude Haiku Weight Proposal ────────────────
     print("\n🤖 Level 6 — Claude Haiku Weight Proposal")
@@ -695,7 +747,9 @@ def generate_weekly_report():
     print(f"💾 บันทึก → {latest}")
     print("\n" + "=" * 60)
     print("⚠️  กรุณา Review และ Confirm ก่อนนำไปใช้")
-    print("   หลัง Confirm → ตอบ /approve_weights ทาง Telegram")
+    print("   L6 Weights         → /approve_weights ทาง Telegram")
+    print("   L4 Condition Points → /approve_conditions ทาง Telegram")
+    print("   L5 Regime Weights   → /approve_regime ทาง Telegram")
     print("=" * 60)
 
     # ── ส่ง Telegram ──────────────────────────────────────────────────────────
