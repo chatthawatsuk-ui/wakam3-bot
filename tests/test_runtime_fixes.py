@@ -775,7 +775,7 @@ class RuntimeFixTests(unittest.TestCase):
     def test_dedupe_same_ts_suppressed(self):
         """Same symbol+side with same timestamp → suppressed."""
         with tempfile.TemporaryDirectory() as tmp:
-            ts = "2026-05-15T10:00:00+00:00"
+            ts = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
             path = self._setup_dedupe(tmp, {"ADA/USDT_SHORT": ts})
             with mock.patch("notify.NOTIFIED_PATH", path):
                 sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": ts}
@@ -784,19 +784,23 @@ class RuntimeFixTests(unittest.TestCase):
     def test_dedupe_older_ts_suppressed(self):
         """Same symbol+side with older signal timestamp → suppressed."""
         with tempfile.TemporaryDirectory() as tmp:
-            stored_ts = "2026-05-15T10:00:00+00:00"
+            now = datetime.now(timezone.utc)
+            stored_ts = (now - timedelta(minutes=1)).isoformat()
+            older_ts  = (now - timedelta(hours=1)).isoformat()
             path = self._setup_dedupe(tmp, {"ADA/USDT_SHORT": stored_ts})
             with mock.patch("notify.NOTIFIED_PATH", path):
-                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": "2026-05-15T09:00:00+00:00"}
+                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": older_ts}
                 self.assertTrue(notify.is_already_notified(sig))
 
     def test_dedupe_newer_ts_allowed(self):
         """Same symbol+side with newer signal timestamp → allowed."""
         with tempfile.TemporaryDirectory() as tmp:
-            stored_ts = "2026-05-15T05:32:00+00:00"
+            now = datetime.now(timezone.utc)
+            stored_ts = (now - timedelta(hours=2)).isoformat()
+            newer_ts  = (now - timedelta(minutes=1)).isoformat()
             path = self._setup_dedupe(tmp, {"ADA/USDT_SHORT": stored_ts})
             with mock.patch("notify.NOTIFIED_PATH", path):
-                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": "2026-05-15T11:01:00+00:00"}
+                sig = {"symbol": "ADA/USDT", "side": "SHORT", "ts": newer_ts}
                 self.assertFalse(notify.is_already_notified(sig))
 
     def test_dedupe_mark_stores_sig_ts(self):
@@ -822,12 +826,14 @@ class RuntimeFixTests(unittest.TestCase):
     def test_dedupe_ai_filter_newer_ts_allowed(self):
         """AI_FILTER_UNAVAILABLE alert-only signal with newer ts → allowed."""
         with tempfile.TemporaryDirectory() as tmp:
-            stored_ts = "2026-05-15T05:00:00+00:00"
+            now = datetime.now(timezone.utc)
+            stored_ts = (now - timedelta(hours=3)).isoformat()
+            newer_ts  = (now - timedelta(minutes=1)).isoformat()
             path = self._setup_dedupe(tmp, {"SOL/USDT_SHORT": stored_ts})
             with mock.patch("notify.NOTIFIED_PATH", path):
                 sig = {
                     "symbol": "SOL/USDT", "side": "SHORT",
-                    "ts": "2026-05-15T11:00:00+00:00",
+                    "ts": newer_ts,
                     "execution_allowed": False,
                     "execution_block_reason": "AI_FILTER_UNAVAILABLE",
                 }
