@@ -3,11 +3,12 @@ import os
 import sqlite3
 import tempfile
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from unittest import mock
 
 import claude_filter
 import generate_dashboard
+import monthly_report
 import paper_trade
 import position_manager
 import signal_scanner
@@ -579,6 +580,183 @@ class RuntimeFixTests(unittest.TestCase):
             entry=100.0, atr=2.0, swing_low=98.0, swing_high=102.0,
         )
         self.assertNotEqual(res["status"], "SL_REJECT")
+
+
+    # ── Monthly Report v0 tests ────────────────────────────────────
+
+    def _make_monthly_db(self, trades=None, signals=None, balance=1000.0):
+        """Helper: in-memory DB with trades + signal_log for monthly report."""
+        conn = sqlite3.connect(":memory:")
+        conn.execute(
+            "CREATE TABLE trades ("
+            "id INTEGER PRIMARY KEY, symbol TEXT, side TEXT, entry_px REAL, "
+            "exit_px REAL, pnl_usd REAL, outcome TEXT, exit_reason TEXT, "
+            "score INTEGER, opened_at TEXT, closed_at TEXT, status TEXT, "
+            "tp1_hit INTEGER, tp1_px REAL, qty REAL, notional_usd REAL, "
+            "regime TEXT, sl_px REAL, tp2_px REAL)"
+        )
+        conn.execute(
+            "CREATE TABLE signal_log ("
+            "id INTEGER PRIMARY KEY, symbol TEXT, side TEXT, score INTEGER, "
+            "was_traded INTEGER, skip_reason TEXT, logged_at TEXT, outcome TEXT)"
+        )
+        conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL, updated TEXT)")
+        conn.execute("INSERT INTO portfolio VALUES (1, ?, '')", (balance,))
+        if trades:
+            for t in trades:
+                conn.execute(
+                    "INSERT INTO trades (symbol, side, entry_px, exit_px, pnl_usd, "
+                    "outcome, exit_reason, score, opened_at, closed_at, status, "
+                    "tp1_hit, tp1_px, qty, notional_usd, regime) "
+                    "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (t["symbol"], t["side"], t["entry_px"], t["exit_px"],
+                     t["pnl_usd"], t["outcome"], t["exit_reason"], t["score"],
+                     t["opened_at"], t["closed_at"], "CLOSED",
+                     t.get("tp1_hit", 0), t.get("tp1_px"), t.get("qty", 1),
+                     t.get("notional_usd", 200), t.get("regime", "TRENDING")),
+                )
+        if signals:
+            for s in signals:
+                conn.execute(
+                    "INSERT INTO signal_log (symbol, side, score, was_traded, "
+                    "skip_reason, logged_at, outcome) VALUES (?,?,?,?,?,?,?)",
+                    (s["symbol"], s["side"], s.get("score", 10),
+                     s.get("was_traded", 0), s.get("skip_reason"),
+                     s["logged_at"], s.get("outcome")),
+                )
+        conn.commit()
+        return conn
+
+    def test_monthly_report_empty_db(self):
+        """Monthly report with no trades or signals produces valid output."""
+        conn = self._make_monthly_db()
+        now = datetime(2026, 5, 15, tzinfo=timezone.utc)
+        since = now - timedelta(days=30)
+        trades = monthly_report._fetch_closed_trades(conn, since.isoformat(), now.isoformat())
+        signals = monthly_report._fetch_signal_log(conn, since.isoformat(), now.isoformat())
+        conn.close()
+        trade_m = monthly_report.calc_trade_metrics(trades)
+        signal_m = monthly_report.calc_signal_metrics(signals)
+        self.assertEqual(trade_m["total"], 0)
+        self.assertEqual(signal_m["total"], 0)
+        self.assertEqual(trade_m["win_rate"], 0)
+
+    def test_monthly_report_aggregates_trades(self):
+        """Monthly report correctly aggregates closed trades."""
+        now = datetime(2026, 5, 15, tzinfo=timezone.utc)
+        trades = [
+            {"symbol": "BTC/USDT", "side": "LONG", "entry_px": 100, "exit_px": 110,
+             "pnl_usd": 10.0, "outcome": "WIN", "exit_reason": "TP2", "score": 15,
+             "opened_at": "2026-05-01T00:00:00+00:00",
+             "closed_at": "2026-05-02T00:00:00+00:00"},
+            {"symbol": "ETH/USDT", "side": "SHORT", "entry_px": 200, "exit_px": 210,
+             "pnl_usd": -5.0, "outcome": "LOSS", "exit_reason": "SL", "score": 12,
+             "opened_at": "2026-05-03T00:00:00+00:00",
+             "closed_at": "2026-05-04T00:00:00+00:00"},
+            {"symbol": "SOL/USDT", "side": "LONG", "entry_px": 50, "exit_px": 55,
+             "pnl_usd": 8.0, "outcome": "WIN", "exit_reason": "TP2", "score": 18,
+             "opened_at": "2026-05-05T00:00:00+00:00",
+             "closed_at": "2026-05-06T00:00:00+00:00"},
+        ]
+        conn = self._make_monthly_db(trades=trades, balance=1013.0)
+        fetched = monthly_report._fetch_closed_trades(
+            conn, (now - timedelta(days=30)).isoformat(), now.isoformat()
+        )
+        conn.close()
+        m = monthly_report.calc_trade_metrics(fetched)
+        self.assertEqual(m["total"], 3)
+        self.assertEqual(m["wins"], 2)
+        self.assertEqual(m["losses"], 1)
+        self.assertAlmostEqual(m["total_pnl"], 13.0)
+        self.assertAlmostEqual(m["win_rate"], 66.7)
+        self.assertEqual(m["exit_reasons"]["TP2"], 2)
+        self.assertEqual(m["exit_reasons"]["SL"], 1)
+
+    def test_monthly_report_signal_skip_reasons(self):
+        """Monthly report counts signal skip reasons correctly."""
+        now = datetime(2026, 5, 15, tzinfo=timezone.utc)
+        signals = [
+            {"symbol": "BTC/USDT", "side": "LONG", "was_traded": 1,
+             "logged_at": "2026-05-01T00:00:00+00:00"},
+            {"symbol": "ETH/USDT", "side": "SHORT", "was_traded": 0,
+             "skip_reason": "SL_REJECT",
+             "logged_at": "2026-05-02T00:00:00+00:00"},
+            {"symbol": "SOL/USDT", "side": "LONG", "was_traded": 0,
+             "skip_reason": "AI_FILTER_UNAVAILABLE",
+             "logged_at": "2026-05-03T00:00:00+00:00"},
+            {"symbol": "ADA/USDT", "side": "LONG", "was_traded": 0,
+             "skip_reason": "MAX_OPEN",
+             "logged_at": "2026-05-04T00:00:00+00:00"},
+            {"symbol": "DOT/USDT", "side": "SHORT", "was_traded": 0,
+             "skip_reason": "AI_FILTER_UNAVAILABLE",
+             "logged_at": "2026-05-05T00:00:00+00:00"},
+        ]
+        conn = self._make_monthly_db(signals=signals)
+        fetched = monthly_report._fetch_signal_log(
+            conn, (now - timedelta(days=30)).isoformat(), now.isoformat()
+        )
+        conn.close()
+        sm = monthly_report.calc_signal_metrics(fetched)
+        self.assertEqual(sm["total"], 5)
+        self.assertEqual(sm["traded"], 1)
+        self.assertEqual(sm["skipped"], 4)
+        safety = monthly_report.calc_safety_metrics(sm["skip_reasons"])
+        self.assertEqual(safety["AI_FILTER_UNAVAILABLE"], 2)
+        self.assertEqual(safety["SL_REJECT"], 1)
+
+    def test_monthly_report_missing_db(self):
+        """Monthly report handles missing DB gracefully."""
+        with mock.patch("monthly_report.DB_PATH", "/nonexistent/path.db"):
+            report = monthly_report.build_report(days=30)
+        self.assertFalse(report["metadata"]["db_available"])
+        self.assertEqual(report["trade_summary"]["total"], 0)
+
+    def test_monthly_report_no_pending_files(self):
+        """Monthly report does NOT create any pending approval files."""
+        with tempfile.TemporaryDirectory() as tmp:
+            old_cwd = os.getcwd()
+            os.chdir(tmp)
+            try:
+                conn = self._make_monthly_db(balance=1000.0)
+                with mock.patch("monthly_report._connect_db", return_value=conn):
+                    report = monthly_report.build_report(days=30)
+                    monthly_report.save_report(report)
+                self.assertFalse(os.path.exists("pending_weights.json"))
+                self.assertFalse(os.path.exists("pending_condition_points.json"))
+                self.assertFalse(os.path.exists("pending_regime_weights.json"))
+                self.assertTrue(os.path.exists("reports/monthly"))
+            finally:
+                os.chdir(old_cwd)
+
+    def test_monthly_telegram_format(self):
+        """Telegram format function produces readable output without crashing."""
+        report = {
+            "metadata": {
+                "generated_at": "2026-05-15T00:00:00+00:00",
+                "days": 30, "period_start": "2026-04-15T00:00:00+00:00",
+                "period_end": "2026-05-15T00:00:00+00:00",
+                "balance": 950.0, "phase": "v0-report-only", "db_available": True,
+            },
+            "trade_summary": {
+                "total": 10, "wins": 4, "losses": 6, "win_rate": 40.0,
+                "total_pnl": -15.50, "avg_pnl": -1.55, "max_win": 12.0,
+                "max_loss": -8.0, "profit_factor": 0.85, "max_drawdown": -20.0,
+                "exit_reasons": {"TP2": 3, "SL": 5, "HTF_REVERSAL": 2},
+                "regime_breakdown": {},
+            },
+            "signal_summary": {
+                "total": 50, "traded": 10, "skipped": 40,
+                "skip_reasons": {"MAX_OPEN": 20, "SL_REJECT": 5, "CORR_LIMIT": 15},
+            },
+            "safety_summary": {"SL_REJECT": 5},
+            "thai_explanation": "ระบบมี win rate ต่ำ — ควร review",
+        }
+        msg = monthly_report.format_telegram_message(report)
+        self.assertIn("Monthly Report", msg)
+        self.assertIn("40.0%", msg)
+        self.assertIn("-15.50", msg)
+        self.assertIn("SL_REJECT", msg)
+        self.assertIn("report-only", msg)
 
 
 if __name__ == "__main__":
