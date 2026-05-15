@@ -18,13 +18,30 @@ DB_PATH       = "paper_trades.db"
 
 # ── SEND ──────────────────────────────────────────────────────────────────────
 def send(message):
-    try:
+    def _send_chunk(chunk):
         r = requests.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={"chat_id": CHAT_ID, "text": message, "parse_mode": "HTML"},
+            json={"chat_id": CHAT_ID, "text": chunk, "parse_mode": "HTML"},
             timeout=10,
         )
         return r.status_code == 200
+
+    try:
+        if len(message) <= 3900:
+            return _send_chunk(message)
+
+        ok = True
+        chunk = ""
+        for line in message.splitlines():
+            candidate = f"{chunk}\n{line}" if chunk else line
+            if len(candidate) > 3900:
+                ok = _send_chunk(chunk) and ok
+                chunk = line
+            else:
+                chunk = candidate
+        if chunk:
+            ok = _send_chunk(chunk) and ok
+        return ok
     except Exception as e:
         print(f"[NOTIFY ERROR] {e}")
         return False
@@ -70,6 +87,37 @@ def _performance_verdict(signal_review, trade_review, backtest_summary):
     else:
         verdict = "ระบบพอใช้ได้ ยังไม่ต้องปรับแรง ให้ปรับเฉพาะเงื่อนไขที่สถิติชัด"
     return verdict
+
+
+def _condition_plain_text(cond, v):
+    current = v.get("current", 0)
+    proposed = v.get("proposed", 0)
+    arrow = "↑" if proposed > current else "↓"
+    label = _CONDITION_LABELS.get(cond, cond)
+    reason = v.get("reason", "")
+    meaning = "ให้ผ่านง่ายขึ้น" if proposed > current else "ให้ผ่านยากขึ้น"
+    return (
+        f"  {arrow} {escape(str(cond))}: {current} → {proposed} "
+        f"({escape(label)}) — {escape(str(reason))}; ผลคือ {meaning}"
+    )
+
+
+def _regime_plain_text(regime, d):
+    wr = d.get("win_rate", 0)
+    count = d.get("count", 0)
+    trend = d.get("avg_score_trend", 0)
+    smc = d.get("avg_score_smc", 0)
+    osc = d.get("avg_score_osc", 0)
+    if wr < 0.45:
+        state = "ยังทำผลงานต่ำ ควรลดความกล้าในการให้ผ่านหรือให้น้ำหนักเฉพาะ agent ที่พิสูจน์ตัวเองกว่า"
+    elif wr < 0.52:
+        state = "ยังกลาง ๆ ควรปรับเบา ๆ และรอดูข้อมูลเพิ่ม"
+    else:
+        state = "ทำผลงานพอใช้ได้ ควรคงหรือปรับแบบระวัง"
+    return (
+        f"  {regime}: {count} trades, WR {wr:.0%} — "
+        f"avg score Trend {trend:.1f}/13, SMC {smc:.1f}/10, Osc {osc:.1f}/11; {state}"
+    )
 
 
 _CONDITION_LABELS = {
@@ -223,13 +271,11 @@ def weekly_report_msg(proposal, backtest_summary=None):
     if changes:
         lines.append(f"📌 เสนอปรับ {len(changes)} conditions:")
         for cond, v in changes.items():
-            arrow = "↑" if v["proposed"] > v["current"] else "↓"
-            reason = v.get("reason", "")
-            label = _CONDITION_LABELS.get(cond, cond)
-            suffix = f" เพราะ {escape(str(reason))}" if reason else ""
-            lines.append(f"  {arrow} {escape(str(cond))}: {v['current']} → {v['proposed']} ({escape(label)}){suffix}")
+            lines.append(_condition_plain_text(cond, v))
         lines += [
-            "  เหตุผลรวม: เงื่อนไขเหล่านี้มี win rate ต่ำ จึงเสนอให้ลดคะแนนเพื่อให้ signal ผ่านยากขึ้น",
+            "  แปลแบบง่าย: เงื่อนไขกลุ่มนี้เคยช่วยดันคะแนนให้เข้า trade แต่ผล 7 วันล่าสุดแพ้บ่อย",
+            "  ถ้าอนุมัติ: signal ที่พึ่งเงื่อนไขเหล่านี้มาก ๆ จะผ่านยากขึ้น ระบบจะคัดไม้เข้มขึ้น",
+            "  ถ้าไม่อนุมัติ: ระบบยังใช้คะแนนเดิมทั้งหมด ไม่มีอะไรเปลี่ยนเอง",
         ]
     else:
         lines.append("  ✅ ไม่มีการเปลี่ยนแปลงแนะนำ")
@@ -239,9 +285,20 @@ def weekly_report_msg(proposal, backtest_summary=None):
     regime_data = l5.get("regime_performance", {})
     lines += ["", "🌐 <b>Level 5 — Market Regime</b>"]
     if regime_data and "error" not in regime_data:
+        lines.append("  หน้าที่: แยกว่าบอททำงานในตลาดแบบ TRENDING / VOLATILE ดีแค่ไหน")
+        lines.append("  ระบบดูจำนวน trade, win rate, และคะแนนเฉลี่ยของ Trend/SMC/Osc ในแต่ละสภาพตลาด")
         for regime, d in regime_data.items():
-            wr = d.get("win_rate", 0)
-            lines.append(f"  {regime}: {d.get('count',0)} trades, WR {wr:.0%}")
+            lines.append(_regime_plain_text(regime, d))
+        l5_props = l5.get("proposals", {})
+        if l5_props:
+            lines.append("  ข้อเสนอ: ใช้น้ำหนัก agent แยกตาม regime แทนน้ำหนักเดียวทั้งตลาด")
+            for regime, p in l5_props.items():
+                lines.append(
+                    f"    {regime}: Trend {p.get('W_TREND',0):.3f}, "
+                    f"SMC {p.get('W_SMC',0):.3f}, Osc {p.get('W_OSC',0):.3f}"
+                )
+            lines.append("  แปลแบบง่าย: ตอนตลาดมี trend ระบบจะเชื่อ Trend มากสุด และลด SMC เพราะสถิติ SMC เฉลี่ยยังอ่อน")
+            lines.append("  ถ้าอนุมัติ: scan ถัดไปจะเลือกชุด weight ตาม regime ปัจจุบันของตลาด")
     else:
         lines.append("  ⚠️ ข้อมูลไม่พอ (รอ 10+ trades)")
 
@@ -260,16 +317,22 @@ def weekly_report_msg(proposal, backtest_summary=None):
         lines += [
             "",
             "🤖 <b>Level 6 — Claude Analysis</b>",
-            "  ยังไม่ได้วิเคราะห์ด้วย AI เพราะไม่มี/ยังไม่ได้เติม Anthropic API credit หรือ key",
+            "  หน้าที่: ให้ Claude Haiku อ่านภาพรวมทั้งหมดแล้วเสนอ core weights ของ Trend/SMC/Osc แบบมีเหตุผล",
+            "  core weights คือค่าน้ำหนักกลางของ agent ทั้ง 3 ตัว ไม่ใช่ condition points และไม่ใช่ regime weights",
+            "  สถานะตอนนี้: ยังไม่ได้วิเคราะห์ เพราะไม่มี/ยังไม่ได้เติม Anthropic API credit หรือ key",
+            "  ดังนั้น /approve_weights ตอนนี้ยังไม่มีอะไรให้อนุมัติ รอให้ Level 6 สร้าง pending_weights.json ก่อน",
             "  ตอนนี้ใช้สถิติ rule-based จาก Level 4/5 ไปก่อน",
         ]
 
+    condition_count = len(changes)
     lines += [
         "",
         "✅ <b>วิธีอนุมัติ</b>",
-        "  พิมพ์ /approve_conditions เพื่อใช้การปรับ 9 conditions",
-        "  พิมพ์ /approve_regime เพื่อใช้ regime weights",
-        "  พิมพ์ /approve_weights เพื่อใช้ Level 6 weights (เมื่อ AI วิเคราะห์ได้)",
+        f"  /approve_conditions = ใช้การปรับ {condition_count} conditions ใน Level 4",
+        "  /approve_regime = ใช้น้ำหนักแยกตามสภาพตลาดใน Level 5",
+        "  /approve_weights = ใช้ core weights จาก Level 6 เฉพาะตอนมี AI proposal แล้วเท่านั้น",
+        "  หลังพิมพ์ Telegram จะยังไม่ตอบทันที ระบบจะอ่านคำสั่งตอน workflow scan/dashboard รอบถัดไป",
+        "  เมื่ออัปเดตสำเร็จ bot จะส่งข้อความยืนยัน และ GitHub Actions จะ commit ไฟล์ config ใหม่กลับ repo",
         "  ถ้ายังไม่มั่นใจ ไม่ต้องพิมพ์อะไร ระบบจะยังไม่ปรับเอง",
         "",
         "================================",

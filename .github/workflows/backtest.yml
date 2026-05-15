@@ -70,6 +70,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f dashboard_data.json proposals/ 2>/dev/null || true
+          git add -A -- pending_weights.json pending_condition_points.json pending_regime_weights.json 2>/dev/null || true
           git diff --staged --stat
           if git diff --staged --quiet; then
             echo "Nothing to commit"

@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 import claude_filter
+import generate_dashboard
 import paper_trade
 import position_manager
 import signal_scanner
@@ -161,6 +162,13 @@ class RuntimeFixTests(unittest.TestCase):
 
         self.assertEqual(action, "PYRAMID")
         self.assertEqual(params["level"], 2)
+
+    def test_approval_commands_can_apply_multiple_pending_types(self):
+        commands = {"/approve_conditions", "/approve_regime"}
+
+        self.assertTrue(generate_dashboard._command_seen(commands, "/approve_conditions"))
+        self.assertTrue(generate_dashboard._command_seen(commands, "/approve_regime"))
+        self.assertFalse(generate_dashboard._command_seen(commands, "/approve_weights"))
 
 
 if __name__ == "__main__":

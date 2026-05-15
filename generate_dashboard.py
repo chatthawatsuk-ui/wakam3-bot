@@ -515,7 +515,63 @@ def check_weight_triggers(specialist_wr, scan_results):
         print(f"  [WARN] check_weight_triggers proposal: {e}")
 
 
-def check_weight_approval():
+def _fetch_telegram_commands():
+    """
+    อ่าน Telegram commands รอบเดียวต่อ dashboard run
+    เพื่อไม่ให้ approval แต่ละชนิดแย่ง offset กันเอง
+    """
+    try:
+        import requests
+        import notify as N
+
+        if not getattr(N, "BOT_TOKEN", ""):
+            return set()
+
+        params = {
+            "allowed_updates": ["message"],
+            "limit": 20,
+        }
+        OFFSET_FILE = "telegram_offset.json"
+        if os.path.exists(OFFSET_FILE):
+            with open(OFFSET_FILE) as f:
+                params["offset"] = json.load(f).get("offset", 0)
+
+        r = requests.get(
+            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
+            params=params, timeout=10,
+        )
+        if r.status_code != 200:
+            return set()
+
+        updates = r.json().get("result", [])
+        commands = set()
+        max_update_id = params.get("offset", 0)
+
+        for upd in updates:
+            upd_id = upd.get("update_id", 0)
+            max_update_id = max(max_update_id, upd_id + 1)
+            text = upd.get("message", {}).get("text", "").strip().lower()
+            if text:
+                commands.add(text.split()[0])
+
+        with open(OFFSET_FILE, "w") as f:
+            json.dump({"offset": max_update_id}, f)
+
+        return commands
+
+    except Exception as e:
+        print(f"  [WARN] fetch_telegram_commands: {e}")
+        return set()
+
+
+def _command_seen(commands, command):
+    if commands is None:
+        commands = _fetch_telegram_commands()
+    suffix = f"{command}@"
+    return any(cmd == command or cmd.startswith(suffix) for cmd in commands)
+
+
+def check_weight_approval(commands=None):
     """
     ตรวจ Telegram getUpdates → หา /approve_weights command
     ถ้าเจอ: โหลด pending_weights.json → บันทึก weights.json → ส่ง confirm Telegram
@@ -527,49 +583,13 @@ def check_weight_approval():
         return False  # ไม่มี pending weight รอ approve
 
     try:
-        import requests
         import notify as N
 
         # โหลด pending weights
         with open(PENDING) as f:
             pending = json.load(f)
 
-        # ดึง updates จาก Telegram
-        params = {
-            "allowed_updates": ["message"],
-            "limit": 20,
-        }
-        # ใช้ offset ล่าสุดเพื่อไม่อ่านซ้ำ
-        OFFSET_FILE = "telegram_offset.json"
-        if os.path.exists(OFFSET_FILE):
-            with open(OFFSET_FILE) as f:
-                params["offset"] = json.load(f).get("offset", 0)
-
-        r = requests.get(
-            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
-            params=params, timeout=10,
-        )
-        if r.status_code != 200:
-            return
-
-        data     = r.json()
-        updates  = data.get("result", [])
-        approved = False
-        max_update_id = params.get("offset", 0)
-
-        for upd in updates:
-            upd_id  = upd.get("update_id", 0)
-            max_update_id = max(max_update_id, upd_id + 1)
-            msg = upd.get("message", {})
-            text = msg.get("text", "").strip().lower()
-            if text in ("/approve_weights", "/approve_weights@"):
-                approved = True
-
-        # บันทึก offset ล่าสุดไว้สำหรับรอบถัดไป
-        with open(OFFSET_FILE, "w") as f:
-            json.dump({"offset": max_update_id}, f)
-
-        if approved:
+        if _command_seen(commands, "/approve_weights"):
             # ใช้ pending weights เขียนทับ weights.json
             weights = {
                 "trend":    pending["trend"],
@@ -606,7 +626,7 @@ def check_weight_approval():
     return False
 
 
-def check_condition_approval():
+def check_condition_approval(commands=None):
     """
     ตรวจ Telegram → /approve_conditions → บันทึก condition_points.json
     """
@@ -614,34 +634,11 @@ def check_condition_approval():
     if not os.path.exists(PENDING):
         return False
     try:
-        import requests
         import notify as N
         from config_loader import load_condition_points, CONDITION_POINTS_PATH
         with open(PENDING) as f:
             pending = json.load(f)
-        params = {"allowed_updates": ["message"], "limit": 20}
-        OFFSET_FILE = "telegram_offset.json"
-        if os.path.exists(OFFSET_FILE):
-            with open(OFFSET_FILE) as f:
-                params["offset"] = json.load(f).get("offset", 0)
-        r = requests.get(
-            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
-            params=params, timeout=10,
-        )
-        if r.status_code != 200:
-            return False
-        updates = r.json().get("result", [])
-        approved = False
-        max_update_id = params.get("offset", 0)
-        for upd in updates:
-            upd_id = upd.get("update_id", 0)
-            max_update_id = max(max_update_id, upd_id + 1)
-            text = upd.get("message", {}).get("text", "").strip().lower()
-            if text in ("/approve_conditions", "/approve_conditions@"):
-                approved = True
-        with open(OFFSET_FILE, "w") as f:
-            json.dump({"offset": max_update_id}, f)
-        if approved:
+        if _command_seen(commands, "/approve_conditions"):
             current_pts = load_condition_points()
             for key, v in pending.get("changes", {}).items():
                 if key in current_pts:
@@ -663,7 +660,7 @@ def check_condition_approval():
     return False
 
 
-def check_regime_approval():
+def check_regime_approval(commands=None):
     """
     ตรวจ Telegram → /approve_regime → บันทึก regime_weights.json
     """
@@ -671,34 +668,11 @@ def check_regime_approval():
     if not os.path.exists(PENDING):
         return False
     try:
-        import requests
         import notify as N
         from config_loader import REGIME_WEIGHTS_PATH
         with open(PENDING) as f:
             pending = json.load(f)
-        params = {"allowed_updates": ["message"], "limit": 20}
-        OFFSET_FILE = "telegram_offset.json"
-        if os.path.exists(OFFSET_FILE):
-            with open(OFFSET_FILE) as f:
-                params["offset"] = json.load(f).get("offset", 0)
-        r = requests.get(
-            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
-            params=params, timeout=10,
-        )
-        if r.status_code != 200:
-            return False
-        updates = r.json().get("result", [])
-        approved = False
-        max_update_id = params.get("offset", 0)
-        for upd in updates:
-            upd_id = upd.get("update_id", 0)
-            max_update_id = max(max_update_id, upd_id + 1)
-            text = upd.get("message", {}).get("text", "").strip().lower()
-            if text in ("/approve_regime", "/approve_regime@"):
-                approved = True
-        with open(OFFSET_FILE, "w") as f:
-            json.dump({"offset": max_update_id}, f)
-        if approved:
+        if _command_seen(commands, "/approve_regime"):
             regime_weights = pending.get("weights", {})
             with open(REGIME_WEIGHTS_PATH, "w") as f:
                 json.dump(regime_weights, f, indent=2, ensure_ascii=False)
@@ -1699,9 +1673,10 @@ def main():
     specialist_wr = calc_specialist_winrate(conn)
 
     # ── Level 3: Dynamic Weights (ตรวจ Telegram approval + triggers) ───────────
-    just_approved = check_weight_approval()
-    check_condition_approval()   # L4 — condition points
-    check_regime_approval()      # L5 — regime weights
+    approval_commands = _fetch_telegram_commands()
+    just_approved = check_weight_approval(approval_commands)
+    check_condition_approval(approval_commands)   # L4 — condition points
+    check_regime_approval(approval_commands)      # L5 — regime weights
     check_weight_triggers(specialist_wr, scan_results)
     dyn_weights = calc_dynamic_weights(specialist_wr, skip_persist=just_approved)
 
