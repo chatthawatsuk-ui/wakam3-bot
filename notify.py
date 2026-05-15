@@ -54,6 +54,37 @@ def _period_label(proposal):
         return f"since last report (max {days}d)"
 
 
+def _performance_verdict(signal_review, trade_review, backtest_summary):
+    wr = float((trade_review or {}).get("wr") or (signal_review or {}).get("wr") or 0)
+    pnl = float((trade_review or {}).get("total_pnl") or 0)
+    skipped = int((signal_review or {}).get("skipped") or 0)
+    total = int((signal_review or {}).get("total") or 0)
+    skip_pct = (skipped / total * 100) if total else 0
+    live_wr = float((backtest_summary or {}).get("wr") or 0)
+    live_pnl = float((backtest_summary or {}).get("total_pnl") or 0)
+
+    if pnl < 0 or wr < 45 or live_pnl < 0 or live_wr < 45:
+        verdict = "ระบบยังอ่อนในรอบนี้ ควรลดคะแนนเงื่อนไขที่พาเข้าแล้วแพ้บ่อยก่อน"
+    elif skip_pct > 60:
+        verdict = "สัญญาณออกเยอะ แต่โดนบล็อกเยอะ ควรดูคุณภาพ signal และ guard เพิ่ม"
+    else:
+        verdict = "ระบบพอใช้ได้ ยังไม่ต้องปรับแรง ให้ปรับเฉพาะเงื่อนไขที่สถิติชัด"
+    return verdict
+
+
+_CONDITION_LABELS = {
+    "cdc_bull": "trend ฝั่ง Long",
+    "cross_up": "EMA cross ฝั่ง Long",
+    "cross_dn": "EMA cross ฝั่ง Short",
+    "trail_slow_bull": "ATR trailing trend",
+    "in_discount": "เข้า Long ใน discount zone",
+    "in_premium": "เข้า Short ใน premium zone",
+    "rsi_ob": "RSI overbought",
+    "st_up": "Stochastic ขาขึ้น",
+    "macd_dn": "MACD ขาลง",
+}
+
+
 def _fmt(px):
     """smart format ราคา — ป้องกัน PEPE/SHIB แสดง 0.0"""
     if px <= 0:
@@ -176,6 +207,13 @@ def weekly_report_msg(proposal, backtest_summary=None):
             f"📉 Max DD   : {s.get('dd', 0)}%",
         ]
 
+    if signal_review or trade_review or backtest_summary:
+        lines += [
+            "",
+            "🧭 <b>สรุปอ่านง่าย</b>",
+            f"  {escape(_performance_verdict(signal_review, trade_review, backtest_summary))}",
+        ]
+
     # Level 4
     l4      = proposal.get("level4", {})
     props   = l4.get("proposals", {})
@@ -187,8 +225,12 @@ def weekly_report_msg(proposal, backtest_summary=None):
         for cond, v in changes.items():
             arrow = "↑" if v["proposed"] > v["current"] else "↓"
             reason = v.get("reason", "")
-            suffix = f" — {escape(str(reason))}" if reason else ""
-            lines.append(f"  {arrow} {escape(str(cond))}: {v['current']} → {v['proposed']}{suffix}")
+            label = _CONDITION_LABELS.get(cond, cond)
+            suffix = f" เพราะ {escape(str(reason))}" if reason else ""
+            lines.append(f"  {arrow} {escape(str(cond))}: {v['current']} → {v['proposed']} ({escape(label)}){suffix}")
+        lines += [
+            "  เหตุผลรวม: เงื่อนไขเหล่านี้มี win rate ต่ำ จึงเสนอให้ลดคะแนนเพื่อให้ signal ผ่านยากขึ้น",
+        ]
     else:
         lines.append("  ✅ ไม่มีการเปลี่ยนแปลงแนะนำ")
 
@@ -214,8 +256,21 @@ def weekly_report_msg(proposal, backtest_summary=None):
             f"  🎯{cp['trend']:.3f} 🏦{cp['smc']:.3f} 📈{cp['osc']:.3f} {conf_icon}",
             "  → ดูรายละเอียดในข้อความถัดไป",
         ]
+    else:
+        lines += [
+            "",
+            "🤖 <b>Level 6 — Claude Analysis</b>",
+            "  ยังไม่ได้วิเคราะห์ด้วย AI เพราะไม่มี/ยังไม่ได้เติม Anthropic API credit หรือ key",
+            "  ตอนนี้ใช้สถิติ rule-based จาก Level 4/5 ไปก่อน",
+        ]
 
     lines += [
+        "",
+        "✅ <b>วิธีอนุมัติ</b>",
+        "  พิมพ์ /approve_conditions เพื่อใช้การปรับ 9 conditions",
+        "  พิมพ์ /approve_regime เพื่อใช้ regime weights",
+        "  พิมพ์ /approve_weights เพื่อใช้ Level 6 weights (เมื่อ AI วิเคราะห์ได้)",
+        "  ถ้ายังไม่มั่นใจ ไม่ต้องพิมพ์อะไร ระบบจะยังไม่ปรับเอง",
         "",
         "================================",
         f"💾 รายละเอียดเต็ม → <a href=\"{proposal_url}\">proposal JSON</a>",
