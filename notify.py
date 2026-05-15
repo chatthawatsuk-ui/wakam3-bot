@@ -1,5 +1,6 @@
 import sys, os, json, sqlite3
 from datetime import datetime, timezone, timedelta
+from html import escape
 
 try:
     import requests
@@ -30,6 +31,29 @@ def send(message):
 
 
 # ── MESSAGE TEMPLATES ─────────────────────────────────────────────────────────
+def _proposal_link(proposal):
+    repo = os.environ.get("GITHUB_REPOSITORY", "chatthawatsuk-ui/wakam3-bot")
+    ref = os.environ.get("GITHUB_REF_NAME", "main")
+    generated = proposal.get("generated") or "latest"
+    path = f"proposals/{generated}_proposal.json" if generated != "latest" else "proposals/latest_proposal.json"
+    return f"https://github.com/{repo}/blob/{ref}/{path}"
+
+
+def _period_label(proposal):
+    period = proposal.get("period") or {}
+    cutoff = period.get("cutoff")
+    days = period.get("days", 7)
+    if not cutoff:
+        return f"{days}d"
+    try:
+        dt = datetime.fromisoformat(cutoff)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return f"since {dt.strftime('%Y-%m-%d %H:%M UTC')} (max {days}d)"
+    except Exception:
+        return f"since last report (max {days}d)"
+
+
 def _fmt(px):
     """smart format ราคา — ป้องกัน PEPE/SHIB แสดง 0.0"""
     if px <= 0:
@@ -105,6 +129,8 @@ def signal_status_msg(sig, status_row):
 def weekly_report_msg(proposal, backtest_summary=None):
     """สรุป Weekly Report + Backtest ส่ง Telegram"""
     today = proposal.get("generated", "")
+    period_label = _period_label(proposal)
+    proposal_url = _proposal_link(proposal)
     lines = [
         "================================",
         f"📋 <b>WEEKLY REPORT — {today}</b>",
@@ -116,7 +142,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
     if signal_review:
         lines += [
             "",
-            "📡 <b>Signal Review (7d)</b>",
+            f"📡 <b>Signal Review ({period_label})</b>",
             f"🔵 Signals : {signal_review.get('total', 0)}",
             f"✅ Traded  : {signal_review.get('traded', 0)}",
             f"⏭ Skipped : {signal_review.get('skipped', 0)}",
@@ -128,7 +154,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
         pnl_sign = "+" if (trade_review.get("total_pnl") or 0) >= 0 else ""
         lines += [
             "",
-            "💼 <b>Trade Review (7d)</b>",
+            f"💼 <b>Trade Review ({period_label})</b>",
             f"🔵 Trades   : {trade_review.get('n', 0)}",
             f"📈 WR       : {trade_review.get('wr', 0)}%",
             f"💰 Total PnL: {pnl_sign}${trade_review.get('total_pnl', 0)}",
@@ -158,11 +184,11 @@ def weekly_report_msg(proposal, backtest_summary=None):
     lines += ["", "🔬 <b>Level 4 — Condition Analysis</b>"]
     if changes:
         lines.append(f"📌 เสนอปรับ {len(changes)} conditions:")
-        for cond, v in list(changes.items())[:5]:
+        for cond, v in changes.items():
             arrow = "↑" if v["proposed"] > v["current"] else "↓"
-            lines.append(f"  {arrow} {cond}: {v['current']} → {v['proposed']}")
-        if len(changes) > 5:
-            lines.append(f"  ... และอีก {len(changes)-5} conditions")
+            reason = v.get("reason", "")
+            suffix = f" — {escape(str(reason))}" if reason else ""
+            lines.append(f"  {arrow} {escape(str(cond))}: {v['current']} → {v['proposed']}{suffix}")
     else:
         lines.append("  ✅ ไม่มีการเปลี่ยนแปลงแนะนำ")
 
@@ -189,7 +215,11 @@ def weekly_report_msg(proposal, backtest_summary=None):
             "  → ดูรายละเอียดในข้อความถัดไป",
         ]
 
-    lines += ["", "================================", "💾 ดูรายละเอียด → proposals/"]
+    lines += [
+        "",
+        "================================",
+        f"💾 รายละเอียดเต็ม → <a href=\"{proposal_url}\">proposal JSON</a>",
+    ]
     return "\n".join(lines)
 
 
