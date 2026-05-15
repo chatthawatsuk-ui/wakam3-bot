@@ -534,6 +534,8 @@ class RuntimeFixTests(unittest.TestCase):
         )
         with mock.patch("signal_scanner.DISABLE_FUNDING", True), \
              mock.patch("signal_scanner._detect_regime", return_value="NORMAL"), \
+             mock.patch("signal_scanner.save_shadow_signal"), \
+             mock.patch("signal_scanner.save_condition_snapshot"), \
              mock.patch("signal_scanner.TREND") as m_t, \
              mock.patch("signal_scanner.SMC") as m_s, \
              mock.patch("signal_scanner.OSC") as m_o, \
