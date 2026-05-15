@@ -18,20 +18,46 @@ Level 5 — Market Regime Detection
   เสนอปรับ weights ต่อ regime — ต้องคอนเฟิมก่อนใช้จริง
 """
 import os, json, sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
-PENDING_WEIGHTS = "pending_weights.json"
+PENDING_WEIGHTS    = "pending_weights.json"
+PENDING_CONDITIONS = "pending_condition_points.json"
+PENDING_REGIME     = "pending_regime_weights.json"
 
 DB_PATH       = "paper_trades.db"
 PROPOSALS_DIR = "proposals"
 MIN_SIGNALS   = 10    # ขั้นต่ำก่อนเสนอปรับ
 
 
-def _build_signal_trade_reviews():
-    """สรุปแยก Signal Review และ Trade Review จาก signal_log/trades ใน 7 วัน"""
+def _report_days() -> int:
+    try:
+        return max(1, int(os.environ.get("REPORT_DAYS", "7") or 7))
+    except Exception:
+        return 7
+
+
+def _report_cutoff(days: int = 7) -> datetime:
+    """เริ่มรายงานจาก last Telegram sent ถ้าอยู่ในกรอบ days; ไม่งั้นย้อนหลัง days วัน."""
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    sent_flag = os.path.join(PROPOSALS_DIR, "last_telegram_sent.json")
+    try:
+        if os.path.exists(sent_flag):
+            with open(sent_flag) as f:
+                flag = json.load(f)
+            last_sent = datetime.fromisoformat(flag.get("sent_at", ""))
+            if last_sent.tzinfo is None:
+                last_sent = last_sent.replace(tzinfo=timezone.utc)
+            cutoff = max(cutoff, last_sent)
+    except Exception:
+        pass
+    return cutoff
+
+
+def _build_signal_trade_reviews(cutoff: datetime, days: int):
+    """สรุปทุก signal หลัง report ล่าสุด ภายในกรอบ days วัน."""
     try:
         import generate_dashboard as GD
-        live_perf = GD.load_live_performance()
+        live_perf = GD.load_live_performance(days=days, since_iso=cutoff.isoformat())
         if not live_perf or not live_perf.get("available"):
             return {}, {}
 
@@ -489,6 +515,54 @@ Rules for weights:
 
 
 # ══════════════════════════════════════════════════════════════
+# PENDING HELPERS — L4 + L5
+# ══════════════════════════════════════════════════════════════
+def _save_pending_conditions(cond_prop):
+    """บันทึก pending_condition_points.json จาก L4 proposals"""
+    changes = {k: v for k, v in cond_prop.items()
+               if isinstance(v, dict) and v.get("proposed") != v.get("current")}
+    if not changes:
+        print("      (ไม่มี condition เปลี่ยนแปลง — ข้าม pending)")
+        return
+    pending = {
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "status":    "PENDING_CONFIRMATION",
+        "changes": {
+            k: {
+                "current":  v["current"],
+                "proposed": v["proposed"],
+                "reason":   v.get("reason", ""),
+            }
+            for k, v in changes.items()
+        },
+    }
+    with open(PENDING_CONDITIONS, "w") as f:
+        json.dump(pending, f, indent=2, ensure_ascii=False)
+    print(f"  💾 บันทึก → {PENDING_CONDITIONS} (รอ /approve_conditions ทาง Telegram)")
+
+
+def _save_pending_regime(regime_prop):
+    """บันทึก pending_regime_weights.json จาก L5 proposals"""
+    if not regime_prop:
+        return
+    pending = {
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "status":    "PENDING_CONFIRMATION",
+        "weights": {
+            regime: {
+                "trend": p["W_TREND"],
+                "smc":   p["W_SMC"],
+                "osc":   p["W_OSC"],
+            }
+            for regime, p in regime_prop.items()
+        },
+    }
+    with open(PENDING_REGIME, "w") as f:
+        json.dump(pending, f, indent=2, ensure_ascii=False)
+    print(f"  💾 บันทึก → {PENDING_REGIME} (รอ /approve_regime ทาง Telegram)")
+
+
+# ══════════════════════════════════════════════════════════════
 # GENERATE WEEKLY REPORT
 # ══════════════════════════════════════════════════════════════
 def generate_weekly_report():
@@ -500,6 +574,8 @@ def generate_weekly_report():
     """
     os.makedirs(PROPOSALS_DIR, exist_ok=True)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    report_days = _report_days()
+    report_cutoff = _report_cutoff(report_days)
 
     print("=" * 60)
     print("📋 WEEKLY REPORT — PROPOSAL ONLY")
@@ -524,6 +600,7 @@ def generate_weekly_report():
             print(f"      {arrow} {cond}: {v['current']} → {v['proposed']} ({v['reason']})")
         if not changes:
             print("      ✅ ไม่มีการเปลี่ยนแปลงที่แนะนำในสัปดาห์นี้")
+    _save_pending_conditions(cond_prop)
 
     # ── Level 5: Regime performance ───────────────────────────
     print("\n🌐 Level 5 — Market Regime Performance")
@@ -540,6 +617,7 @@ def generate_weekly_report():
         for regime, p in regime_prop.items():
             print(f"      {regime}: Trend={p['W_TREND']:.3f} SMC={p['W_SMC']:.3f} Osc={p['W_OSC']:.3f}")
             print(f"        → {p['reason']}")
+    _save_pending_regime(regime_prop)
 
     # ── Level 6: Claude Haiku Weight Proposal ────────────────
     print("\n🤖 Level 6 — Claude Haiku Weight Proposal")
@@ -567,18 +645,16 @@ def generate_weekly_report():
     except Exception:
         pass
 
-    # backtest summary — ดึงจาก paper_trades.db (7 วันล่าสุด)
+    # live trade summary — ดึงจาก paper_trades.db หลัง report ล่าสุด ภายในกรอบ report_days
     bt_summary = None
     try:
         import pandas as pd
-        from datetime import timedelta
         if os.path.exists(DB_PATH):
-            cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
             con_bt = sqlite3.connect(DB_PATH)
             rows_bt = con_bt.execute(
                 "SELECT pnl_usd, outcome FROM trades "
                 "WHERE status='CLOSED' AND outcome IS NOT NULL AND closed_at >= ?",
-                (cutoff,)
+                (report_cutoff.isoformat(),)
             ).fetchall()
             con_bt.close()
             if rows_bt:
@@ -606,52 +682,12 @@ def generate_weekly_report():
     except Exception:
         pass
 
-    # ── TF Performance (all-time) ─────────────────────────────
-    tf_data = {}
-    try:
-        if os.path.exists(DB_PATH):
-            con_tf = sqlite3.connect(DB_PATH)
-            cur_tf = con_tf.cursor()
-            cur_tf.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='trades'")
-            if cur_tf.fetchone():
-                # ตรวจว่ามี tf column ไหม
-                tf_cols = {r[1] for r in con_tf.execute("PRAGMA table_info(trades)").fetchall()}
-                if "tf" in tf_cols:
-                    tf_rows = con_tf.execute(
-                        "SELECT tf, outcome, pnl_usd FROM trades "
-                        "WHERE status='CLOSED' AND outcome IS NOT NULL AND tf IS NOT NULL"
-                    ).fetchall()
-                    from collections import defaultdict
-                    tf_bucket = defaultdict(list)
-                    for tf, outcome, pnl in tf_rows:
-                        tf_bucket[tf].append((outcome, pnl or 0.0))
-                    for tf, trades_list in tf_bucket.items():
-                        n    = len(trades_list)
-                        wins = sum(1 for o, _ in trades_list if o == "WIN")
-                        pnls = [p for _, p in trades_list]
-                        tf_data[tf] = {
-                            "n":         n,
-                            "wr":        round(wins / n * 100, 1),
-                            "avg_pnl":   round(sum(pnls) / n, 2),
-                            "total_pnl": round(sum(pnls), 2),
-                        }
-            con_tf.close()
-    except Exception as e:
-        print(f"  [WARN] tf_data: {e}")
-
-    if tf_data:
-        best_tf = max(tf_data, key=lambda k: tf_data[k]["wr"])
-        print(f"\n📊 TF Performance:")
-        for tf, d in sorted(tf_data.items(), key=lambda x: x[1]["wr"], reverse=True):
-            star = " ⭐" if tf == best_tf else ""
-            print(f"   {tf}: {d['n']} trades, WR={d['wr']}%, avg=${d['avg_pnl']}{star}")
-
-    signal_review, trade_review = _build_signal_trade_reviews()
+    signal_review, trade_review = _build_signal_trade_reviews(report_cutoff, report_days)
     if signal_review:
-        print("\n📡 Signal Review (7d)")
+        print(f"\n📡 Signal Review (since {report_cutoff.strftime('%Y-%m-%d %H:%M UTC')})")
         print(f"   Signals={signal_review['total']} Traded={signal_review['traded']} Skipped={signal_review['skipped']} WR={signal_review['wr']}%")
     if trade_review:
-        print("\n💼 Trade Review (7d)")
+        print(f"\n💼 Trade Review (since {report_cutoff.strftime('%Y-%m-%d %H:%M UTC')})")
         print(f"   Trades={trade_review['n']} WR={trade_review['wr']}% PnL=${trade_review['total_pnl']}")
 
     claude_prop = _claude_weight_proposal(
@@ -659,7 +695,7 @@ def generate_weekly_report():
         regime_data if "error" not in regime_data else {},
         cond_wr if "error" not in cond_wr else {},
         bt_summary,
-        tf_data if tf_data else None,
+        None,
     )
 
     # ── บันทึก Proposal ───────────────────────────────────────
@@ -667,6 +703,11 @@ def generate_weekly_report():
         "generated":        today,
         "status":           "PENDING_CONFIRMATION",
         "warning":          "⚠️ PROPOSAL ONLY — ต้องได้รับการคอนเฟิมจากเจ้าของก่อนปรับใช้จริง",
+        "period":           {
+            "days": report_days,
+            "cutoff": report_cutoff.isoformat(),
+            "basis": "signals since last Telegram report, capped by REPORT_DAYS",
+        },
         "signal_review":    signal_review,
         "trade_review":     trade_review,
         "level4": {
@@ -695,7 +736,9 @@ def generate_weekly_report():
     print(f"💾 บันทึก → {latest}")
     print("\n" + "=" * 60)
     print("⚠️  กรุณา Review และ Confirm ก่อนนำไปใช้")
-    print("   หลัง Confirm → ตอบ /approve_weights ทาง Telegram")
+    print("   L6 Weights         → /approve_weights ทาง Telegram")
+    print("   L4 Condition Points → /approve_conditions ทาง Telegram")
+    print("   L5 Regime Weights   → /approve_regime ทาง Telegram")
     print("=" * 60)
 
     # ── ส่ง Telegram ──────────────────────────────────────────────────────────

@@ -9,12 +9,18 @@ import logging
 from ta.momentum import RSIIndicator, StochasticOscillator
 from ta.trend    import MACD
 from ta.volume   import OnBalanceVolumeIndicator
+from config_loader import load_condition_points as _load_pts
+_PT = _load_pts()
 
 log = logging.getLogger(__name__)
 
 NAME      = "Oscillator Agent"
 EMOJI     = "📈"
-MAX_SCORE = 13
+MAX_SCORE = (
+    _PT["rsi_bull_div"] + _PT["rsi_hidden_bull"] + _PT["rsi_exag_bull"] +
+    _PT["rsi_os"] + _PT["st_up"] + _PT["macd_up"] +
+    _PT["obv_above_20"] + _PT["obv_above_50"] + _PT["obv_bull_div"]
+)
 
 
 def _add_indicators(df):
@@ -125,15 +131,15 @@ def _add_indicators(df):
 
 def _score_long(r):
     s = 0
-    if r["rsi_bull_div"]:    s += 3
-    if r["rsi_hidden_bull"]: s += 2
-    if r["rsi_exag_bull"]:   s += 1
-    if r["rsi_os"]:          s += 2
-    if r["st_up"]:           s += 2
-    if r["macd_up"]:         s += 2
-    if r["obv_above_20"]:    s += 1
-    if r["obv_above_50"]:    s += 1
-    if r["obv_bull_div"]:    s += 2
+    if r["rsi_bull_div"]:    s += _PT["rsi_bull_div"]
+    if r["rsi_hidden_bull"]: s += _PT["rsi_hidden_bull"]
+    if r["rsi_exag_bull"]:   s += _PT["rsi_exag_bull"]
+    if r["rsi_os"]:          s += _PT["rsi_os"]
+    if r["st_up"]:           s += _PT["st_up"]
+    if r["macd_up"]:         s += _PT["macd_up"]
+    if r["obv_above_20"]:    s += _PT["obv_above_20"]
+    if r["obv_above_50"]:    s += _PT["obv_above_50"]
+    if r["obv_bull_div"]:    s += _PT["obv_bull_div"]
     if r["kz"] and s > 0:
         s = min(round(s * 1.5), MAX_SCORE)
     return s
@@ -141,15 +147,15 @@ def _score_long(r):
 
 def _score_short(r):
     s = 0
-    if r["rsi_bear_div"]:    s += 3
-    if r["rsi_hidden_bear"]: s += 2
-    if r["rsi_exag_bear"]:   s += 1
-    if r["rsi_ob"]:          s += 2
-    if r["st_dn"]:           s += 2
-    if r["macd_dn"]:         s += 2
-    if not r["obv_above_20"]: s += 1
-    if not r["obv_above_50"]: s += 1
-    if r["obv_bear_div"]:    s += 2
+    if r["rsi_bear_div"]:     s += _PT["rsi_bear_div"]
+    if r["rsi_hidden_bear"]:  s += _PT["rsi_hidden_bear"]
+    if r["rsi_exag_bear"]:    s += _PT["rsi_exag_bear"]
+    if r["rsi_ob"]:           s += _PT["rsi_ob"]
+    if r["st_dn"]:            s += _PT["st_dn"]
+    if r["macd_dn"]:          s += _PT["macd_dn"]
+    if not r["obv_above_20"]: s += _PT["obv_above_20_n"]
+    if not r["obv_above_50"]: s += _PT["obv_above_50_n"]
+    if r["obv_bear_div"]:     s += _PT["obv_bear_div"]
     if r["kz"] and s > 0:
         s = min(round(s * 1.5), MAX_SCORE)
     return s

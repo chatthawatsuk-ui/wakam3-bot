@@ -606,6 +606,118 @@ def check_weight_approval():
     return False
 
 
+def check_condition_approval():
+    """
+    ตรวจ Telegram → /approve_conditions → บันทึก condition_points.json
+    """
+    PENDING = "pending_condition_points.json"
+    if not os.path.exists(PENDING):
+        return False
+    try:
+        import requests
+        import notify as N
+        from config_loader import load_condition_points, CONDITION_POINTS_PATH
+        with open(PENDING) as f:
+            pending = json.load(f)
+        params = {"allowed_updates": ["message"], "limit": 20}
+        OFFSET_FILE = "telegram_offset.json"
+        if os.path.exists(OFFSET_FILE):
+            with open(OFFSET_FILE) as f:
+                params["offset"] = json.load(f).get("offset", 0)
+        r = requests.get(
+            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
+            params=params, timeout=10,
+        )
+        if r.status_code != 200:
+            return False
+        updates = r.json().get("result", [])
+        approved = False
+        max_update_id = params.get("offset", 0)
+        for upd in updates:
+            upd_id = upd.get("update_id", 0)
+            max_update_id = max(max_update_id, upd_id + 1)
+            text = upd.get("message", {}).get("text", "").strip().lower()
+            if text in ("/approve_conditions", "/approve_conditions@"):
+                approved = True
+        with open(OFFSET_FILE, "w") as f:
+            json.dump({"offset": max_update_id}, f)
+        if approved:
+            current_pts = load_condition_points()
+            for key, v in pending.get("changes", {}).items():
+                if key in current_pts:
+                    current_pts[key] = int(v["proposed"])
+            with open(CONDITION_POINTS_PATH, "w") as f:
+                json.dump(current_pts, f, indent=2, ensure_ascii=False)
+            os.remove(PENDING)
+            changes = pending.get("changes", {})
+            lines = ["✅ <b>Condition Points อัพเดตแล้ว</b>", "━━━━━━━━━━━━━━━━━━━━"]
+            for key, v in changes.items():
+                arrow = "↑" if int(v["proposed"]) > int(v["current"]) else "↓"
+                lines.append(f"{arrow} {key}: {v['current']} → {v['proposed']}")
+            lines += ["━━━━━━━━━━━━━━━━━━━━", "จะใช้ condition points ใหม่ตั้งแต่ scan ถัดไป"]
+            N.send("\n".join(lines))
+            print(f"  ✅ Condition Points approved — {len(changes)} conditions updated")
+            return True
+    except Exception as e:
+        print(f"  [WARN] check_condition_approval: {e}")
+    return False
+
+
+def check_regime_approval():
+    """
+    ตรวจ Telegram → /approve_regime → บันทึก regime_weights.json
+    """
+    PENDING = "pending_regime_weights.json"
+    if not os.path.exists(PENDING):
+        return False
+    try:
+        import requests
+        import notify as N
+        from config_loader import REGIME_WEIGHTS_PATH
+        with open(PENDING) as f:
+            pending = json.load(f)
+        params = {"allowed_updates": ["message"], "limit": 20}
+        OFFSET_FILE = "telegram_offset.json"
+        if os.path.exists(OFFSET_FILE):
+            with open(OFFSET_FILE) as f:
+                params["offset"] = json.load(f).get("offset", 0)
+        r = requests.get(
+            f"https://api.telegram.org/bot{N.BOT_TOKEN}/getUpdates",
+            params=params, timeout=10,
+        )
+        if r.status_code != 200:
+            return False
+        updates = r.json().get("result", [])
+        approved = False
+        max_update_id = params.get("offset", 0)
+        for upd in updates:
+            upd_id = upd.get("update_id", 0)
+            max_update_id = max(max_update_id, upd_id + 1)
+            text = upd.get("message", {}).get("text", "").strip().lower()
+            if text in ("/approve_regime", "/approve_regime@"):
+                approved = True
+        with open(OFFSET_FILE, "w") as f:
+            json.dump({"offset": max_update_id}, f)
+        if approved:
+            regime_weights = pending.get("weights", {})
+            with open(REGIME_WEIGHTS_PATH, "w") as f:
+                json.dump(regime_weights, f, indent=2, ensure_ascii=False)
+            os.remove(PENDING)
+            lines = ["✅ <b>Regime Weights อัพเดตแล้ว</b>", "━━━━━━━━━━━━━━━━━━━━"]
+            for regime, w in regime_weights.items():
+                lines.append(
+                    f"📊 {regime}: Trend={w['trend']:.3f} "
+                    f"SMC={w['smc']:.3f} Osc={w['osc']:.3f}"
+                )
+            lines += ["━━━━━━━━━━━━━━━━━━━━", "จะใช้ regime weights ใหม่ตั้งแต่ scan ถัดไป"]
+            N.send("\n".join(lines))
+            print(f"  ✅ Regime Weights approved via Telegram")
+            return True
+    except Exception as e:
+        print(f"  [WARN] check_regime_approval: {e}")
+    return False
+
+
 def calc_dynamic_weights(specialist_wr, skip_persist=False):
     """
     Level 3 — คำนวณ dynamic weights จาก win rate แต่ละ specialist
@@ -993,7 +1105,7 @@ def _load_custom_symbols():
     return _load_watchlist_symbols()
 
 
-def load_live_performance():
+def load_live_performance(days: int = 7, since_iso: str = None):
     """
     📡 Weekly Performance — วิเคราะห์ทุก Signal ที่ระบบออก (ไม่ใช่แค่ที่เทรด)
     อ่านจาก signal_log (Claude-approved ทุกตัว ไม่ว่าจะถูก skip หรือเทรด)
@@ -1005,7 +1117,16 @@ def load_live_performance():
     # ใช้ sizing เดียวกับ paper_trade.py: margin=1% ของ balance × 20x leverage
     RISK_PCT   = 0.01   # 1% ของ balance ณ เวลาปัจจุบัน
     LEVERAGE   = 20.0   # leverage 20x ทุก position
-    CUTOFF = datetime.now(timezone.utc) - timedelta(days=7)
+    window_start = datetime.now(timezone.utc) - timedelta(days=days)
+    if since_iso:
+        try:
+            since_dt = datetime.fromisoformat(since_iso)
+            if since_dt.tzinfo is None:
+                since_dt = since_dt.replace(tzinfo=timezone.utc)
+            window_start = max(window_start, since_dt)
+        except Exception:
+            pass
+    CUTOFF = window_start
 
     if not os.path.exists(DB_PATH):
         return {"available": False, "label": "live_perf",
@@ -1240,7 +1361,7 @@ def load_live_performance():
             "generated":       datetime.now(timezone.utc).isoformat(),
             "date_from":       date_from,
             "date_to":         date_to,
-            "period":          f"All Signals · 7d ({date_from or '?'} → {date_to or 'now'})",
+            "period":          f"All Signals · since {CUTOFF.strftime('%Y-%m-%d %H:%M UTC')} ({date_from or '?'} → {date_to or 'now'})",
             "total_rows":      total_sig,
             "n_traded":        n_traded,
             "n_skipped":       n_skipped,
@@ -1579,6 +1700,8 @@ def main():
 
     # ── Level 3: Dynamic Weights (ตรวจ Telegram approval + triggers) ───────────
     just_approved = check_weight_approval()
+    check_condition_approval()   # L4 — condition points
+    check_regime_approval()      # L5 — regime weights
     check_weight_triggers(specialist_wr, scan_results)
     dyn_weights = calc_dynamic_weights(specialist_wr, skip_persist=just_approved)
 

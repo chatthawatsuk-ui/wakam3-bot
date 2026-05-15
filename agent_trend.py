@@ -9,10 +9,16 @@ import numpy as np
 from ta.trend      import EMAIndicator, SMAIndicator, ADXIndicator
 from ta.volatility import AverageTrueRange, BollingerBands
 from ta.momentum   import StochasticOscillator
+from config_loader import load_condition_points as _load_pts
+_PT = _load_pts()
 
 NAME      = "Trend Agent"
 EMOJI     = "🎯"
-MAX_SCORE = 13   # 11 (original) + 1 (ADX) + 1 (BB squeeze)
+MAX_SCORE = (
+    _PT["cdc_bull"] + _PT["cross_up"] + _PT["touch_bull"] +
+    _PT["above_sma99"] + _PT["ema7_gt_sma99"] + _PT["trail_slow_bull"] +
+    _PT["adx_strong"] + _PT["bb_squeeze"]
+)
 
 # ── Alert throttle — ส่ง HTF fallback alert ไม่เกิน 1 ครั้ง/ชั่วโมง ────────────
 _htf_warn_ts = 0.0
@@ -115,28 +121,28 @@ def _htf_bias(df_1h, df_4h):
 
 def _score_long(r):
     s = 0
-    if r["bull"]:             s += 2
-    if r["cross_up"]:         s += 2
-    if r["touch_bull"]:       s += 1
-    if r["above_sma99"]:      s += 2
-    if r["ema7_gt_sma99"]:    s += 2
-    if r["trail_slow_bull"]:  s += 2
-    if r["adx_strong"]:       s += 1   # NEW: trend confirmed by ADX
-    if r["bb_squeeze"]:       s += 1   # NEW: breakout energy building
-    return s   # max 13
+    if r["bull"]:             s += _PT["cdc_bull"]
+    if r["cross_up"]:         s += _PT["cross_up"]
+    if r["touch_bull"]:       s += _PT["touch_bull"]
+    if r["above_sma99"]:      s += _PT["above_sma99"]
+    if r["ema7_gt_sma99"]:    s += _PT["ema7_gt_sma99"]
+    if r["trail_slow_bull"]:  s += _PT["trail_slow_bull"]
+    if r["adx_strong"]:       s += _PT["adx_strong"]
+    if r["bb_squeeze"]:       s += _PT["bb_squeeze"]
+    return s
 
 
 def _score_short(r):
     s = 0
-    if not r["bull"]:            s += 2
-    if r["cross_dn"]:            s += 2
-    if r["touch_bear"]:          s += 1
-    if not r["above_sma99"]:     s += 2
-    if not r["ema7_gt_sma99"]:   s += 2
-    if not r["trail_slow_bull"]: s += 2
-    if r["adx_strong"]:          s += 1   # NEW
-    if r["bb_squeeze"]:          s += 1   # NEW
-    return s   # max 13
+    if not r["bull"]:            s += _PT["cdc_bear"]
+    if r["cross_dn"]:            s += _PT["cross_dn"]
+    if r["touch_bear"]:          s += _PT["touch_bear"]
+    if not r["above_sma99"]:     s += _PT["above_sma99_n"]
+    if not r["ema7_gt_sma99"]:   s += _PT["ema7_gt_sma99_n"]
+    if not r["trail_slow_bull"]: s += _PT["trail_slow_n"]
+    if r["adx_strong"]:          s += _PT["adx_strong"]
+    if r["bb_squeeze"]:          s += _PT["bb_squeeze"]
+    return s
 
 
 def _daily_stoch_bias(df_1d):

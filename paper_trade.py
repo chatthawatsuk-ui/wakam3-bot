@@ -51,6 +51,18 @@ exchange = ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}
 _htf_cache: dict = {}
 
 
+def _add_column_if_missing(conn, table, col, definition, allowed_cols):
+    if table not in {"trades", "shadow_trades", "signal_log"}:
+        raise ValueError(f"Invalid migration table: {table}")
+    if col not in allowed_cols or allowed_cols[col] != definition:
+        raise ValueError(f"Invalid migration column: {table}.{col}")
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {definition}")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" not in str(e).lower():
+            raise
+
+
 # ── POSITION SIZING ───────────────────────────────────────────────────────────
 def calc_position(balance, entry_px, sl_px):
     """
@@ -145,11 +157,9 @@ def init_db():
         ("signal_price",     "REAL"),                # ราคา ณ เวลา scan
         ("slippage_pct",     "REAL DEFAULT 0"),      # % ต่าง = (entry - signal_price)/signal_price×100
     ]
+    allowed_trade_cols = dict(new_cols)
     for col, definition in new_cols:
-        try:
-            conn.execute(f"ALTER TABLE trades ADD COLUMN {col} {definition}")
-        except Exception:
-            pass
+        _add_column_if_missing(conn, "trades", col, definition, allowed_trade_cols)
 
     PM.migrate_db(conn)
 
@@ -184,7 +194,7 @@ def init_db():
         )
     """)
     # migrate shadow_trades: เพิ่ม columns ที่อาจไม่มีใน DB เก่า
-    for sh_col, sh_def in [
+    shadow_cols = [
         ("tp1_hit",       "INTEGER DEFAULT 0"),
         ("exit_reason",   "TEXT"),
         ("score_liq",     "INTEGER DEFAULT 0"),
@@ -192,11 +202,10 @@ def init_db():
         ("funding_rate",  "REAL"),
         ("bull_sweep",    "INTEGER DEFAULT 0"),
         ("bear_sweep",    "INTEGER DEFAULT 0"),
-    ]:
-        try:
-            conn.execute(f"ALTER TABLE shadow_trades ADD COLUMN {sh_col} {sh_def}")
-        except Exception:
-            pass
+    ]
+    allowed_shadow_cols = dict(shadow_cols)
+    for sh_col, sh_def in shadow_cols:
+        _add_column_if_missing(conn, "shadow_trades", sh_col, sh_def, allowed_shadow_cols)
 
     # ── Signal Log — บันทึกทุก signal (ไม่ว่าจะเทรดหรือ skip) เพื่อวิเคราะห์ ──
     conn.execute("""
@@ -223,7 +232,7 @@ def init_db():
         )
     """)
     # migrate signal_log: เผื่อ DB เก่า
-    for sl_col, sl_def in [
+    signal_log_cols = [
         ("tf",                 "TEXT DEFAULT '1H'"),
         ("tp1_hit",            "INTEGER DEFAULT 0"),
         ("exit_reason",        "TEXT"),
@@ -234,11 +243,10 @@ def init_db():
         ("funding_rate",       "REAL"),
         ("bull_sweep",         "INTEGER DEFAULT 0"),
         ("bear_sweep",         "INTEGER DEFAULT 0"),
-    ]:
-        try:
-            conn.execute(f"ALTER TABLE signal_log ADD COLUMN {sl_col} {sl_def}")
-        except Exception:
-            pass
+    ]
+    allowed_signal_log_cols = dict(signal_log_cols)
+    for sl_col, sl_def in signal_log_cols:
+        _add_column_if_missing(conn, "signal_log", sl_col, sl_def, allowed_signal_log_cols)
     cur = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()
     if cur[0] == 0:
         conn.execute("INSERT INTO portfolio VALUES (1, ?, ?)",
@@ -582,6 +590,12 @@ def open_trade(conn, sig):
     # อ่าน balance ครั้งเดียว ใช้ร่วมกันทุก log call ในฟังก์ชันนี้
     balance = get_balance(conn)
 
+    if not sig.get("execution_allowed", True):
+        reason = sig.get("execution_block_reason") or "EXECUTION_BLOCKED"
+        print(f"  [EXECUTION] {sig['symbol']} — alert only ({reason})")
+        log_signal(conn, sig, was_traded=False, skip_reason=reason, balance=balance)
+        return None
+
     # ── Guardrail 1: Daily Loss Cap ─────────────────────────────────────────
     daily_pnl = get_daily_pnl(conn)
     if daily_pnl < -DAILY_LOSS_CAP:
@@ -908,7 +922,7 @@ def _close(conn, trade_id, exit_px, outcome, pnl, reason=""):
     elif "timeout" in r_low:
         exit_reason = "TIMEOUT"
     elif "maxpos" in r_low or "max_pos" in r_low or "forced" in r_low:
-        exit_reason = "TIMEOUT"
+        exit_reason = "MAX_POS"
     else:
         exit_reason = "SL"
 

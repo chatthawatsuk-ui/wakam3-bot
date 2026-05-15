@@ -89,7 +89,10 @@ def signal_msg(sig):
 
 def signal_status_msg(sig, status_row):
     base = signal_msg(sig)
-    if not status_row:
+    if not sig.get("execution_allowed", True):
+        reason = sig.get("execution_block_reason") or "EXECUTION_BLOCKED"
+        status = f"⏭ Alert only ({reason})"
+    elif not status_row:
         status = "⏳ ยังไม่พบสถานะใน DB"
     elif status_row.get("was_traded"):
         status = "✅ เปิดเป็น Paper Position"
@@ -131,7 +134,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
             f"💰 Total PnL: {pnl_sign}${trade_review.get('total_pnl', 0)}",
         ]
 
-    # Backtest summary
+    # Live paper-trade summary
     if backtest_summary:
         s = backtest_summary
         pnl_sign = "+" if (s.get("total_pnl") or 0) >= 0 else ""
@@ -139,7 +142,7 @@ def weekly_report_msg(proposal, backtest_summary=None):
         pnl_icon = "🟢" if (s.get("total_pnl") or 0) >= 0 else "🔴"
         lines += [
             "",
-            "📊 <b>Backtest (Walk-Forward)</b>",
+            "📊 <b>Live Paper Results</b>",
             f"🔵 Trades   : {s.get('n', 0)}",
             f"{wr_icon} Win Rate  : {s.get('wr', 0)}%",
             f"{pnl_icon} Total PnL : {pnl_sign}${s.get('total_pnl', 0)}",
@@ -495,12 +498,6 @@ if __name__ == "__main__":
             continue
 
         status_row = status_map.get(sym_side)
-        skip_reason = (status_row or {}).get("skip_reason", "")
-        if skip_reason == "PYRAMID_BLOCKED":
-            print(f"  [SKIP] {sig['symbol']} {sig['side']} — PYRAMID_BLOCKED ไม่ส่ง notification")
-            skip_count += 1
-            continue
-
         msg = signal_status_msg(sig, status_row)
         ok  = send(msg)
         if ok:
