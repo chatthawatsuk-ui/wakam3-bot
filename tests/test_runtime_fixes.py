@@ -495,5 +495,91 @@ class RuntimeFixTests(unittest.TestCase):
                 os.chdir(old_cwd)
 
 
+    # ── P1: SL Distance Cap tests ──────────────────────────────────
+
+    def _make_scan_env(self, entry_price, atr, swing_low, swing_high,
+                       score_long=15, score_short=5):
+        """Helper: mock agents + DataFrame so scan_symbol reaches SL calc."""
+        import pandas as pd
+        df_1h = pd.DataFrame({"close": [entry_price] * 30})
+        df_4h = pd.DataFrame({"close": [entry_price] * 30})
+
+        t_rep = {
+            "score_long": score_long, "score_short": score_short,
+            "atr": atr, "htf_bull": True, "htf_sma": True,
+            "details": {"trail_slow_bull": False},
+        }
+        s_rep = {
+            "score_long": score_long, "score_short": score_short,
+            "swing_low": swing_low, "swing_high": swing_high,
+            "details": {"in_discount": False},
+        }
+        o_rep = {
+            "score_long": score_long, "score_short": score_short,
+            "rsi": 50, "kz": False,
+        }
+        l_rep = {
+            "score_long": 0, "score_short": 0,
+            "bull_sweep": False, "bear_sweep": False,
+        }
+        return df_1h, df_4h, t_rep, s_rep, o_rep, l_rep
+
+    def _run_scan_with_sl(self, entry, atr, swing_low, swing_high,
+                          score_long=15, score_short=5):
+        """Run scan_symbol with controlled SL parameters, return (signal, result)."""
+        df_1h, df_4h, t_rep, s_rep, o_rep, l_rep = self._make_scan_env(
+            entry, atr, swing_low, swing_high, score_long, score_short,
+        )
+        with mock.patch("signal_scanner.DISABLE_FUNDING", True), \
+             mock.patch("signal_scanner._detect_regime", return_value="NORMAL"), \
+             mock.patch("signal_scanner.TREND") as m_t, \
+             mock.patch("signal_scanner.SMC") as m_s, \
+             mock.patch("signal_scanner.OSC") as m_o, \
+             mock.patch("signal_scanner.LIQUIDITY") as m_l:
+            m_t.run.return_value = t_rep
+            m_t.MAX_SCORE = 13
+            m_s.run.return_value = s_rep
+            m_s.MAX_SCORE = 12
+            m_o.run.return_value = o_rep
+            m_o.MAX_SCORE = 16
+            m_l.run.return_value = l_rep
+            return signal_scanner.scan_symbol("TEST/USDT", df_1h, df_4h)
+
+    def test_p1_sl_reject_pct_long(self):
+        """LONG with SL > 4% from entry → SL_REJECT."""
+        sig, res = self._run_scan_with_sl(
+            entry=100.0, atr=2.0, swing_low=94.0, swing_high=106.0,
+        )
+        self.assertIsNone(sig)
+        self.assertEqual(res["status"], "SL_REJECT")
+        self.assertIn("6.0%", res["reject_reason"])
+
+    def test_p1_sl_reject_pct_short(self):
+        """SHORT with SL > 4% from entry → SL_REJECT."""
+        sig, res = self._run_scan_with_sl(
+            entry=100.0, atr=2.0, swing_low=94.0, swing_high=106.0,
+            score_long=5, score_short=15,
+        )
+        self.assertIsNone(sig)
+        self.assertEqual(res["status"], "SL_REJECT")
+        self.assertIn("6.0%", res["reject_reason"])
+
+    def test_p1_sl_reject_atr_mult(self):
+        """SL < 4% but > ATR×3 → SL_REJECT on ATR rule."""
+        sig, res = self._run_scan_with_sl(
+            entry=100.0, atr=1.0, swing_low=96.5, swing_high=103.5,
+        )
+        self.assertIsNone(sig)
+        self.assertEqual(res["status"], "SL_REJECT")
+        self.assertIn("ATR", res["reject_reason"])
+
+    def test_p1_sl_valid_passes(self):
+        """SL < 4% AND < ATR×3 → passes SL checks (not SL_REJECT)."""
+        sig, res = self._run_scan_with_sl(
+            entry=100.0, atr=2.0, swing_low=98.0, swing_high=102.0,
+        )
+        self.assertNotEqual(res["status"], "SL_REJECT")
+
+
 if __name__ == "__main__":
     unittest.main()

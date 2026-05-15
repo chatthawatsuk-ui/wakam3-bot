@@ -33,7 +33,8 @@ import agent_funding   as FUNDING
 WEIGHTS_PATH    = "weights.json"
 DB_PATH         = "paper_trades.db"
 MIN_SCORE       = 9    # total score (core + liq bonus + fund bonus)
-MAX_SL_PCT      = 0.15 # SL ห้ามเกิน 15% ของ entry — ป้องกัน swing_high ATH wide SL
+MAX_SL_PCT      = 0.04 # SL ห้ามเกิน 4% ของ entry (P1 SL Distance Cap)
+MAX_SL_ATR_MULT = 3.0  # SL ห้ามเกิน ATR × 3
 TP1_R           = 1.2
 TP2_R           = 2.0
 DISABLE_FUNDING = False  # set True ใน backtest เพื่อ skip live API call
@@ -281,6 +282,12 @@ def scan_symbol(sym, df_1h, df_4h, market_type="FUTURES", df_1d=None):
             scan_result,
             "SL_REJECT",
             f"SL กว้างเกิน {dist/ep*100:.1f}% > {MAX_SL_PCT*100:.0f}% — swing level ไกลเกิน entry",
+        )
+    if dist > atr * MAX_SL_ATR_MULT:
+        return _reject_scan(
+            scan_result,
+            "SL_REJECT",
+            f"SL กว้างเกิน ATR — {dist/atr:.1f}× > {MAX_SL_ATR_MULT:.0f}× ATR",
         )
 
     tp1 = ep + dist * TP1_R if side == "LONG" else ep - dist * TP1_R
