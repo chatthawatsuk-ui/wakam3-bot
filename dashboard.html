@@ -1877,6 +1877,14 @@ tr:hover td{background:rgba(255,255,255,.02)}
       </div>
       <div class="ag-grid" id="ag-grid"></div>
 
+      <div class="card" id="ag-notes-card" style="margin-top:14px;display:none">
+        <div class="card-h">
+          <div class="card-title">📝 AGENT TEAM NOTES</div>
+          <div class="card-meta">change log / operator notes</div>
+        </div>
+        <div id="ag-notes" style="padding:4px 0 8px"></div>
+      </div>
+
       <!-- ── Level 3: Dynamic Weight Panel ── -->
       <div class="card" style="margin-top:14px">
         <div class="card-h">
@@ -1932,6 +1940,16 @@ tr:hover td{background:rgba(255,255,255,.02)}
 let D={},LIVE={},MKT=[],FG={value:50,label:'Neutral',yesterday:50,lastWeek:50}
 let currentPage='dash',labFilterMode='all',posTab='open'
 const CUSTOM_PRICES={}  // cache ราคา custom symbols ที่ fetch จาก OKX public API
+const FALLBACK_AGENT_NOTES=[{
+  date:'2026-05-15',
+  title:'Weekly Report + Approval Flow',
+  items:[
+    'Weekly Report อธิบาย Level 4/5/6 ละเอียดขึ้น พร้อมผลกระทบก่อน approve',
+    'Telegram approval อ่านคำสั่งรอบเดียวต่อ scan เพื่อไม่ให้ /approve_* แย่ง offset กัน',
+    'Workflow sync pending/config files ครบ: condition_points, regime_weights, weights และ pending_*',
+    'Approve แล้วจะไม่ตอบทันที ต้องรอ scan/dashboard รอบถัดไป จากนั้น bot จะส่ง confirm และ commit config กลับ repo',
+  ],
+}]
 const SYMS=[
   'BTC/USDT','ETH/USDT','BNB/USDT','XRP/USDT','SOL/USDT',
   'TRX/USDT','DOGE/USDT','ADA/USDT','BCH/USDT','LTC/USDT',
@@ -1974,6 +1992,12 @@ function tvUrl(sym){
   const base=sym.replace('/USDT','')
   const s=isFutures(sym)?'OKX:'+base+'USDT.P':'OKX:'+base+'USDT'
   return'https://www.tradingview.com/chart/'+TV_LAYOUT+'/?symbol='+s
+}
+
+function h(txt){
+  return String(txt??'').replace(/[&<>"']/g,m=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]))
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -3785,10 +3809,35 @@ function renderAgents(){
     sectionLabel('STEP 3-6 — SIGNAL PIPELINE')+
     pipeline.map(cardHtml).join('')
 
+  renderAgentNotes()
+
   // ── Level 3: Dynamic Weights ─────────────────────────────
   renderDynWeights()
   // ── Level 2: Specialist Win Rate ──────────────────────────
   renderSpecialistWR()
+}
+
+function renderAgentNotes(){
+  const card=document.getElementById('ag-notes-card')
+  const box=document.getElementById('ag-notes')
+  if(!card||!box) return
+  const notes=(D.agent_notes&&D.agent_notes.length?D.agent_notes:FALLBACK_AGENT_NOTES).slice(0,3)
+  if(!notes.length){
+    card.style.display='none'
+    return
+  }
+  card.style.display='block'
+  box.innerHTML=notes.map(n=>`
+    <div style="border-top:1px solid var(--border);padding:10px 12px">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:6px">
+        <div style="font-size:12px;font-weight:700;color:var(--t1)">${h(n.title||'Update')}</div>
+        <div style="font-size:10px;color:var(--t2);white-space:nowrap">${h(n.date||'')}</div>
+      </div>
+      <ul style="margin:0;padding-left:16px;color:var(--t2);font-size:11px;line-height:1.7">
+        ${(n.items||[]).map(item=>`<li>${h(item)}</li>`).join('')}
+      </ul>
+    </div>
+  `).join('')
 }
 
 function renderSpecialistWR(){

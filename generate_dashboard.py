@@ -24,6 +24,19 @@ DEFAULT_WATCHLIST = [
     "HYPE/USDT", "RAVE/USDT", "RIVER/USDT",
 ]
 
+AGENT_TEAM_NOTES = [
+    {
+        "date": "2026-05-15",
+        "title": "Weekly Report + Approval Flow",
+        "items": [
+            "Weekly Report อธิบาย Level 4/5/6 ละเอียดขึ้น พร้อมผลกระทบก่อน approve",
+            "Telegram approval อ่านคำสั่งรอบเดียวต่อ scan เพื่อไม่ให้ /approve_* แย่ง offset กัน",
+            "Workflow sync pending/config files ครบ: condition_points, regime_weights, weights และ pending_*",
+            "Approve แล้วจะไม่ตอบทันที ต้องรอ scan/dashboard รอบถัดไป จากนั้น bot จะส่ง confirm และ commit config กลับ repo",
+        ],
+    }
+]
+
 
 def _load_watchlist_symbols():
     path = "watchlist_custom.json"
@@ -1808,6 +1821,7 @@ def main():
         "custom_symbols":   _load_custom_symbols(),   # compat key
         "watchlist_symbols": _load_watchlist_symbols(),
         "api_usage":        _load_api_usage(),         # 🤖 Claude Haiku cost tracking
+        "agent_notes":      AGENT_TEAM_NOTES,
         "slippage":         get_slippage_summary(conn),
     }
 
