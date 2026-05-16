@@ -277,7 +277,8 @@ class RuntimeFixTests(unittest.TestCase):
             "outcome TEXT DEFAULT 'PENDING', exit_reason TEXT, exit_px REAL, logged_at TEXT, "
             "resolved_at TEXT, balance_at_signal REAL DEFAULT 1000.0, score_liq INTEGER DEFAULT 0, "
             "score_fund INTEGER DEFAULT 0, funding_rate REAL, bull_sweep INTEGER DEFAULT 0, "
-            "bear_sweep INTEGER DEFAULT 0)"
+            "bear_sweep INTEGER DEFAULT 0, score_trend INTEGER DEFAULT 0, "
+            "score_smc INTEGER DEFAULT 0, score_osc INTEGER DEFAULT 0)"
         )
         conn.execute("CREATE TABLE portfolio (id INTEGER PRIMARY KEY, balance REAL, updated TEXT)")
         conn.execute("INSERT INTO portfolio VALUES (1, 1000, '')")
@@ -1041,6 +1042,71 @@ class RuntimeFixTests(unittest.TestCase):
         msg = monthly_report.format_telegram_message(report)
         self.assertIn("2026-04", msg)
         self.assertNotIn("30 วัน", msg)
+
+    # ── P2 measurement-only: signal_log per-agent score persistence ─────────
+    def _init_signal_log_db(self, db_path):
+        """Bring up paper_trade's full schema in an isolated DB and return a connection."""
+        with mock.patch("paper_trade.DB_PATH", db_path):
+            return paper_trade.init_db()
+
+    def test_signal_log_schema_has_per_agent_score_columns(self):
+        """signal_log must declare score_trend, score_smc, score_osc for P2 measurement."""
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "p2_schema.db")
+            conn = self._init_signal_log_db(db_path)
+            try:
+                cols = {r[1] for r in conn.execute("PRAGMA table_info(signal_log)")}
+            finally:
+                conn.close()
+        self.assertIn("score_trend", cols)
+        self.assertIn("score_smc",   cols)
+        self.assertIn("score_osc",   cols)
+
+    def test_log_signal_persists_per_agent_scores_when_present(self):
+        """log_signal must write sig['score_trend'/'score_smc'/'score_osc'] into signal_log."""
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "p2_persist.db")
+            conn = self._init_signal_log_db(db_path)
+            try:
+                sig = {
+                    "symbol": "BTC/USDT", "side": "LONG",
+                    "score": 17, "price": 100.0,
+                    "sl": 99.0, "tp1": 101.2, "tp2": 102.0,
+                    "regime": "TRENDING", "tf": "30m",
+                    "score_trend": 8, "score_smc": 5, "score_osc": 4,
+                }
+                paper_trade.log_signal(conn, sig, was_traded=False, balance=1000.0)
+                row = conn.execute(
+                    "SELECT score_trend, score_smc, score_osc FROM signal_log "
+                    "WHERE symbol=? AND side=? ORDER BY id DESC LIMIT 1",
+                    ("BTC/USDT", "LONG"),
+                ).fetchone()
+            finally:
+                conn.close()
+        self.assertEqual(row, (8, 5, 4))
+
+    def test_log_signal_defaults_per_agent_scores_to_zero_when_omitted(self):
+        """If sig lacks the per-agent keys, log_signal must store 0 (no crash, no NULL)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            db_path = os.path.join(tmp, "p2_defaults.db")
+            conn = self._init_signal_log_db(db_path)
+            try:
+                sig = {
+                    "symbol": "ETH/USDT", "side": "SHORT",
+                    "score": 12, "price": 2000.0,
+                    "sl": 2020.0, "tp1": 1976.0, "tp2": 1960.0,
+                    "regime": "RANGING", "tf": "30m",
+                    # intentionally NO score_trend/smc/osc
+                }
+                paper_trade.log_signal(conn, sig, was_traded=False, balance=1000.0)
+                row = conn.execute(
+                    "SELECT score_trend, score_smc, score_osc FROM signal_log "
+                    "WHERE symbol=? AND side=? ORDER BY id DESC LIMIT 1",
+                    ("ETH/USDT", "SHORT"),
+                ).fetchone()
+            finally:
+                conn.close()
+        self.assertEqual(row, (0, 0, 0))
 
 
 if __name__ == "__main__":

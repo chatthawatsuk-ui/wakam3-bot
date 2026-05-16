@@ -228,7 +228,10 @@ def init_db():
             exit_px             REAL,
             logged_at           TEXT,
             resolved_at         TEXT,
-            balance_at_signal   REAL    DEFAULT 1000.0
+            balance_at_signal   REAL    DEFAULT 1000.0,
+            score_trend         INTEGER DEFAULT 0,
+            score_smc           INTEGER DEFAULT 0,
+            score_osc           INTEGER DEFAULT 0
         )
     """)
     # migrate signal_log: เผื่อ DB เก่า
@@ -243,6 +246,9 @@ def init_db():
         ("funding_rate",       "REAL"),
         ("bull_sweep",         "INTEGER DEFAULT 0"),
         ("bear_sweep",         "INTEGER DEFAULT 0"),
+        ("score_trend",        "INTEGER DEFAULT 0"),
+        ("score_smc",          "INTEGER DEFAULT 0"),
+        ("score_osc",          "INTEGER DEFAULT 0"),
     ]
     allowed_signal_log_cols = dict(signal_log_cols)
     for sl_col, sl_def in signal_log_cols:
@@ -469,8 +475,9 @@ def log_signal(conn, sig: dict, was_traded: bool, skip_reason: str = "",
         INSERT INTO signal_log
         (symbol, side, score, entry_px, sl_px, tp1_px, tp2_px,
          regime, tf, was_traded, skip_reason, logged_at, balance_at_signal,
-         score_liq, score_fund, funding_rate, bull_sweep, bear_sweep)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         score_liq, score_fund, funding_rate, bull_sweep, bear_sweep,
+         score_trend, score_smc, score_osc)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         sig["symbol"], sig["side"], sig.get("score", 0),
         sig.get("price", 0), sig.get("sl", 0),
@@ -486,6 +493,9 @@ def log_signal(conn, sig: dict, was_traded: bool, skip_reason: str = "",
         sig.get("funding_rate"),
         1 if sig.get("bull_sweep") else 0,
         1 if sig.get("bear_sweep") else 0,
+        sig.get("score_trend", 0),
+        sig.get("score_smc",   0),
+        sig.get("score_osc",   0),
     ))
     conn.commit()
 
