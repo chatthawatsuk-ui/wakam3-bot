@@ -31897,7 +31897,7 @@
     {
       "symbol": "PEPE/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "SHORT",
       "score_long": 9,
       "score_short": 18,
@@ -32356,7 +32356,7 @@
       "score_osc": 0,
       "score_liq": 5,
       "score_fund": 1,
-      "in_discount": false,
+      "in_discount": true,
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
@@ -32634,7 +32634,7 @@
       "volBase": 1499218.41
     },
     "ADA/USDT": {
-      "price": 0.1606,
+      "price": 0.1608,
       "change": -1.59,
       "high": 0.1639,
       "low": 0.1597,
@@ -33699,9 +33699,9 @@
     "btc_rsi": 56.2
   },
   "altcoin_season": {
-    "value": 17,
+    "value": 19,
     "label": "Bitcoin Season ₿",
-    "outperform": 6,
+    "outperform": 7,
     "total": 36,
     "btc_24h": 0.89,
     "timeframe": "24h"
@@ -51102,9 +51102,9 @@
         "avg_pnl": 3.07
       },
       "POSITIONS_FULL (10/10)": {
-        "n": 119,
-        "wr": 53.8,
-        "avg_pnl": 0.24
+        "n": 120,
+        "wr": 54.2,
+        "avg_pnl": 0.29
       },
       "PYRAMID_BLOCKED": {
         "n": 29,
@@ -52178,6 +52178,19 @@
         "regime": "TRENDING"
       },
       {
+        "sym": "BNB/USDT",
+        "side": "LONG",
+        "score": 10,
+        "ep": 577.8,
+        "entry_ts": "2026-06-19T15:33:08.925114+00:00",
+        "exit_type": "TP2",
+        "tp1_hit": 1,
+        "outcome": "WIN",
+        "pnl": 6.33,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "SOL/USDT",
         "side": "LONG",
         "score": 13,
@@ -52854,6 +52867,20 @@
         "sym": "DOGE/USDT"
       },
       {
+        "n": 10,
+        "n_win": 5,
+        "n_lose": 5,
+        "wr": 50.0,
+        "tp1r": 50.0,
+        "total_pnl": 8.72,
+        "avg_pnl": 0.87,
+        "dd": -5.6,
+        "sharpe": 3.27,
+        "kz_wr": null,
+        "profit_factor": 1.59,
+        "sym": "BNB/USDT"
+      },
+      {
         "n": 17,
         "n_win": 8,
         "n_lose": 9,
@@ -53249,10 +53276,10 @@
       },
       {
         "exit_type": "TP2",
-        "n": 106,
-        "wins": 106,
+        "n": 107,
+        "wins": 107,
         "wr": 100.0,
-        "avg_pnl": 10.01
+        "avg_pnl": 9.98
       },
       {
         "exit_type": "TIMEOUT",
@@ -53277,9 +53304,9 @@
       },
       {
         "band": "9-11",
-        "n": 50,
-        "wr": 56.0,
-        "avg_pnl": 0.56
+        "n": 51,
+        "wr": 56.9,
+        "avg_pnl": 0.67
       },
       {
         "band": "12-14",
@@ -54639,8 +54666,8 @@
     "pending": 59,
     "win": 232,
     "loss": 259,
-    "win_rate": 47.3,
-    "win_tp2": 145,
+    "win_rate": 47.4,
+    "win_tp2": 146,
     "win_slbe": 76,
     "loss_sl": 251,
     "timeout": 19,
@@ -55291,21 +55318,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "LTC/USDT",
-        "side": "LONG",
-        "score": 10,
-        "entry_px": 43.79,
-        "sl_pct": 1.028,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-06-19T22:46:59.128872+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "ADA/USDT",
         "side": "LONG",
         "score": 13,
@@ -55532,6 +55544,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "LTC/USDT",
+        "side": "LONG",
+        "score": 10,
+        "entry_px": 43.79,
+        "sl_pct": 1.028,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "WIN",
+        "exit_px": 44.71,
+        "exit_reason": "TP2",
+        "tp1_hit": 1,
+        "created_at": "2026-06-19T22:46:59.128872+00:00",
+        "resolved_at": "2026-06-21T06:35:45.496936+00:00"
+      },
       {
         "symbol": "SHIB/USDT",
         "side": "LONG",
