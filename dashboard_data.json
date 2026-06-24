@@ -33415,7 +33415,7 @@
       "score_fund": 1,
       "in_discount": true,
       "trail_bull": false,
-      "bull_sweep": false,
+      "bull_sweep": true,
       "bear_sweep": true,
       "funding_rate": 0.005,
       "regime": "RANGING",
@@ -33748,7 +33748,7 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0097,
+      "funding_rate": -0.0098,
       "regime": "RANGING",
       "ts": "2026-06-24T08:47:11.896461+00:00",
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
@@ -52827,9 +52827,9 @@
         "avg_pnl": 1.31
       },
       "POSITIONS_FULL (10/10)": {
-        "n": 103,
-        "wr": 49.5,
-        "avg_pnl": -0.06
+        "n": 104,
+        "wr": 49.0,
+        "avg_pnl": -0.07
       },
       "PYRAMID_BLOCKED": {
         "n": 31,
@@ -53044,17 +53044,17 @@
       "profit_factor": 0.71
     },
     "summary_skipped": {
-      "n": 232,
+      "n": 233,
       "n_win": 104,
-      "n_lose": 128,
-      "wr": 44.8,
-      "tp1r": 39.7,
-      "total_pnl": -29.25,
+      "n_lose": 129,
+      "wr": 44.6,
+      "tp1r": 39.5,
+      "total_pnl": -30.81,
       "avg_pnl": -0.13,
       "dd": -12.5,
       "sharpe": -0.3,
       "kz_wr": null,
-      "profit_factor": 0.96
+      "profit_factor": 0.95
     },
     "trades": [
       {
@@ -54033,6 +54033,19 @@
         "regime": "TRENDING"
       },
       {
+        "sym": "TRX/USDT",
+        "side": "SHORT",
+        "score": 19,
+        "ep": 0.329,
+        "entry_ts": "2026-06-23T20:18:17.498256+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -1.56,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "ENA/USDT",
         "side": "SHORT",
         "score": 16,
@@ -54612,20 +54625,6 @@
         "sym": "APT/USDT"
       },
       {
-        "n": 3,
-        "n_win": 2,
-        "n_lose": 1,
-        "wr": 66.7,
-        "tp1r": 66.7,
-        "total_pnl": 1.34,
-        "avg_pnl": 0.45,
-        "dd": -5.7,
-        "sharpe": 2.9,
-        "kz_wr": null,
-        "profit_factor": 1.75,
-        "sym": "TRX/USDT"
-      },
-      {
         "n": 19,
         "n_win": 10,
         "n_lose": 9,
@@ -54652,6 +54651,20 @@
         "kz_wr": null,
         "profit_factor": 1.02,
         "sym": "POL/USDT"
+      },
+      {
+        "n": 4,
+        "n_win": 2,
+        "n_lose": 2,
+        "wr": 50.0,
+        "tp1r": 50.0,
+        "total_pnl": -0.22,
+        "avg_pnl": -0.06,
+        "dd": -4.3,
+        "sharpe": -0.42,
+        "kz_wr": null,
+        "profit_factor": 0.93,
+        "sym": "TRX/USDT"
       },
       {
         "n": 15,
@@ -54881,10 +54894,10 @@
     "by_exit": [
       {
         "exit_type": "SL",
-        "n": 189,
+        "n": 190,
         "wins": 0,
         "wr": 0.0,
-        "avg_pnl": -5.6
+        "avg_pnl": -5.58
       },
       {
         "exit_type": "SL_BE",
@@ -54941,8 +54954,8 @@
       },
       {
         "band": "18-20",
-        "n": 142,
-        "wr": 46.5,
+        "n": 143,
+        "wr": 46.2,
         "avg_pnl": -0.38
       },
       {
@@ -56149,11 +56162,11 @@
     "total": 587,
     "pending": 50,
     "win": 248,
-    "loss": 289,
-    "win_rate": 46.2,
+    "loss": 290,
+    "win_rate": 46.1,
     "win_tp2": 147,
     "win_slbe": 84,
-    "loss_sl": 284,
+    "loss_sl": 285,
     "timeout": 22,
     "pending_trades": [
       {
@@ -56772,21 +56785,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "TRX/USDT",
-        "side": "SHORT",
-        "score": 22,
-        "entry_px": 0.3293,
-        "sl_pct": 0.489,
-        "regime": "TRENDING",
-        "claude_reason": "SL 0.49% too tight (<0.5%) — noise stop-out risk",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-06-23T19:02:23.666102+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "ALGO/USDT",
         "side": "SHORT",
         "score": 15,
@@ -56908,6 +56906,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "TRX/USDT",
+        "side": "SHORT",
+        "score": 22,
+        "entry_px": 0.3293,
+        "sl_pct": 0.489,
+        "regime": "TRENDING",
+        "claude_reason": "SL 0.49% too tight (<0.5%) — noise stop-out risk",
+        "outcome": "LOSS",
+        "exit_px": 0.33095,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-06-23T19:02:23.666102+00:00",
+        "resolved_at": "2026-06-24T08:50:57.213370+00:00"
+      },
       {
         "symbol": "ALGO/USDT",
         "side": "LONG",
