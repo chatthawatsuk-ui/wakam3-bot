@@ -10,7 +10,7 @@
       "side": "LONG",
       "score": 20,
       "entry_price": 0.1965,
-      "current_price": 0.19815,
+      "current_price": 0.19713,
       "sl_price": 0.1892,
       "tp_price": 0.2054,
       "tp2_price": 0.2113,
@@ -20,8 +20,8 @@
       "leverage": 20.0,
       "margin_usd": 12.79,
       "risk_usd": 9.51,
-      "pnl_pct": 0.84,
-      "pnl": 2.15,
+      "pnl_pct": 0.32,
+      "pnl": 0.82,
       "open_time": "2026-07-01T10:32:18.769726+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 3.75
@@ -54,7 +54,7 @@
       "side": "SHORT",
       "score": 18,
       "entry_price": 2.29e-06,
-      "current_price": 2.28e-06,
+      "current_price": 2.26e-06,
       "sl_price": 2.347e-06,
       "tp_price": 2.2128e-06,
       "tp2_price": 2.164e-06,
@@ -64,8 +64,8 @@
       "leverage": 20.0,
       "margin_usd": 12.79,
       "risk_usd": 6.83,
-      "pnl_pct": 0.26,
-      "pnl": 0.67,
+      "pnl_pct": 1.14,
+      "pnl": 2.91,
       "open_time": "2026-07-01T09:18:16.168818+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 2.668
@@ -76,7 +76,7 @@
       "side": "SHORT",
       "score": 18,
       "entry_price": 58938.12264919,
-      "current_price": 58661.2,
+      "current_price": 58680.0,
       "sl_price": 59458.4,
       "tp_price": 58079.28,
       "tp2_price": 57429.2,
@@ -86,8 +86,8 @@
       "leverage": 20.0,
       "margin_usd": 18.88,
       "risk_usd": 3.46,
-      "pnl_pct": 0.47,
-      "pnl": 1.77,
+      "pnl_pct": 0.44,
+      "pnl": 1.65,
       "open_time": "2026-06-30T14:03:05.216806+00:00",
       "pyramid_count": 2,
       "sl_pct_orig": 1.376
@@ -98,7 +98,7 @@
       "side": "SHORT",
       "score": 17,
       "entry_price": 2.108,
-      "current_price": 2.111,
+      "current_price": 2.106,
       "sl_price": 2.148,
       "tp_price": 2.06,
       "tp2_price": 2.028,
@@ -108,8 +108,8 @@
       "leverage": 20.0,
       "margin_usd": 12.79,
       "risk_usd": 4.86,
-      "pnl_pct": -0.14,
-      "pnl": -0.36,
+      "pnl_pct": 0.09,
+      "pnl": 0.24,
       "open_time": "2026-07-01T09:03:15.360640+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 1.898
@@ -120,7 +120,7 @@
       "side": "SHORT",
       "score": 12,
       "entry_price": 0.3161,
-      "current_price": 0.31699,
+      "current_price": 0.3168,
       "sl_price": 0.3178,
       "tp_price": 0.3141,
       "tp2_price": 0.3128,
@@ -130,8 +130,8 @@
       "leverage": 20.0,
       "margin_usd": 12.79,
       "risk_usd": 1.38,
-      "pnl_pct": -0.28,
-      "pnl": -0.72,
+      "pnl_pct": -0.22,
+      "pnl": -0.57,
       "open_time": "2026-07-01T08:33:15.087701+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 0.535
@@ -36710,75 +36710,80 @@
     1271.07,
     1275.55
   ],
-  "signals": [],
-  "scan_results": [
+  "signals": [
     {
       "symbol": "XLM/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 20,
-      "score_short": 10,
-      "best_score": 20,
-      "score_pct": 44.4,
-      "price": 0.1982,
-      "rsi": 56.8,
-      "htf_bull": true,
+      "score": 16,
+      "price": 0.197,
+      "signal_price": 0.197,
+      "atr": 0.0034022730668124977,
+      "sl": 0.1901,
+      "tp1": 0.2052,
+      "tp2": 0.2107,
+      "sl_pct": 3.493,
+      "rsi": 50.8,
+      "in_kz": false,
+      "regime": "TRENDING",
+      "score_trend": 9,
+      "score_smc": 0,
+      "score_osc": 1,
+      "score_liq": 5,
+      "score_fund": 2,
+      "funding_rate": 0.0076,
+      "bull_sweep": false,
+      "bear_sweep": true,
+      "ts": "2026-07-01T11:32:38.554152+00:00",
+      "execution_allowed": false,
+      "execution_block_reason": "PYRAMID_BLOCKED trend=9/13 pnl=+0.3%",
+      "ai_filter_bypassed": true,
+      "bypass_reason": "credit_exhausted",
+      "claude_approved": true,
+      "claude_reason": "bypass:credit_exhausted",
+      "db_available": true,
+      "haiku_filtered": false,
+      "tf": "30M"
+    }
+  ],
+  "scan_results": [
+    {
+      "symbol": "BTC/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "SHORT",
+      "score_long": 7,
+      "score_short": 19,
+      "best_score": 19,
+      "score_pct": 42.2,
+      "price": 58730.1,
+      "rsi": 45.7,
+      "htf_bull": false,
       "in_kz": false,
       "score_trend": 10,
       "score_smc": 2,
-      "score_osc": 3,
-      "score_liq": 5,
-      "score_fund": 2,
-      "in_discount": true,
-      "trail_bull": true,
-      "bull_sweep": false,
-      "bear_sweep": true,
-      "funding_rate": 0.0093,
-      "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:29.686900+00:00",
-      "reject_reason": "SL กว้างเกิน 4.1% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.1% > 4% — swing level ไกลเกิน entry"
-    },
-    {
-      "symbol": "ADA/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
-      "side": "LONG",
-      "score_long": 19,
-      "score_short": 7,
-      "best_score": 19,
-      "score_pct": 42.2,
-      "price": 0.1522,
-      "rsi": 63.4,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 9,
-      "score_smc": 0,
       "score_osc": 2,
       "score_liq": 8,
       "score_fund": 1,
       "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": true,
-      "bear_sweep": false,
-      "funding_rate": 0.01,
-      "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:21.450267+00:00",
-      "reject_reason": "SL กว้างเกิน 6.7% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 6.7% > 4% — swing level ไกลเกิน entry"
+      "trail_bull": false,
+      "bull_sweep": false,
+      "bear_sweep": true,
+      "funding_rate": 0.0065,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:21.972707+00:00",
+      "claude_reason": "score19 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
       "symbol": "HBAR/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 7,
+      "score_long": 6,
       "score_short": 19,
       "best_score": 19,
       "score_pct": 42.2,
-      "price": 0.0695,
-      "rsi": 47.3,
+      "price": 0.06944,
+      "rsi": 47.1,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 10,
@@ -36792,37 +36797,9 @@
       "bear_sweep": false,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:28.796276+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.2× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.2× > 3× ATR"
-    },
-    {
-      "symbol": "BCH/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
-      "side": "LONG",
-      "score_long": 18,
-      "score_short": 8,
-      "best_score": 18,
-      "score_pct": 40.0,
-      "price": 205.6,
-      "rsi": 62.5,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 8,
-      "score_smc": 0,
-      "score_osc": 4,
-      "score_liq": 8,
-      "score_fund": 2,
-      "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": true,
-      "bear_sweep": false,
-      "funding_rate": -0.0016,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:22.399198+00:00",
-      "reject_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-07-01T11:32:37.538511+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR"
     },
     {
       "symbol": "UNI/USDT",
@@ -36833,8 +36810,8 @@
       "score_short": 18,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 2.754,
-      "rsi": 36.6,
+      "price": 2.745,
+      "rsi": 35.1,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
@@ -36848,77 +36825,77 @@
       "bear_sweep": false,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:30.639457+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 5.3× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 5.3× > 3× ATR"
-    },
-    {
-      "symbol": "FIL/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
-      "side": "LONG",
-      "score_long": 18,
-      "score_short": 11,
-      "best_score": 18,
-      "score_pct": 40.0,
-      "price": 0.7316,
-      "rsi": 54.4,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 9,
-      "score_smc": 0,
-      "score_osc": 4,
-      "score_liq": 8,
-      "score_fund": 1,
-      "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": true,
-      "bear_sweep": true,
-      "funding_rate": 0.01,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:41.727150+00:00",
+      "ts": "2026-07-01T11:32:40.781055+00:00",
       "reject_reason": "SL กว้างเกิน 4.1% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 4.1% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "BNB/USDT",
+      "symbol": "RIVER/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 8,
-      "score_short": 17,
-      "best_score": 17,
-      "score_pct": 37.8,
-      "price": 540.0,
-      "rsi": 35.2,
+      "score_long": 10,
+      "score_short": 18,
+      "best_score": 18,
+      "score_pct": 40.0,
+      "price": 3.686,
+      "rsi": 38.2,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
       "score_smc": 2,
       "score_osc": 2,
       "score_liq": 5,
-      "score_fund": 1,
+      "score_fund": 2,
       "in_discount": false,
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0034,
+      "funding_rate": 0.0154,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:16.998802+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 5.5× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 5.5× > 3× ATR"
+      "ts": "2026-07-01T11:33:00.553120+00:00",
+      "reject_reason": "SL กว้างเกิน 4.7% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.7% > 4% — swing level ไกลเกิน entry"
+    },
+    {
+      "symbol": "ETH/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "SHORT",
+      "score_long": 11,
+      "score_short": 17,
+      "best_score": 17,
+      "score_pct": 37.8,
+      "price": 1573.1,
+      "rsi": 43.5,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 9,
+      "score_smc": 2,
+      "score_osc": 1,
+      "score_liq": 8,
+      "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": false,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.008,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:22.993777+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR"
     },
     {
       "symbol": "DOGE/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 10,
+      "score_long": 11,
       "score_short": 17,
       "best_score": 17,
       "score_pct": 37.8,
-      "price": 0.071,
-      "rsi": 37.9,
+      "price": 0.07112,
+      "rsi": 40.2,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
@@ -36930,23 +36907,107 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0097,
+      "funding_rate": 0.0098,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:20.571820+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR"
+      "ts": "2026-07-01T11:32:28.158275+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR"
+    },
+    {
+      "symbol": "ADA/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 17,
+      "score_short": 7,
+      "best_score": 17,
+      "score_pct": 37.8,
+      "price": 0.151,
+      "rsi": 65.5,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 9,
+      "score_smc": 0,
+      "score_osc": 4,
+      "score_liq": 5,
+      "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": false,
+      "bear_sweep": false,
+      "funding_rate": 0.01,
+      "regime": "TRENDING",
+      "ts": "2026-07-01T11:32:29.149627+00:00",
+      "reject_reason": "SL กว้างเกิน 6.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 6.0% > 4% — swing level ไกลเกิน entry"
+    },
+    {
+      "symbol": "BCH/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 17,
+      "score_short": 11,
+      "best_score": 17,
+      "score_pct": 37.8,
+      "price": 205.8,
+      "rsi": 57.2,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 8,
+      "score_smc": 0,
+      "score_osc": 2,
+      "score_liq": 8,
+      "score_fund": 2,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": -0.0023,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:30.158452+00:00",
+      "reject_reason": "SL กว้างเกิน 4.7% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.7% > 4% — swing level ไกลเกิน entry"
+    },
+    {
+      "symbol": "SUI/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 17,
+      "score_short": 9,
+      "best_score": 17,
+      "score_pct": 37.8,
+      "price": 0.699,
+      "rsi": 51.6,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 9,
+      "score_smc": 0,
+      "score_osc": 2,
+      "score_liq": 8,
+      "score_fund": 2,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": false,
+      "funding_rate": 0.0073,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:34.160902+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR"
     },
     {
       "symbol": "WLD/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 8,
+      "score_long": 9,
       "score_short": 17,
       "best_score": 17,
       "score_pct": 37.8,
-      "price": 0.3925,
-      "rsi": 35.9,
+      "price": 0.3923,
+      "rsi": 36.8,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
@@ -36958,9 +37019,9 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0076,
+      "funding_rate": 0.0072,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:39.965981+00:00",
+      "ts": "2026-07-01T11:32:51.310173+00:00",
       "reject_reason": "SL กว้างเกิน 6.9% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 6.9% > 4% — swing level ไกลเกิน entry"
     },
@@ -36969,12 +37030,12 @@
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 6,
+      "score_long": 5,
       "score_short": 17,
       "best_score": 17,
       "score_pct": 37.8,
-      "price": 0.2908,
-      "rsi": 34.7,
+      "price": 0.2896,
+      "rsi": 35.3,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
@@ -36986,66 +37047,39 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0156,
+      "funding_rate": -0.0163,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:47.232955+00:00",
-      "reject_reason": "SL กว้างเกิน 14.9% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 14.9% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-07-01T11:32:59.540960+00:00",
+      "reject_reason": "SL กว้างเกิน 15.4% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 15.4% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "RIVER/USDT",
+      "symbol": "BNB/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 9,
-      "score_short": 17,
-      "best_score": 17,
-      "score_pct": 37.8,
-      "price": 3.696,
-      "rsi": 36.6,
+      "score_long": 12,
+      "score_short": 16,
+      "best_score": 16,
+      "score_pct": 35.6,
+      "price": 543.6,
+      "rsi": 40.3,
       "htf_bull": false,
       "in_kz": false,
-      "score_trend": 8,
+      "score_trend": 9,
       "score_smc": 2,
-      "score_osc": 2,
+      "score_osc": 0,
       "score_liq": 5,
-      "score_fund": 2,
+      "score_fund": 1,
       "in_discount": false,
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0182,
+      "funding_rate": 0.0025,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:48.123650+00:00",
-      "reject_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry"
-    },
-    {
-      "symbol": "SOL/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "SHORT",
-      "score_long": 13,
-      "score_short": 16,
-      "best_score": 16,
-      "score_pct": 35.6,
-      "price": 75.11,
-      "rsi": 54.2,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 0,
-      "score_smc": 2,
-      "score_osc": 5,
-      "score_liq": 8,
-      "score_fund": 2,
-      "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": false,
-      "bear_sweep": true,
-      "funding_rate": 0.01,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:18.780676+00:00",
-      "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)"
+      "ts": "2026-07-01T11:32:24.002320+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR"
     },
     {
       "symbol": "AVAX/USDT",
@@ -37056,80 +37090,54 @@
       "score_short": 12,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 6.658,
-      "rsi": 53.6,
+      "price": 6.654,
+      "rsi": 55.4,
       "htf_bull": true,
       "in_kz": false,
-      "score_trend": 9,
+      "score_trend": 10,
       "score_smc": 0,
-      "score_osc": 2,
-      "score_liq": 8,
+      "score_osc": 4,
+      "score_liq": 5,
       "score_fund": 1,
       "in_discount": false,
       "trail_bull": true,
-      "bull_sweep": true,
+      "bull_sweep": false,
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:25.062586+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 5.2× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 5.2× > 3× ATR"
+      "ts": "2026-07-01T11:32:33.157145+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 5.1× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 5.1× > 3× ATR"
     },
     {
-      "symbol": "SUI/USDT",
+      "symbol": "XLM/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "SIGNAL",
       "side": "LONG",
       "score_long": 16,
       "score_short": 12,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 0.6988,
-      "rsi": 48.6,
+      "price": 0.197,
+      "rsi": 50.8,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 9,
       "score_smc": 0,
-      "score_osc": 0,
-      "score_liq": 8,
+      "score_osc": 1,
+      "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": true,
+      "trail_bull": false,
+      "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0074,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:25.952535+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR"
-    },
-    {
-      "symbol": "DOT/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
-      "side": "LONG",
-      "score_long": 16,
-      "score_short": 10,
-      "best_score": 16,
-      "score_pct": 35.6,
-      "price": 0.8372,
-      "rsi": 56.2,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 9,
-      "score_smc": 0,
-      "score_osc": 2,
-      "score_liq": 8,
-      "score_fund": 1,
-      "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": true,
-      "bear_sweep": true,
-      "funding_rate": 0.01,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:26.848443+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 5.9× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 5.9× > 3× ATR"
+      "funding_rate": 0.0076,
+      "regime": "TRENDING",
+      "ts": "2026-07-01T11:32:38.554152+00:00",
+      "entry_price": 0.197,
+      "sl_price": 0.1901,
+      "tp_price": 0.2052,
+      "tp2_price": 0.2107
     },
     {
       "symbol": "PEPE/USDT",
@@ -37140,8 +37148,8 @@
       "score_short": 16,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 2.281e-06,
-      "rsi": 39.4,
+      "price": 2.265e-06,
+      "rsi": 37.3,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
@@ -37153,23 +37161,23 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0408,
+      "funding_rate": -0.0411,
       "regime": "TRENDING",
-      "ts": "2026-07-01T11:17:32.425848+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR"
+      "ts": "2026-07-01T11:32:42.839793+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.4× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.4× > 3× ATR"
     },
     {
       "symbol": "ATOM/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 11,
+      "score_long": 9,
       "score_short": 16,
       "best_score": 16,
       "score_pct": 35.6,
-      "price": 1.511,
-      "rsi": 42.1,
+      "price": 1.507,
+      "rsi": 43.4,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 9,
@@ -37183,21 +37191,21 @@
       "bear_sweep": false,
       "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:38.942676+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.2× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.2× > 3× ATR"
+      "ts": "2026-07-01T11:32:50.312892+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR"
     },
     {
       "symbol": "ENA/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
       "side": "SHORT",
-      "score_long": 9,
+      "score_long": 7,
       "score_short": 16,
       "best_score": 16,
       "score_pct": 35.6,
       "price": 0.07199,
-      "rsi": 46.6,
+      "rsi": 51.4,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 10,
@@ -37209,53 +37217,190 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0036,
+      "funding_rate": -0.0032,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:40.850965+00:00",
+      "ts": "2026-07-01T11:32:52.401492+00:00",
       "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
-      "symbol": "TRUMP/USDT",
+      "symbol": "DOT/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 16,
-      "score_short": 11,
-      "best_score": 16,
-      "score_pct": 35.6,
-      "price": 1.702,
-      "rsi": 53.2,
+      "score_long": 15,
+      "score_short": 10,
+      "best_score": 15,
+      "score_pct": 33.3,
+      "price": 0.8369,
+      "rsi": 59.6,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 9,
       "score_smc": 0,
       "score_osc": 4,
       "score_liq": 5,
-      "score_fund": 2,
+      "score_fund": 1,
       "in_discount": false,
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.006,
+      "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:44.507529+00:00",
+      "ts": "2026-07-01T11:32:35.518595+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 5.8× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 5.8× > 3× ATR"
+    },
+    {
+      "symbol": "NEAR/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "SHORT",
+      "score_long": 12,
+      "score_short": 15,
+      "best_score": 15,
+      "score_pct": 33.3,
+      "price": 1.796,
+      "rsi": 48.1,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 9,
+      "score_smc": 2,
+      "score_osc": 1,
+      "score_liq": 5,
+      "score_fund": 2,
+      "in_discount": false,
+      "trail_bull": false,
+      "bull_sweep": true,
+      "bear_sweep": false,
+      "funding_rate": 0.01,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:41.829079+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR"
+    },
+    {
+      "symbol": "ICP/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "SHORT",
+      "score_long": 7,
+      "score_short": 15,
+      "best_score": 15,
+      "score_pct": 33.3,
+      "price": 2.108,
+      "rsi": 48.3,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 9,
+      "score_smc": 2,
+      "score_osc": 2,
+      "score_liq": 5,
+      "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": false,
+      "bull_sweep": false,
+      "bear_sweep": false,
+      "funding_rate": -0.0125,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:44.925800+00:00",
+      "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
+    },
+    {
+      "symbol": "FIL/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 15,
+      "score_short": 12,
+      "best_score": 15,
+      "score_pct": 33.3,
+      "price": 0.7293,
+      "rsi": 56.4,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 8,
+      "score_smc": 0,
+      "score_osc": 1,
+      "score_liq": 8,
+      "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.01,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:53.402324+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR",
       "claude_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR"
     },
     {
-      "symbol": "BTC/USDT",
+      "symbol": "ONDO/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "SHORT",
+      "score_long": 13,
+      "score_short": 15,
+      "best_score": 15,
+      "score_pct": 33.3,
+      "price": 0.311,
+      "rsi": 49.7,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 7,
+      "score_smc": 2,
+      "score_osc": 0,
+      "score_liq": 8,
+      "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.005,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:57.496068+00:00",
+      "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
+    },
+    {
+      "symbol": "XRP/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
       "side": "SHORT",
       "score_long": 10,
-      "score_short": 15,
-      "best_score": 15,
-      "score_pct": 33.3,
-      "price": 58670.8,
-      "rsi": 44.5,
+      "score_short": 14,
+      "best_score": 14,
+      "score_pct": 31.1,
+      "price": 1.0396,
+      "rsi": 44.0,
       "htf_bull": false,
       "in_kz": false,
-      "score_trend": 9,
+      "score_trend": 7,
+      "score_smc": 2,
+      "score_osc": 2,
+      "score_liq": 5,
+      "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": false,
+      "funding_rate": 0.0031,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:25.021505+00:00",
+      "claude_reason": "RANGING regime — skip Claude (low WR regime)"
+    },
+    {
+      "symbol": "LTC/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "SHORT",
+      "score_long": 12,
+      "score_short": 14,
+      "best_score": 14,
+      "score_pct": 31.1,
+      "price": 41.89,
+      "rsi": 39.4,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 8,
       "score_smc": 2,
       "score_osc": 2,
       "score_liq": 5,
@@ -37264,37 +37409,11 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0067,
+      "funding_rate": -0.008,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:15.192078+00:00",
-      "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
-    },
-    {
-      "symbol": "ICP/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "SHORT",
-      "score_long": 9,
-      "score_short": 15,
-      "best_score": 15,
-      "score_pct": 33.3,
-      "price": 2.116,
-      "rsi": 49.7,
-      "htf_bull": false,
-      "in_kz": false,
-      "score_trend": 9,
-      "score_smc": 2,
-      "score_osc": 2,
-      "score_liq": 5,
-      "score_fund": 1,
-      "in_discount": false,
-      "trail_bull": false,
-      "bull_sweep": false,
-      "bear_sweep": false,
-      "funding_rate": -0.0119,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:34.240242+00:00",
-      "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
+      "ts": "2026-07-01T11:32:31.163342+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR"
     },
     {
       "symbol": "RENDER/USDT",
@@ -37302,122 +37421,94 @@
       "status": "REJECTED",
       "side": "SHORT",
       "score_long": 9,
-      "score_short": 15,
-      "best_score": 15,
-      "score_pct": 33.3,
-      "price": 1.511,
-      "rsi": 46.2,
+      "score_short": 14,
+      "best_score": 14,
+      "score_pct": 31.1,
+      "price": 1.512,
+      "rsi": 52.6,
       "htf_bull": false,
       "in_kz": false,
-      "score_trend": 9,
+      "score_trend": 7,
       "score_smc": 2,
       "score_osc": 2,
       "score_liq": 5,
       "score_fund": 1,
       "in_discount": false,
-      "trail_bull": false,
+      "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0025,
+      "funding_rate": 0.0007,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:36.053418+00:00",
-      "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
+      "ts": "2026-07-01T11:32:47.201506+00:00",
+      "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
       "symbol": "APT/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 15,
+      "score_long": 14,
       "score_short": 6,
-      "best_score": 15,
-      "score_pct": 33.3,
-      "price": 0.588,
-      "rsi": 60.5,
+      "best_score": 14,
+      "score_pct": 31.1,
+      "price": 0.5866,
+      "rsi": 60.9,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 8,
       "score_smc": 0,
-      "score_osc": 4,
+      "score_osc": 2,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0059,
+      "funding_rate": 0.0066,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:42.610801+00:00",
-      "reject_reason": "SL กว้างเกิน 4.9% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.9% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-07-01T11:32:54.453638+00:00",
+      "reject_reason": "SL กว้างเกิน 4.7% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.7% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "LTC/USDT",
+      "symbol": "TRUMP/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
-      "side": "SHORT",
-      "score_long": 10,
-      "score_short": 14,
+      "side": "LONG",
+      "score_long": 14,
+      "score_short": 8,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 41.87,
-      "rsi": 38.2,
-      "htf_bull": false,
+      "price": 1.7,
+      "rsi": 55.1,
+      "htf_bull": true,
       "in_kz": false,
-      "score_trend": 8,
-      "score_smc": 2,
+      "score_trend": 9,
+      "score_smc": 0,
       "score_osc": 2,
-      "score_liq": 5,
-      "score_fund": 1,
-      "in_discount": false,
-      "trail_bull": false,
-      "bull_sweep": true,
-      "bear_sweep": false,
-      "funding_rate": -0.0089,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:23.286732+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR"
-    },
-    {
-      "symbol": "NEAR/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
-      "side": "SHORT",
-      "score_long": 10,
-      "score_short": 14,
-      "best_score": 14,
-      "score_pct": 31.1,
-      "price": 1.787,
-      "rsi": 41.1,
-      "htf_bull": false,
-      "in_kz": false,
-      "score_trend": 8,
-      "score_smc": 2,
-      "score_osc": 1,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
-      "trail_bull": false,
-      "bull_sweep": true,
+      "trail_bull": true,
+      "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.01,
+      "funding_rate": -0.0073,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:31.544189+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.1× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.1× > 3× ATR"
+      "ts": "2026-07-01T11:32:56.475453+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR"
     },
     {
       "symbol": "HYPE/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 8,
+      "score_long": 10,
       "score_short": 14,
       "best_score": 14,
       "score_pct": 31.1,
-      "price": 63.02,
-      "rsi": 32.0,
+      "price": 62.94,
+      "rsi": 35.4,
       "htf_bull": false,
       "in_kz": false,
       "score_trend": 8,
@@ -37429,231 +37520,176 @@
       "trail_bull": false,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0052,
+      "funding_rate": -0.0055,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:46.349460+00:00",
-      "reject_reason": "SL กว้างเกิน 4.8% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.8% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-07-01T11:32:58.515588+00:00",
+      "reject_reason": "SL กว้างเกิน 5.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 5.0% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "ETH/USDT",
+      "symbol": "SOL/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
-      "side": "SHORT",
-      "score_long": 12,
-      "score_short": 13,
+      "side": "LONG",
+      "score_long": 13,
+      "score_short": 12,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 1573.21,
-      "rsi": 44.0,
-      "htf_bull": false,
+      "price": 74.99,
+      "rsi": 54.7,
+      "htf_bull": true,
       "in_kz": false,
       "score_trend": 9,
-      "score_smc": 2,
-      "score_osc": 0,
+      "score_smc": 0,
+      "score_osc": 2,
       "score_liq": 5,
       "score_fund": 1,
       "in_discount": false,
-      "trail_bull": false,
-      "bull_sweep": true,
-      "bear_sweep": false,
-      "funding_rate": 0.0079,
+      "trail_bull": true,
+      "bull_sweep": false,
+      "bear_sweep": true,
+      "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:16.111240+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR"
+      "ts": "2026-07-01T11:32:26.148134+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.6× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.6× > 3× ATR"
+    },
+    {
+      "symbol": "AAVE/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "SHORT",
+      "score_long": 10,
+      "score_short": 13,
+      "best_score": 13,
+      "score_pct": 28.9,
+      "price": 86.32,
+      "rsi": 49.3,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 8,
+      "score_smc": 0,
+      "score_osc": 1,
+      "score_liq": 5,
+      "score_fund": 2,
+      "in_discount": true,
+      "trail_bull": true,
+      "bull_sweep": false,
+      "bear_sweep": false,
+      "funding_rate": 0.01,
+      "regime": "RANGING",
+      "ts": "2026-07-01T11:32:43.919019+00:00",
+      "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
       "symbol": "ETC/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 10,
+      "score_long": 8,
       "score_short": 13,
       "best_score": 13,
       "score_pct": 28.9,
       "price": 6.85,
-      "rsi": 43.5,
+      "rsi": 41.9,
       "htf_bull": false,
       "in_kz": false,
-      "score_trend": 9,
+      "score_trend": 8,
       "score_smc": 2,
-      "score_osc": 0,
+      "score_osc": 1,
       "score_liq": 5,
       "score_fund": 1,
       "in_discount": false,
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0058,
+      "funding_rate": -0.0047,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:35.165297+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR"
+      "ts": "2026-07-01T11:32:46.124884+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR"
     },
     {
       "symbol": "POL/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 13,
+      "score_long": 12,
       "score_short": 9,
-      "best_score": 13,
-      "score_pct": 28.9,
-      "price": 0.0703,
-      "rsi": 58.5,
+      "best_score": 12,
+      "score_pct": 26.7,
+      "price": 0.07005,
+      "rsi": 59.3,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
       "score_smc": 0,
-      "score_osc": 3,
+      "score_osc": 2,
       "score_liq": 8,
       "score_fund": 2,
       "in_discount": false,
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0025,
+      "funding_rate": 0.003,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:37.978390+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 6.8× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 6.8× > 3× ATR"
-    },
-    {
-      "symbol": "ONDO/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "SHORT",
-      "score_long": 12,
-      "score_short": 13,
-      "best_score": 13,
-      "score_pct": 28.9,
-      "price": 0.311,
-      "rsi": 46.2,
-      "htf_bull": false,
-      "in_kz": false,
-      "score_trend": 9,
-      "score_smc": 2,
-      "score_osc": 0,
-      "score_liq": 5,
-      "score_fund": 1,
-      "in_discount": false,
-      "trail_bull": false,
-      "bull_sweep": true,
-      "bear_sweep": false,
-      "funding_rate": 0.005,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:45.457243+00:00",
-      "claude_reason": "RANGING regime — skip Claude (low WR regime)"
+      "ts": "2026-07-01T11:32:49.309625+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 6.2× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 6.2× > 3× ATR"
     },
     {
       "symbol": "TRX/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 11,
-      "score_short": 6,
-      "best_score": 11,
-      "score_pct": 24.4,
-      "price": 0.3172,
-      "rsi": 53.7,
+      "score_long": 10,
+      "score_short": 8,
+      "best_score": 10,
+      "score_pct": 22.2,
+      "price": 0.3169,
+      "rsi": 56.4,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
       "score_smc": 0,
-      "score_osc": 1,
-      "score_liq": 8,
+      "score_osc": 3,
+      "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
       "trail_bull": true,
-      "bull_sweep": true,
+      "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0115,
+      "funding_rate": -0.0104,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:19.681028+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 5.2× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 5.2× > 3× ATR"
+      "ts": "2026-07-01T11:32:27.157912+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR"
     },
     {
       "symbol": "SHIB/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
       "side": "SHORT",
-      "score_long": 7,
-      "score_short": 11,
-      "best_score": 11,
-      "score_pct": 24.4,
-      "price": 4.232e-06,
-      "rsi": 48.1,
+      "score_long": 8,
+      "score_short": 10,
+      "best_score": 10,
+      "score_pct": 22.2,
+      "price": 4.224e-06,
+      "rsi": 49.4,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
       "score_smc": 2,
-      "score_osc": 4,
+      "score_osc": 2,
       "score_liq": 5,
-      "score_fund": 1,
+      "score_fund": 2,
       "in_discount": false,
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0093,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:27.816435+00:00",
-      "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
-    },
-    {
-      "symbol": "XRP/USDT",
-      "market_type": "FUTURES",
-      "status": "SL_REJECT",
-      "side": "LONG",
-      "score_long": 10,
-      "score_short": 9,
-      "best_score": 10,
-      "score_pct": 22.2,
-      "price": 1.0405,
-      "rsi": 44.5,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 0,
-      "score_smc": 0,
-      "score_osc": 0,
-      "score_liq": 8,
-      "score_fund": 2,
-      "in_discount": false,
-      "trail_bull": true,
-      "bull_sweep": true,
-      "bear_sweep": false,
-      "funding_rate": 0.0033,
-      "regime": "RANGING",
-      "ts": "2026-07-01T11:17:17.895325+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR"
-    },
-    {
-      "symbol": "AAVE/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "LONG",
-      "score_long": 10,
-      "score_short": 9,
-      "best_score": 10,
-      "score_pct": 22.2,
-      "price": 86.2,
-      "rsi": 46.9,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 0,
-      "score_smc": 0,
-      "score_osc": 1,
-      "score_liq": 8,
-      "score_fund": 1,
-      "in_discount": false,
-      "trail_bull": false,
-      "bull_sweep": true,
-      "bear_sweep": false,
       "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:33.304698+00:00",
+      "ts": "2026-07-01T11:32:36.536872+00:00",
       "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)"
     },
     {
@@ -37661,17 +37697,17 @@
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 9,
+      "score_long": 10,
       "score_short": 8,
-      "best_score": 9,
-      "score_pct": 20.0,
-      "price": 0.08362,
-      "rsi": 53.5,
+      "best_score": 10,
+      "score_pct": 22.2,
+      "price": 0.08355,
+      "rsi": 53.1,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
       "score_smc": 0,
-      "score_osc": 2,
+      "score_osc": 4,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
@@ -37680,7 +37716,7 @@
       "bear_sweep": false,
       "funding_rate": 0.0076,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:36.996015+00:00",
+      "ts": "2026-07-01T11:32:48.294729+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 4.0× > 3× ATR",
       "claude_reason": "SL กว้างเกิน ATR — 4.0× > 3× ATR"
     },
@@ -37689,28 +37725,28 @@
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
-      "score_long": 9,
+      "score_long": 10,
       "score_short": 8,
-      "best_score": 9,
-      "score_pct": 20.0,
-      "price": 0.05396,
-      "rsi": 48.7,
+      "best_score": 10,
+      "score_pct": 22.2,
+      "price": 0.05394,
+      "rsi": 50.7,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
       "score_smc": 0,
-      "score_osc": 2,
+      "score_osc": 4,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0017,
+      "funding_rate": -0.0003,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:43.564062+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR"
+      "ts": "2026-07-01T11:32:55.458777+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.6× > 3× ATR"
     },
     {
       "symbol": "LINK/USDT",
@@ -37721,8 +37757,8 @@
       "score_short": 8,
       "best_score": 8,
       "score_pct": 17.8,
-      "price": 7.23,
-      "rsi": 48.4,
+      "price": 7.227,
+      "rsi": 49.0,
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
@@ -37731,12 +37767,12 @@
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": false,
-      "trail_bull": false,
+      "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0017,
+      "funding_rate": -0.0013,
       "regime": "RANGING",
-      "ts": "2026-07-01T11:17:24.182322+00:00"
+      "ts": "2026-07-01T11:32:32.158412+00:00"
     },
     {
       "symbol": "TON/USDT",
@@ -37755,1333 +37791,1333 @@
       "in_kz": false,
       "in_discount": false,
       "trail_bull": false,
-      "ts": "2026-07-01T11:17:26.507308+00:00"
+      "ts": "2026-07-01T11:32:34.738817+00:00"
     }
   ],
   "live_prices": {
     "BTC/USDT": {
-      "price": 58661.2,
-      "change": -1.04,
+      "price": 58680.0,
+      "change": -0.71,
       "high": 59436.8,
       "low": 57750.0,
-      "vol": 806586259795.0,
-      "volBase": 13749910.67
+      "vol": 801463666564.8,
+      "volBase": 13658208.36
     },
     "ETH/USDT": {
-      "price": 1573.06,
-      "change": -0.51,
+      "price": 1572.02,
+      "change": -0.25,
       "high": 1604.21,
       "low": 1549.03,
-      "vol": 71682425696.02,
-      "volBase": 45568780.4
+      "vol": 70589242404.5,
+      "volBase": 44903526.93
     },
     "BNB/USDT": {
-      "price": 539.7,
-      "change": -1.59,
+      "price": 542.7,
+      "change": -0.73,
       "high": 552.6,
       "low": 536.7,
-      "vol": 5195444717.4,
-      "volBase": 9626542.0
+      "vol": 5460671278.8,
+      "volBase": 10062044.0
     },
     "XRP/USDT": {
-      "price": 1.0403,
-      "change": -0.08,
+      "price": 1.039,
+      "change": 0.09,
       "high": 1.0538,
       "low": 1.0211,
-      "vol": 1430417.14,
-      "volBase": 1375004.46
+      "vol": 1423746.01,
+      "volBase": 1370304.15
     },
     "SOL/USDT": {
-      "price": 75.12,
-      "change": 2.32,
+      "price": 74.95,
+      "change": 2.2,
       "high": 75.83,
       "low": 71.86,
-      "vol": 1152716927.34,
-      "volBase": 15345007.02
+      "vol": 1146705675.06,
+      "volBase": 15299608.74
     },
     "TRX/USDT": {
-      "price": 0.31699,
-      "change": 0.0,
+      "price": 0.3168,
+      "change": -0.22,
       "high": 0.3177,
       "low": 0.31388,
-      "vol": 14333.56,
-      "volBase": 45217.7
+      "vol": 14276.43,
+      "volBase": 45064.48
     },
     "DOGE/USDT": {
-      "price": 0.07099,
-      "change": -1.73,
+      "price": 0.07108,
+      "change": -1.28,
       "high": 0.07287,
       "low": 0.06945,
-      "vol": 330633.2,
-      "volBase": 4657461.58
+      "vol": 327822.61,
+      "volBase": 4612023.15
     },
     "ADA/USDT": {
-      "price": 0.1522,
-      "change": 5.55,
+      "price": 0.1507,
+      "change": 4.8,
       "high": 0.1529,
       "low": 0.1417,
-      "vol": 561791.68,
-      "volBase": 3691141.1
+      "vol": 557909.95,
+      "volBase": 3702123.1
     },
     "BCH/USDT": {
-      "price": 205.6,
-      "change": 2.9,
+      "price": 205.1,
+      "change": 2.96,
       "high": 210.3,
       "low": 194.0,
-      "vol": 380133778.32,
-      "volBase": 1848899.7
+      "vol": 376901584.29,
+      "volBase": 1837647.9
     },
     "LTC/USDT": {
-      "price": 41.85,
-      "change": -1.2,
+      "price": 41.83,
+      "change": -0.9,
       "high": 42.92,
       "low": 41.28,
-      "vol": 24718133.34,
-      "volBase": 590636.4
+      "vol": 24660554.41,
+      "volBase": 589542.3
     },
     "LINK/USDT": {
-      "price": 7.225,
-      "change": -0.54,
+      "price": 7.219,
+      "change": -0.32,
       "high": 7.332,
       "low": 7.064,
-      "vol": 23259022.0,
-      "volBase": 3219241.8
+      "vol": 23077744.68,
+      "volBase": 3196806.3
     },
     "AVAX/USDT": {
-      "price": 6.656,
-      "change": 1.31,
+      "price": 6.651,
+      "change": 1.48,
       "high": 6.723,
       "low": 6.378,
-      "vol": 22997370.57,
-      "volBase": 3455133.8
+      "vol": 22698180.3,
+      "volBase": 3412747.0
     },
     "SUI/USDT": {
-      "price": 0.6985,
-      "change": 1.01,
+      "price": 0.6983,
+      "change": 1.29,
       "high": 0.7084,
       "low": 0.6769,
-      "vol": 67666966.08,
-      "volBase": 96874683.0
+      "vol": 66788160.51,
+      "volBase": 95643936.0
     },
     "DOT/USDT": {
-      "price": 0.8363,
-      "change": 3.17,
+      "price": 0.8361,
+      "change": 3.29,
       "high": 0.8424,
       "low": 0.8002,
-      "vol": 16876576.65,
-      "volBase": 20180051.0
+      "vol": 16821729.17,
+      "volBase": 20119279.0
     },
     "SHIB/USDT": {
       "price": 4.22e-06,
-      "change": -0.47,
+      "change": -0.09,
       "high": 4.26e-06,
       "low": 4.13e-06,
-      "vol": 11.15,
-      "volBase": 2640455.6
+      "vol": 11.09,
+      "volBase": 2625777.8
     },
     "HBAR/USDT": {
       "price": 0.06941,
-      "change": -1.49,
+      "change": -1.13,
       "high": 0.07118,
       "low": 0.0684,
-      "vol": 80205.89,
-      "volBase": 1155537.9
+      "vol": 79872.86,
+      "volBase": 1150740.0
     },
     "XLM/USDT": {
-      "price": 0.19815,
-      "change": 10.91,
+      "price": 0.19713,
+      "change": 10.99,
       "high": 0.20759,
       "low": 0.17371,
-      "vol": 990383.66,
-      "volBase": 4998151.2
+      "vol": 986224.56,
+      "volBase": 5002914.6
     },
     "UNI/USDT": {
-      "price": 2.752,
-      "change": -1.92,
+      "price": 2.744,
+      "change": -1.12,
       "high": 2.855,
       "low": 2.738,
-      "vol": 24617468.35,
-      "volBase": 8945301.0
+      "vol": 23477938.4,
+      "volBase": 8556100.0
     },
     "NEAR/USDT": {
-      "price": 1.786,
-      "change": -3.04,
+      "price": 1.796,
+      "change": -2.13,
       "high": 1.854,
       "low": 1.722,
-      "vol": 3189354.68,
-      "volBase": 1785752.9
+      "vol": 3198435.16,
+      "volBase": 1780865.9
     },
     "PEPE/USDT": {
-      "price": 2.28e-06,
-      "change": -2.19,
+      "price": 2.26e-06,
+      "change": -2.58,
       "high": 2.36e-06,
       "low": 2.24e-06,
-      "vol": 8.35,
-      "volBase": 3664818.4
+      "vol": 8.37,
+      "volBase": 3694924.7
     },
     "AAVE/USDT": {
-      "price": 86.13,
-      "change": -2.73,
+      "price": 86.17,
+      "change": -2.58,
       "high": 88.93,
       "low": 84.24,
-      "vol": 365131985.62,
-      "volBase": 4239312.5
+      "vol": 363088617.74,
+      "volBase": 4213631.4
     },
     "ICP/USDT": {
-      "price": 2.111,
-      "change": -0.8,
+      "price": 2.106,
+      "change": -0.52,
       "high": 2.145,
       "low": 2.046,
-      "vol": 758770379.73,
-      "volBase": 359436466.0
+      "vol": 746033755.19,
+      "volBase": 354242049.0
     },
     "ETC/USDT": {
-      "price": 6.846,
-      "change": -1.88,
+      "price": 6.838,
+      "change": -1.99,
       "high": 7.02,
       "low": 6.752,
-      "vol": 627146.25,
-      "volBase": 91607.69
+      "vol": 623887.63,
+      "volBase": 91238.32
     },
     "RENDER/USDT": {
-      "price": 1.507,
-      "change": -0.2,
+      "price": 1.509,
+      "change": 0.27,
       "high": 1.534,
       "low": 1.467,
-      "vol": 3248124.51,
-      "volBase": 2155358.0
+      "vol": 3202392.25,
+      "volBase": 2122195.0
     },
     "ALGO/USDT": {
-      "price": 0.08348,
-      "change": -1.57,
+      "price": 0.0834,
+      "change": -1.59,
       "high": 0.08509,
       "low": 0.08112,
-      "vol": 359616.9,
-      "volBase": 4307821.0
+      "vol": 354971.75,
+      "volBase": 4256256.0
     },
     "POL/USDT": {
-      "price": 0.06998,
-      "change": -0.19,
+      "price": 0.07001,
+      "change": -0.09,
       "high": 0.07035,
       "low": 0.06737,
-      "vol": 292972.25,
-      "volBase": 4186514.0
+      "vol": 292500.87,
+      "volBase": 4177987.0
     },
     "ATOM/USDT": {
-      "price": 1.508,
-      "change": -0.79,
+      "price": 1.505,
+      "change": -0.46,
       "high": 1.538,
       "low": 1.478,
-      "vol": 2452090.94,
-      "volBase": 1626055.0
+      "vol": 2420262.74,
+      "volBase": 1608148.0
     },
     "WLD/USDT": {
-      "price": 0.392,
-      "change": -5.88,
+      "price": 0.3919,
+      "change": -4.58,
       "high": 0.4193,
       "low": 0.3874,
-      "vol": 120346104.65,
-      "volBase": 307005369.0
+      "vol": 117886891.12,
+      "volBase": 300808602.0
     },
     "ENA/USDT": {
-      "price": 0.07182,
+      "price": 0.07187,
       "change": 0.27,
       "high": 0.07337,
       "low": 0.07013,
-      "vol": 1956850.38,
-      "volBase": 27246594.0
+      "vol": 1935899.45,
+      "volBase": 26936127.0
     },
     "FIL/USDT": {
-      "price": 0.7312,
-      "change": 0.59,
+      "price": 0.7293,
+      "change": 1.19,
       "high": 0.7379,
       "low": 0.7009,
-      "vol": 448013257.33,
-      "volBase": 612709597.0
+      "vol": 440125922.85,
+      "volBase": 603490913.0
     },
     "APT/USDT": {
-      "price": 0.5875,
-      "change": 3.47,
+      "price": 0.5858,
+      "change": 3.77,
       "high": 0.5896,
       "low": 0.5541,
-      "vol": 8460248.51,
-      "volBase": 14400423.0
+      "vol": 8357559.98,
+      "volBase": 14266917.0
     },
     "CRO/USDT": {
-      "price": 0.0539,
-      "change": 0.41,
+      "price": 0.05385,
+      "change": 0.45,
       "high": 0.05436,
       "low": 0.05296,
-      "vol": 68367.41,
-      "volBase": 1268412.0
+      "vol": 66697.1,
+      "volBase": 1238572.0
     },
     "TRUMP/USDT": {
-      "price": 1.699,
-      "change": 2.66,
+      "price": 1.698,
+      "change": 3.16,
       "high": 1.736,
       "low": 1.63,
-      "vol": 298322781.92,
-      "volBase": 175587276.0
+      "vol": 294434578.78,
+      "volBase": 173400812.0
     },
     "ONDO/USDT": {
-      "price": 0.3107,
-      "change": 0.36,
+      "price": 0.3108,
+      "change": 0.71,
       "high": 0.3163,
       "low": 0.3028,
-      "vol": 1800840.81,
-      "volBase": 5796076.0
+      "vol": 1784989.36,
+      "volBase": 5743209.0
     },
     "HYPE/USDT": {
-      "price": 62.956,
-      "change": -4.57,
+      "price": 62.824,
+      "change": -4.07,
       "high": 66.093,
       "low": 62.417,
-      "vol": 2859780643.96,
-      "volBase": 45425069.0
+      "vol": 2828298408.66,
+      "volBase": 45019394.0
     },
     "RAVE/USDT": {
-      "price": 0.2907,
-      "change": -16.18,
-      "high": 0.3474,
+      "price": 0.2893,
+      "change": -14.26,
+      "high": 0.3425,
       "low": 0.2811,
-      "vol": 5931920.8,
-      "volBase": 20405644.32
+      "vol": 5681410.6,
+      "volBase": 19638474.24
     },
     "RIVER/USDT": {
-      "price": 3.695,
-      "change": 1.32,
+      "price": 3.686,
+      "change": 1.15,
       "high": 3.876,
       "low": 3.612,
-      "vol": 39833300.88,
-      "volBase": 10780325.0
+      "vol": 39202040.17,
+      "volBase": 10635388.0
     }
   },
   "market_tickers": [
     {
       "sym": "PI",
       "price": 0.1148,
-      "change": 1.41,
-      "vol": 5501124.73
+      "change": 1.77,
+      "vol": 5476257.33
     },
     {
       "sym": "UNI",
-      "price": 2.752,
-      "change": -1.92,
-      "vol": 24617468.35
+      "price": 2.744,
+      "change": -1.12,
+      "vol": 23477938.4
     },
     {
       "sym": "WDC",
-      "price": 629.05,
-      "change": -2.19,
-      "vol": 5298028.94
+      "price": 625.9,
+      "change": -2.29,
+      "vol": 5238100.77
     },
     {
       "sym": "APE",
-      "price": 0.1434,
-      "change": -1.69,
-      "vol": 34564735.91
+      "price": 0.1438,
+      "change": -0.23,
+      "vol": 34592273.62
     },
     {
       "sym": "LITE",
-      "price": 845.95,
-      "change": -0.14,
-      "vol": 10111005.89
+      "price": 845.28,
+      "change": -0.01,
+      "vol": 10102473.81
     },
     {
       "sym": "MSTR",
-      "price": 87.38,
-      "change": -2.85,
-      "vol": 48306230.35
+      "price": 87.42,
+      "change": -2.21,
+      "vol": 48358519.16
     },
     {
       "sym": "APT",
-      "price": 0.5875,
-      "change": 3.47,
-      "vol": 8460248.51
+      "price": 0.5858,
+      "change": 3.77,
+      "vol": 8357559.98
     },
     {
       "sym": "SNX",
-      "price": 0.2061,
-      "change": -1.67,
-      "vol": 1559353.84
+      "price": 0.2062,
+      "change": -1.43,
+      "vol": 1556183.77
     },
     {
       "sym": "LIT",
-      "price": 1.86,
-      "change": -2.64,
-      "vol": 46305178.02
+      "price": 1.8562,
+      "change": -2.35,
+      "vol": 45350164.23
     },
     {
       "sym": "W",
-      "price": 0.009364,
-      "change": -0.06,
-      "vol": 2637981.2
+      "price": 0.009369,
+      "change": 0.98,
+      "vol": 2575606.44
     },
     {
       "sym": "LPT",
-      "price": 1.526,
-      "change": -0.2,
-      "vol": 12694945.07
+      "price": 1.523,
+      "change": 0.2,
+      "vol": 12510543.38
     },
     {
       "sym": "MRVL",
-      "price": 292.79,
-      "change": 4.65,
-      "vol": 45268598.61
+      "price": 292.31,
+      "change": 4.61,
+      "vol": 45019776.8
     },
     {
       "sym": "MSFT",
-      "price": 380.4,
-      "change": 2.54,
-      "vol": 5860058.2
+      "price": 380.34,
+      "change": 2.55,
+      "vol": 5899016.35
     },
     {
       "sym": "SKHYNIX",
-      "price": 1657.6,
-      "change": -3.6,
-      "vol": 156306982.36
+      "price": 1659.2,
+      "change": -3.53,
+      "vol": 156513603.63
     },
     {
       "sym": "ETH",
-      "price": 1573.06,
-      "change": -0.51,
-      "vol": 71682425696.02
+      "price": 1572.02,
+      "change": -0.25,
+      "vol": 70589242404.5
     },
     {
       "sym": "LAYER",
-      "price": 0.06369,
-      "change": -1.59,
-      "vol": 1666345.67
+      "price": 0.06403,
+      "change": -0.59,
+      "vol": 1674996.31
     },
     {
       "sym": "VANA",
       "price": 1.068,
-      "change": -2.91,
-      "vol": 3260570.89
+      "change": -2.38,
+      "vol": 3216392.0
     },
     {
       "sym": "ZBT",
-      "price": 0.14416,
-      "change": 43.2,
-      "vol": 12009439.38
+      "price": 0.14139,
+      "change": 41.12,
+      "vol": 12495398.23
     },
     {
       "sym": "SUI",
-      "price": 0.6985,
-      "change": 1.01,
-      "vol": 67666966.08
+      "price": 0.6983,
+      "change": 1.29,
+      "vol": 66788160.51
     },
     {
       "sym": "RE",
-      "price": 0.62277,
-      "change": -12.29,
-      "vol": 8092368.66
+      "price": 0.62178,
+      "change": -13.02,
+      "vol": 8008664.44
     },
     {
       "sym": "BCH",
-      "price": 205.6,
-      "change": 2.9,
-      "vol": 380133778.32
+      "price": 205.1,
+      "change": 2.96,
+      "vol": 376901584.29
     },
     {
       "sym": "ALLO",
-      "price": 0.25785,
-      "change": -7.8,
-      "vol": 1834586.51
+      "price": 0.25769,
+      "change": -8.2,
+      "vol": 1834309.83
     },
     {
       "sym": "XPT",
-      "price": 1565.0,
-      "change": -1.89,
-      "vol": 1798986280.0
+      "price": 1571.1,
+      "change": -1.71,
+      "vol": 1887291730.5
     },
     {
       "sym": "QQQ",
-      "price": 734.12,
-      "change": 0.9,
-      "vol": 15841531.43
+      "price": 733.61,
+      "change": 0.91,
+      "vol": 15795430.27
     },
     {
       "sym": "YGG",
-      "price": 0.02157,
-      "change": -1.55,
-      "vol": 1839561.15
+      "price": 0.02158,
+      "change": -0.83,
+      "vol": 1804704.8
     },
     {
       "sym": "METIS",
-      "price": 2.608,
-      "change": -1.73,
-      "vol": 1448717.92
+      "price": 2.611,
+      "change": -1.17,
+      "vol": 1437467.77
     },
     {
       "sym": "GRAM",
-      "price": 1.556,
-      "change": -2.69,
-      "vol": 10210560.69
+      "price": 1.559,
+      "change": -2.32,
+      "vol": 10206966.32
     },
     {
       "sym": "BB",
-      "price": 12.573,
-      "change": 1.13,
-      "vol": 2092926.73
+      "price": 12.564,
+      "change": 1.66,
+      "vol": 2079090.72
     },
     {
       "sym": "AVNT",
-      "price": 0.08834,
-      "change": -1.19,
-      "vol": 1460453.31
+      "price": 0.08829,
+      "change": -0.7,
+      "vol": 1477960.83
     },
     {
       "sym": "AGLD",
       "price": 0.1792,
-      "change": -5.88,
-      "vol": 6392787.97
+      "change": -6.23,
+      "vol": 6376479.87
     },
     {
       "sym": "TRUMP",
-      "price": 1.699,
-      "change": 2.66,
-      "vol": 298322781.92
+      "price": 1.698,
+      "change": 3.16,
+      "vol": 294434578.78
     },
     {
       "sym": "ME",
-      "price": 0.05966,
-      "change": 4.61,
-      "vol": 2362776.07
+      "price": 0.05954,
+      "change": 5.01,
+      "vol": 2369435.74
     },
     {
       "sym": "AVGO",
-      "price": 377.39,
-      "change": -0.26,
-      "vol": 2254973.18
+      "price": 376.84,
+      "change": -0.12,
+      "vol": 2237193.56
     },
     {
       "sym": "RKLB",
-      "price": 101.76,
-      "change": 0.44,
-      "vol": 5435882.84
+      "price": 101.43,
+      "change": 0.23,
+      "vol": 5416921.89
     },
     {
       "sym": "BICO",
-      "price": 0.01528,
-      "change": -17.09,
-      "vol": 6486317.19
+      "price": 0.01514,
+      "change": -17.54,
+      "vol": 6432086.38
     },
     {
       "sym": "PROS",
-      "price": 0.4075,
-      "change": -5.14,
-      "vol": 1546175.62
+      "price": 0.4079,
+      "change": -5.38,
+      "vol": 1550062.83
     },
     {
       "sym": "IBM",
-      "price": 282.3,
-      "change": 1.35,
-      "vol": 1113645.27
+      "price": 282.63,
+      "change": 1.5,
+      "vol": 1113466.11
     },
     {
       "sym": "META",
-      "price": 567.66,
-      "change": 0.32,
-      "vol": 2004208.78
+      "price": 568.5,
+      "change": 0.58,
+      "vol": 2028516.02
     },
     {
       "sym": "MORPHO",
-      "price": 1.9855,
-      "change": 5.28,
-      "vol": 3105508.64
+      "price": 1.9716,
+      "change": 7.14,
+      "vol": 2942666.23
     },
     {
       "sym": "QNT",
-      "price": 81.4,
-      "change": 11.55,
-      "vol": 2554128.5
+      "price": 81.28,
+      "change": 11.5,
+      "vol": 2554809.22
     },
     {
       "sym": "SOL",
-      "price": 75.12,
-      "change": 2.32,
-      "vol": 1152716927.34
+      "price": 74.95,
+      "change": 2.2,
+      "vol": 1146705675.06
     },
     {
       "sym": "RIVER",
-      "price": 3.695,
-      "change": 1.32,
-      "vol": 39833300.88
+      "price": 3.686,
+      "change": 1.15,
+      "vol": 39202040.17
     },
     {
       "sym": "NBIS",
-      "price": 280.77,
-      "change": 6.24,
-      "vol": 9360175.49
+      "price": 278.93,
+      "change": 5.74,
+      "vol": 9307037.78
     },
     {
       "sym": "WLD",
-      "price": 0.392,
-      "change": -5.88,
-      "vol": 120346104.65
+      "price": 0.3919,
+      "change": -4.58,
+      "vol": 117886891.12
     },
     {
       "sym": "ORCL",
-      "price": 149.43,
-      "change": -0.38,
-      "vol": 5353538.95
+      "price": 148.99,
+      "change": -0.46,
+      "vol": 5355460.45
     },
     {
       "sym": "KSM",
-      "price": 3.009,
-      "change": 0.07,
-      "vol": 6704831.33
+      "price": 3.01,
+      "change": 0.67,
+      "vol": 6684012.02
     },
     {
       "sym": "UMA",
-      "price": 0.3776,
-      "change": -0.94,
-      "vol": 1660824.89
+      "price": 0.3783,
+      "change": -0.24,
+      "vol": 1676803.02
     },
     {
       "sym": "MAGIC",
-      "price": 0.04025,
-      "change": -4.26,
-      "vol": 2231142.11
+      "price": 0.04062,
+      "change": -3.08,
+      "vol": 2255775.69
     },
     {
       "sym": "ORDI",
-      "price": 3.541,
-      "change": -3.75,
-      "vol": 229871419.23
+      "price": 3.552,
+      "change": -3.06,
+      "vol": 229263744.1
     },
     {
       "sym": "PYTH",
-      "price": 0.03867,
-      "change": 5.17,
-      "vol": 1358499.06
+      "price": 0.03875,
+      "change": 6.84,
+      "vol": 1357583.39
     },
     {
       "sym": "CBRS",
-      "price": 216.72,
-      "change": 1.12,
-      "vol": 31300256.28
+      "price": 216.89,
+      "change": 1.29,
+      "vol": 31206209.11
     },
     {
       "sym": "VIRTUAL",
-      "price": 0.5266,
-      "change": 0.13,
-      "vol": 3495046.83
+      "price": 0.5269,
+      "change": 1.15,
+      "vol": 3306646.83
     },
     {
       "sym": "ONDO",
-      "price": 0.3107,
-      "change": 0.36,
-      "vol": 1800840.81
+      "price": 0.3108,
+      "change": 0.71,
+      "vol": 1784989.36
     },
     {
       "sym": "LTC",
-      "price": 41.85,
-      "change": -1.2,
-      "vol": 24718133.34
+      "price": 41.83,
+      "change": -0.9,
+      "vol": 24660554.41
     },
     {
       "sym": "ASTER",
-      "price": 0.6263,
-      "change": 1.1,
-      "vol": 7762533.81
+      "price": 0.6266,
+      "change": 1.31,
+      "vol": 7682253.23
     },
     {
       "sym": "EWY",
-      "price": 194.39,
-      "change": -1.71,
-      "vol": 15229365.97
+      "price": 194.52,
+      "change": -1.56,
+      "vol": 15248699.02
     },
     {
       "sym": "BNB",
-      "price": 539.7,
-      "change": -1.59,
-      "vol": 5195444717.4
+      "price": 542.7,
+      "change": -0.73,
+      "vol": 5460671278.8
     },
     {
       "sym": "AAPL",
       "price": 289.49,
-      "change": 2.61,
-      "vol": 4032274.37
+      "change": 2.75,
+      "vol": 3913403.98
     },
     {
       "sym": "SPY",
-      "price": 746.24,
-      "change": 0.32,
-      "vol": 1432549.47
+      "price": 746.09,
+      "change": 0.37,
+      "vol": 1427270.17
     },
     {
       "sym": "KAITO",
-      "price": 0.5724,
-      "change": -1.21,
-      "vol": 2909308.86
+      "price": 0.5698,
+      "change": -0.92,
+      "vol": 2820455.3
     },
     {
       "sym": "CRWV",
       "price": 100.45,
-      "change": 3.64,
-      "vol": 3008479.51
+      "change": 3.82,
+      "vol": 3020340.65
     },
     {
       "sym": "TSLA",
-      "price": 421.65,
-      "change": 3.14,
-      "vol": 16035412.75
+      "price": 420.8,
+      "change": 3.05,
+      "vol": 15978230.46
     },
     {
       "sym": "ENA",
-      "price": 0.07182,
+      "price": 0.07187,
       "change": 0.27,
-      "vol": 1956850.38
+      "vol": 1935899.45
     },
     {
       "sym": "LIGHT",
-      "price": 0.1213,
-      "change": -0.33,
-      "vol": 1008705.33
+      "price": 0.1211,
+      "change": -0.25,
+      "vol": 1003686.25
     },
     {
       "sym": "ASTS",
-      "price": 88.25,
-      "change": -0.6,
-      "vol": 3555183.02
+      "price": 87.9,
+      "change": -0.86,
+      "vol": 3519372.72
     },
     {
       "sym": "LAB",
-      "price": 9.028,
-      "change": -29.49,
-      "vol": 23497008.58
+      "price": 8.952,
+      "change": -29.94,
+      "vol": 23450098.8
     },
     {
       "sym": "FIL",
-      "price": 0.7312,
-      "change": 0.59,
-      "vol": 448013257.33
+      "price": 0.7293,
+      "change": 1.19,
+      "vol": 440125922.85
     },
     {
       "sym": "ALAB",
-      "price": 481.31,
-      "change": 5.88,
-      "vol": 1012219.0
+      "price": 481.98,
+      "change": 6.16,
+      "vol": 1024723.22
     },
     {
       "sym": "SPCX",
-      "price": 174.68,
-      "change": 6.66,
-      "vol": 451101801.78
+      "price": 174.12,
+      "change": 6.42,
+      "vol": 447769591.61
     },
     {
       "sym": "NG",
-      "price": 3.241,
-      "change": 0.19,
-      "vol": 3194332.84
+      "price": 3.226,
+      "change": -0.31,
+      "vol": 3200350.07
     },
     {
       "sym": "GRASS",
-      "price": 0.4819,
-      "change": 2.99,
-      "vol": 5669677.83
+      "price": 0.4847,
+      "change": 4.04,
+      "vol": 5679475.64
     },
     {
       "sym": "BE",
-      "price": 329.45,
-      "change": 17.52,
-      "vol": 9220952.99
+      "price": 326.75,
+      "change": 16.71,
+      "vol": 9245456.6
     },
     {
       "sym": "ETHFI",
-      "price": 0.3199,
-      "change": -1.2,
-      "vol": 3676798.16
+      "price": 0.3198,
+      "change": -0.96,
+      "vol": 3650742.78
     },
     {
       "sym": "SSV",
       "price": 1.974,
-      "change": -1.5,
-      "vol": 2925424.57
+      "change": -0.95,
+      "vol": 2849579.54
     },
     {
       "sym": "RESOLV",
-      "price": 0.02148,
-      "change": 17.96,
-      "vol": 1802098.43
+      "price": 0.02145,
+      "change": 18.44,
+      "vol": 1822499.04
     },
     {
       "sym": "MET",
-      "price": 0.1661,
-      "change": 1.78,
-      "vol": 3010542.24
+      "price": 0.1653,
+      "change": 2.8,
+      "vol": 2821408.17
     },
     {
       "sym": "SNDK",
-      "price": 2196.31,
-      "change": 4.73,
-      "vol": 460247799.15
+      "price": 2198.49,
+      "change": 4.67,
+      "vol": 461613104.54
     },
     {
       "sym": "TAO",
       "price": 197.3,
-      "change": -3.05,
-      "vol": 2487274879.9
+      "change": -2.62,
+      "vol": 2446531246.1
     },
     {
       "sym": "ARM",
-      "price": 350.42,
-      "change": 0.53,
-      "vol": 8385711.79
+      "price": 350.06,
+      "change": 0.61,
+      "vol": 8342325.37
     },
     {
       "sym": "SLX",
-      "price": 0.4285,
-      "change": -19.65,
-      "vol": 11790886.24
+      "price": 0.429,
+      "change": -19.01,
+      "vol": 11765694.37
     },
     {
       "sym": "TSM",
-      "price": 478.09,
-      "change": 4.98,
-      "vol": 3579689.31
+      "price": 477.55,
+      "change": 5.03,
+      "vol": 3598921.86
     },
     {
       "sym": "HYPE",
-      "price": 62.956,
-      "change": -4.57,
-      "vol": 2859780643.96
+      "price": 62.824,
+      "change": -4.07,
+      "vol": 2828298408.66
     },
     {
       "sym": "GLW",
-      "price": 249.94,
-      "change": -3.97,
-      "vol": 11304878.68
+      "price": 248.9,
+      "change": -3.7,
+      "vol": 11224479.03
     },
     {
       "sym": "BZ",
-      "price": 72.52,
-      "change": -2.08,
-      "vol": 738319955.8
+      "price": 72.4,
+      "change": -2.48,
+      "vol": 738915920.4
     },
     {
       "sym": "NEAR",
-      "price": 1.786,
-      "change": -3.04,
-      "vol": 3189354.68
+      "price": 1.796,
+      "change": -2.13,
+      "vol": 3198435.16
     },
     {
       "sym": "DRAM",
-      "price": 70.15,
-      "change": -2.96,
-      "vol": 26767633.57
+      "price": 70.1,
+      "change": -2.95,
+      "vol": 26916275.97
     },
     {
       "sym": "STRC",
-      "price": 85.16,
-      "change": 3.63,
-      "vol": 1717881.58
+      "price": 85.23,
+      "change": 3.85,
+      "vol": 1703415.3
     },
     {
       "sym": "SPX",
-      "price": 0.3441,
-      "change": -0.72,
-      "vol": 1525698.45
+      "price": 0.3434,
+      "change": 0.56,
+      "vol": 1495360.71
     },
     {
       "sym": "AXS",
-      "price": 0.9981,
-      "change": 3.34,
-      "vol": 37547652.65
+      "price": 1.0011,
+      "change": 3.84,
+      "vol": 37599949.5
     },
     {
       "sym": "XPD",
-      "price": 1197.4,
-      "change": -3.98,
-      "vol": 729417763.2
+      "price": 1202.4,
+      "change": -3.7,
+      "vol": 740843128.8
     },
     {
       "sym": "WIF",
-      "price": 0.1669,
-      "change": -2.74,
-      "vol": 9532459.45
+      "price": 0.1668,
+      "change": -2.46,
+      "vol": 9455995.42
     },
     {
       "sym": "SUSHI",
-      "price": 0.152,
-      "change": 2.43,
-      "vol": 1329402.03
+      "price": 0.1518,
+      "change": 3.41,
+      "vol": 1318472.26
     },
     {
       "sym": "SOXL",
-      "price": 260.02,
-      "change": 6.24,
-      "vol": 170515333.16
+      "price": 258.78,
+      "change": 6.21,
+      "vol": 170011661.85
     },
     {
       "sym": "RAVE",
-      "price": 0.2907,
-      "change": -16.18,
-      "vol": 5931920.8
+      "price": 0.2893,
+      "change": -14.26,
+      "vol": 5681410.6
     },
     {
       "sym": "DASH",
-      "price": 32.35,
-      "change": -1.97,
-      "vol": 371313591.15
+      "price": 32.38,
+      "change": -1.7,
+      "vol": 369520527.62
     },
     {
       "sym": "STRK",
-      "price": 0.02942,
-      "change": -0.14,
-      "vol": 2697527.92
+      "price": 0.02933,
+      "change": -0.2,
+      "vol": 2661850.16
     },
     {
       "sym": "INJ",
-      "price": 4.659,
-      "change": 1.28,
-      "vol": 57761862.69
+      "price": 4.68,
+      "change": 1.94,
+      "vol": 56340699.48
     },
     {
       "sym": "OKB",
-      "price": 80.78,
-      "change": 3.33,
-      "vol": 1908389452.62
+      "price": 80.42,
+      "change": 3.18,
+      "vol": 1832792065.84
     },
     {
       "sym": "AVAX",
-      "price": 6.656,
-      "change": 1.31,
-      "vol": 22997370.57
+      "price": 6.651,
+      "change": 1.48,
+      "vol": 22698180.3
     },
     {
       "sym": "ACT",
-      "price": 0.009941,
-      "change": -9.16,
-      "vol": 19756838.01
+      "price": 0.009865,
+      "change": -8.93,
+      "vol": 19484899.78
     },
     {
       "sym": "AXTI",
-      "price": 70.71,
-      "change": -1.49,
-      "vol": 1933875.37
+      "price": 70.6,
+      "change": -1.52,
+      "vol": 1931640.0
     },
     {
       "sym": "GIGGLE",
-      "price": 24.26,
-      "change": -0.53,
-      "vol": 126445982.68
+      "price": 24.28,
+      "change": -0.04,
+      "vol": 124500895.92
     },
     {
       "sym": "AUCTION",
-      "price": 3.115,
-      "change": -2.01,
-      "vol": 3941509.18
+      "price": 3.114,
+      "change": -1.86,
+      "vol": 3909673.71
     },
     {
       "sym": "ZRO",
-      "price": 0.8279,
-      "change": 4.41,
-      "vol": 3420696.52
+      "price": 0.8274,
+      "change": 4.27,
+      "vol": 3422166.94
     },
     {
       "sym": "GMX",
-      "price": 5.423,
-      "change": -1.27,
-      "vol": 3045920.14
+      "price": 5.418,
+      "change": -1.46,
+      "vol": 3021055.13
     },
     {
       "sym": "BASED",
-      "price": 0.11735,
-      "change": 26.22,
-      "vol": 22582566.21
+      "price": 0.11768,
+      "change": 23.83,
+      "vol": 22778253.54
     },
     {
       "sym": "AAOI",
-      "price": 146.54,
-      "change": -1.68,
-      "vol": 13061132.18
+      "price": 146.03,
+      "change": -1.25,
+      "vol": 12980866.63
     },
     {
       "sym": "DYDX",
-      "price": 0.20099,
-      "change": 23.41,
-      "vol": 118822450.62
+      "price": 0.19018,
+      "change": 17.33,
+      "vol": 114574692.59
     },
     {
       "sym": "AAVE",
-      "price": 86.13,
-      "change": -2.73,
-      "vol": 365131985.62
+      "price": 86.17,
+      "change": -2.58,
+      "vol": 363088617.74
     },
     {
       "sym": "MERL",
-      "price": 0.01859,
-      "change": -0.27,
-      "vol": 1052546.71
+      "price": 0.0186,
+      "change": 0.76,
+      "vol": 1018127.38
     },
     {
       "sym": "EGLD",
-      "price": 2.523,
-      "change": -1.18,
-      "vol": 19870305.32
+      "price": 2.515,
+      "change": -0.91,
+      "vol": 19606688.5
     },
     {
       "sym": "LUNA",
-      "price": 0.04596,
-      "change": -2.77,
-      "vol": 1365144.73
+      "price": 0.04588,
+      "change": -2.22,
+      "vol": 1306205.25
     },
     {
       "sym": "XAG",
-      "price": 58.65,
-      "change": -0.66,
-      "vol": 7798439771.25
+      "price": 59.01,
+      "change": -0.2,
+      "vol": 7985957075.67
     },
     {
       "sym": "BEAT",
-      "price": 2.3574,
-      "change": -16.98,
-      "vol": 15103392.44
+      "price": 2.3458,
+      "change": -17.11,
+      "vol": 15103929.44
     },
     {
       "sym": "EDEN",
-      "price": 0.0432,
-      "change": -5.03,
-      "vol": 1371085.44
+      "price": 0.04315,
+      "change": -4.7,
+      "vol": 1379274.6
     },
     {
       "sym": "ICP",
-      "price": 2.111,
-      "change": -0.8,
-      "vol": 758770379.73
+      "price": 2.106,
+      "change": -0.52,
+      "vol": 746033755.19
     },
     {
       "sym": "KORU",
-      "price": 694.13,
-      "change": -5.59,
-      "vol": 37450000.24
+      "price": 695.45,
+      "change": -5.25,
+      "vol": 37630291.82
     },
     {
       "sym": "LDO",
-      "price": 0.2443,
-      "change": -1.65,
-      "vol": 4189829.77
+      "price": 0.2438,
+      "change": -1.46,
+      "vol": 4163107.35
     },
     {
       "sym": "ZEC",
-      "price": 395.93,
-      "change": 1.59,
-      "vol": 18535861255.58
+      "price": 396.18,
+      "change": 1.73,
+      "vol": 18417059603.28
     },
     {
       "sym": "AMZN",
-      "price": 240.33,
-      "change": -0.49,
-      "vol": 3403185.76
+      "price": 240.09,
+      "change": -0.35,
+      "vol": 3396985.39
     },
     {
       "sym": "YFI",
-      "price": 1652.0,
-      "change": 1.85,
-      "vol": 2820654536.0
+      "price": 1654.0,
+      "change": 2.48,
+      "vol": 2814276038.0
     },
     {
       "sym": "FARTCOIN",
-      "price": 0.143,
-      "change": 0.28,
-      "vol": 7328733.55
+      "price": 0.1433,
+      "change": 2.65,
+      "vol": 7107125.43
     },
     {
       "sym": "DOT",
-      "price": 0.8363,
-      "change": 3.17,
-      "vol": 16876576.65
+      "price": 0.8361,
+      "change": 3.29,
+      "vol": 16821729.17
     },
     {
       "sym": "HOOD",
-      "price": 100.4,
-      "change": -1.89,
-      "vol": 2147114.24
+      "price": 100.41,
+      "change": -1.68,
+      "vol": 2110437.46
     },
     {
       "sym": "COAI",
-      "price": 0.286,
-      "change": 2.58,
-      "vol": 22988750.07
+      "price": 0.2859,
+      "change": 2.73,
+      "vol": 23103887.77
     },
     {
       "sym": "SAMSUNG",
-      "price": 203.99,
-      "change": -5.18,
-      "vol": 13925361.03
+      "price": 203.98,
+      "change": -5.12,
+      "vol": 10939037.4
     },
     {
       "sym": "IP",
-      "price": 0.2936,
-      "change": 0.27,
-      "vol": 5237931.16
+      "price": 0.2934,
+      "change": 0.1,
+      "vol": 5198782.18
     },
     {
       "sym": "TRB",
-      "price": 13.45,
-      "change": 0.22,
-      "vol": 11690107.85
+      "price": 13.44,
+      "change": 0.9,
+      "vol": 11440181.76
     },
     {
       "sym": "QCOM",
-      "price": 185.2,
-      "change": -3.39,
-      "vol": 1690301.88
+      "price": 184.67,
+      "change": -3.52,
+      "vol": 1679204.31
     },
     {
       "sym": "ZEN",
-      "price": 3.998,
-      "change": -1.24,
-      "vol": 4120502.72
+      "price": 3.997,
+      "change": -0.72,
+      "vol": 4083798.85
     },
     {
       "sym": "CRCL",
-      "price": 64.11,
-      "change": -14.74,
-      "vol": 83085829.15
+      "price": 64.03,
+      "change": -14.63,
+      "vol": 83099395.39
     },
     {
       "sym": "AI",
-      "price": 0.03475,
-      "change": 4.54,
-      "vol": 1271554.62
+      "price": 0.03406,
+      "change": 2.1,
+      "vol": 1241536.28
     },
     {
       "sym": "RENDER",
-      "price": 1.507,
-      "change": -0.2,
-      "vol": 3248124.51
+      "price": 1.509,
+      "change": 0.27,
+      "vol": 3202392.25
     },
     {
       "sym": "O",
-      "price": 0.5242,
-      "change": -1.35,
-      "vol": 1745091.68
+      "price": 0.5388,
+      "change": 0.88,
+      "vol": 1809280.16
     },
     {
       "sym": "CRV",
-      "price": 0.1904,
-      "change": 1.33,
-      "vol": 4643075.93
+      "price": 0.1902,
+      "change": 2.37,
+      "vol": 4298061.43
     },
     {
       "sym": "INTC",
-      "price": 138.38,
-      "change": 4.6,
-      "vol": 47443693.7
+      "price": 138.14,
+      "change": 4.49,
+      "vol": 47223725.37
     },
     {
       "sym": "BTC",
-      "price": 58661.2,
-      "change": -1.04,
-      "vol": 806586259795.0
+      "price": 58680.0,
+      "change": -0.71,
+      "vol": 801463666564.8
     },
     {
       "sym": "LINK",
-      "price": 7.225,
-      "change": -0.54,
-      "vol": 23259022.0
+      "price": 7.219,
+      "change": -0.32,
+      "vol": 23077744.68
     },
     {
       "sym": "NMR",
-      "price": 9.179,
-      "change": 5.68,
-      "vol": 8416133.31
+      "price": 9.116,
+      "change": 4.61,
+      "vol": 8213670.97
     },
     {
       "sym": "XPL",
-      "price": 0.09146,
-      "change": -5.56,
-      "vol": 4097666.37
+      "price": 0.0916,
+      "change": -5.01,
+      "vol": 4063694.13
     },
     {
       "sym": "COMP",
-      "price": 15.19,
-      "change": -2.25,
-      "vol": 4725305.2
+      "price": 15.18,
+      "change": -2.0,
+      "vol": 4677428.58
     },
     {
       "sym": "PLTR",
-      "price": 119.69,
-      "change": 2.28,
-      "vol": 1817891.22
+      "price": 119.68,
+      "change": 2.47,
+      "vol": 1819597.96
     },
     {
       "sym": "JTO",
-      "price": 0.7821,
-      "change": 4.77,
-      "vol": 29214370.22
+      "price": 0.7757,
+      "change": 3.12,
+      "vol": 29076279.85
     },
     {
       "sym": "TIA",
-      "price": 0.3729,
-      "change": 0.62,
-      "vol": 4914105.66
+      "price": 0.3714,
+      "change": 1.12,
+      "vol": 4774636.69
     },
     {
       "sym": "MU",
-      "price": 1128.54,
-      "change": -1.21,
-      "vol": 327650936.72
+      "price": 1125.3,
+      "change": -1.55,
+      "vol": 328368942.96
     },
     {
       "sym": "ENS",
-      "price": 4.056,
-      "change": -1.27,
-      "vol": 8393612.14
+      "price": 4.051,
+      "change": -1.0,
+      "vol": 8694479.01
     },
     {
       "sym": "NVDA",
-      "price": 199.45,
-      "change": 1.07,
-      "vol": 17761935.98
+      "price": 199.22,
+      "change": 1.02,
+      "vol": 17698003.55
     },
     {
       "sym": "GAS",
-      "price": 1.0081,
-      "change": -7.01,
-      "vol": 1432138.11
+      "price": 1.0085,
+      "change": -6.53,
+      "vol": 1418564.17
     },
     {
       "sym": "OP",
-      "price": 0.09467,
-      "change": -1.2,
-      "vol": 9239913.08
+      "price": 0.09466,
+      "change": -1.18,
+      "vol": 9141650.35
     },
     {
       "sym": "AMD",
-      "price": 576.64,
-      "change": 5.94,
-      "vol": 11914783.64
+      "price": 576.28,
+      "change": 6.01,
+      "vol": 11877395.89
     },
     {
       "sym": "BIO",
-      "price": 0.02947,
-      "change": 8.87,
-      "vol": 12831233.26
+      "price": 0.02954,
+      "change": 9.73,
+      "vol": 12829168.27
     },
     {
       "sym": "CORE",
-      "price": 0.02509,
-      "change": -1.1,
-      "vol": 2417664.32
+      "price": 0.02505,
+      "change": -0.67,
+      "vol": 2413390.05
     },
     {
       "sym": "NOK",
-      "price": 13.33,
-      "change": -0.3,
-      "vol": 1876957.31
+      "price": 13.28,
+      "change": -0.52,
+      "vol": 1873109.47
     },
     {
       "sym": "ATOM",
-      "price": 1.508,
-      "change": -0.79,
-      "vol": 2452090.94
+      "price": 1.505,
+      "change": -0.46,
+      "vol": 2420262.74
     },
     {
       "sym": "ETHW",
-      "price": 0.2221,
-      "change": 0.05,
-      "vol": 3580531.18
+      "price": 0.2218,
+      "change": 0.0,
+      "vol": 3577665.94
     },
     {
       "sym": "COIN",
-      "price": 145.99,
-      "change": -2.33,
-      "vol": 3282096.08
+      "price": 146.08,
+      "change": -1.91,
+      "vol": 3266636.58
     },
     {
       "sym": "XAU",
-      "price": 4021.8,
-      "change": -0.37,
-      "vol": 248024357738.4
+      "price": 4031.1,
+      "change": -0.12,
+      "vol": 257247827037.9
     },
     {
       "sym": "CELO",
-      "price": 0.06622,
-      "change": 12.49,
-      "vol": 9615501.85
+      "price": 0.06534,
+      "change": 11.27,
+      "vol": 9631174.68
     },
     {
       "sym": "AR",
-      "price": 1.993,
-      "change": 2.42,
-      "vol": 20568369.86
+      "price": 1.992,
+      "change": 2.73,
+      "vol": 20443786.44
     },
     {
       "sym": "AMAT",
-      "price": 713.46,
-      "change": -1.19,
-      "vol": 2044833.44
+      "price": 711.99,
+      "change": -0.98,
+      "vol": 2029406.46
     },
     {
       "sym": "CL",
-      "price": 69.13,
-      "change": -2.37,
-      "vol": 386223088.3
+      "price": 69.05,
+      "change": -2.68,
+      "vol": 383630613.9
     },
     {
       "sym": "BERA",
       "price": 0.2026,
-      "change": -2.17,
-      "vol": 16034077.02
+      "change": -1.75,
+      "vol": 15993138.65
     },
     {
       "sym": "KLAC",
-      "price": 299.84,
-      "change": 5.19,
-      "vol": 1357369.68
+      "price": 298.9,
+      "change": 4.87,
+      "vol": 1344861.69
     },
     {
       "sym": "PENDLE",
-      "price": 1.347,
-      "change": 1.81,
-      "vol": 1702172.92
+      "price": 1.346,
+      "change": 3.38,
+      "vol": 1591432.33
     },
     {
       "sym": "EIGEN",
-      "price": 0.198,
-      "change": -9.79,
-      "vol": 3275239.18
+      "price": 0.2005,
+      "change": -6.66,
+      "vol": 3198923.37
     },
     {
       "sym": "ENSO",
-      "price": 0.6193,
-      "change": 1.04,
-      "vol": 1488756.95
+      "price": 0.6205,
+      "change": 2.12,
+      "vol": 1475321.9
     },
     {
       "sym": "GOOGL",
-      "price": 356.54,
-      "change": 0.36,
-      "vol": 2534671.38
+      "price": 356.63,
+      "change": 0.28,
+      "vol": 2544515.82
     },
     {
       "sym": "XRP",
-      "price": 1.0403,
-      "change": -0.08,
-      "vol": 1430417.14
+      "price": 1.039,
+      "change": 0.09,
+      "vol": 1423746.01
     }
   ],
   "btc_fg": {
-    "value": 44,
+    "value": 45,
     "label": "Neutral",
-    "btc_24h": -1.04,
-    "btc_rsi": 44.5
+    "btc_24h": -0.71,
+    "btc_rsi": 45.7
   },
   "altcoin_season": {
     "value": 64,
     "label": "Altcoins Leading",
     "outperform": 23,
     "total": 36,
-    "btc_24h": -1.04,
+    "btc_24h": -0.71,
     "timeframe": "24h"
   },
-  "last_scan": "2026-07-01T11:18:03.572479+00:00",
-  "generated": "2026-07-01T11:18:03.572479+00:00",
+  "last_scan": "2026-07-01T11:33:18.910494+00:00",
+  "generated": "2026-07-01T11:33:18.910494+00:00",
   "specialist_wr": {
     "trend": {
       "trades": 1648,
@@ -39165,13 +39201,13 @@
     "wr_trend": 41.9,
     "wr_smc": 41.9,
     "wr_osc": 41.9,
-    "generated": "2026-07-01T11:18:05.670102+00:00"
+    "generated": "2026-07-01T11:33:21.030776+00:00"
   },
   "backtest": {
     "available": true,
     "source": "mtf",
     "source_file": "backtest_mtf.csv",
-    "generated": "2026-07-01T11:16:51.075049+00:00",
+    "generated": "2026-07-01T11:31:59.262987+00:00",
     "date_from": "2024-04-18",
     "date_to": "2026-02-28",
     "total_rows": 2161,
@@ -47814,7 +47850,7 @@
     "label": "backtest_3y",
     "source": "mtf",
     "source_file": "backtest_mtf.csv",
-    "generated": "2026-07-01T11:16:51.075049+00:00",
+    "generated": "2026-07-01T11:31:59.262987+00:00",
     "date_from": "2024-04-18",
     "date_to": "2026-02-28",
     "period": "2023-01-01 → 2026-07-01",
@@ -56457,10 +56493,10 @@
     "available": true,
     "label": "live_perf",
     "source": "signal_log",
-    "generated": "2026-07-01T11:18:06.168328+00:00",
+    "generated": "2026-07-01T11:33:21.529967+00:00",
     "date_from": "2026-06-24",
     "date_to": "2026-07-01",
-    "period": "All Signals · since 2026-06-24 11:18 UTC (2026-06-24 → 2026-07-01)",
+    "period": "All Signals · since 2026-06-24 11:33 UTC (2026-06-24 → 2026-07-01)",
     "total_rows": 306,
     "n_traded": 143,
     "n_skipped": 163,
