@@ -45844,10 +45844,10 @@
       "rsi": 41.9,
       "in_kz": false,
       "regime": "TRENDING",
-      "score_trend": 10,
-      "score_smc": 0,
+      "score_trend": 11,
+      "score_smc": 2,
       "score_osc": 2,
-      "score_liq": 5,
+      "score_liq": 8,
       "score_fund": 1,
       "funding_rate": -0.0235,
       "bull_sweep": false,
@@ -46019,7 +46019,7 @@
       "bear_sweep": true,
       "ts": "2026-07-19T23:03:46.218243+00:00",
       "execution_allowed": false,
-      "execution_block_reason": "POSITIONS_FULL (10/10)",
+      "execution_block_reason": "PYRAMID_BLOCKED trend=5/13 pnl=-0.0%",
       "ai_filter_bypassed": true,
       "bypass_reason": "credit_exhausted",
       "claude_approved": true,
@@ -46376,7 +46376,7 @@
     {
       "symbol": "DOT/USDT",
       "market_type": "FUTURES",
-      "status": "SIGNAL",
+      "status": "SL_REJECT",
       "side": "SHORT",
       "score_long": 9,
       "score_short": 17,
@@ -46557,7 +46557,7 @@
       "in_kz": false,
       "score_trend": 9,
       "score_smc": 2,
-      "score_osc": 2,
+      "score_osc": 1,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": true,
@@ -46570,9 +46570,9 @@
       "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
-      "symbol": "ENA/USDT",
+      "symbol": "ETC/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SIGNAL",
       "side": "SHORT",
       "score_long": 10,
       "score_short": 16,
@@ -68868,9 +68868,9 @@
     "pending": 46,
     "win": 282,
     "loss": 317,
-    "win_rate": 47.1,
+    "win_rate": 47.2,
     "win_tp2": 183,
-    "win_slbe": 79,
+    "win_slbe": 80,
     "loss_sl": 313,
     "timeout": 24,
     "pending_trades": [
@@ -68960,7 +68960,7 @@
         "outcome": "PENDING",
         "exit_px": null,
         "exit_reason": "",
-        "tp1_hit": 0,
+        "tp1_hit": 1,
         "created_at": "2026-07-19T22:17:57.432396+00:00",
         "resolved_at": null
       },
@@ -69157,21 +69157,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-07-19T17:33:23.216747+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "APT/USDT",
-        "side": "LONG",
-        "score": 13,
-        "entry_px": 0.5933,
-        "sl_pct": 0.469,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-07-19T17:03:32.616505+00:00",
         "resolved_at": null
       },
       {
@@ -69566,6 +69551,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "APT/USDT",
+        "side": "LONG",
+        "score": 13,
+        "entry_px": 0.5933,
+        "sl_pct": 0.469,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
+        "outcome": "WIN",
+        "exit_px": 0.593,
+        "exit_reason": "SL_BE",
+        "tp1_hit": 1,
+        "created_at": "2026-07-19T17:03:32.616505+00:00",
+        "resolved_at": "2026-07-19T23:07:21.649037+00:00"
+      },
       {
         "symbol": "TRUMP/USDT",
         "side": "LONG",
