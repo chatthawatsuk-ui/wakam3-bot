@@ -49655,7 +49655,7 @@
       "score_osc": 4,
       "score_liq": 5,
       "score_fund": 2,
-      "funding_rate": 0.003,
+      "funding_rate": 0.0032,
       "bull_sweep": false,
       "bear_sweep": true,
       "ts": "2026-07-26T19:18:00.172390+00:00",
@@ -49754,7 +49754,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0097,
+      "funding_rate": 0.0096,
       "regime": "TRENDING",
       "ts": "2026-07-26T19:18:29.216662+00:00",
       "claude_reason": "SL 0.48% too tight (<0.5%) — noise stop-out risk"
@@ -49808,7 +49808,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.003,
+      "funding_rate": 0.0032,
       "regime": "TRENDING",
       "ts": "2026-07-26T19:18:00.172390+00:00",
       "entry_price": 75.29,
@@ -50064,7 +50064,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0052,
+      "funding_rate": 0.0056,
       "regime": "VOLATILE",
       "ts": "2026-07-26T19:18:04.907319+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 7.6× > 3× ATR",
@@ -50156,7 +50156,7 @@
     {
       "symbol": "XLM/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 16,
       "score_short": 8,
@@ -50175,7 +50175,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0058,
+      "funding_rate": -0.0056,
       "regime": "RANGING",
       "ts": "2026-07-26T19:18:14.093524+00:00",
       "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)"
@@ -50647,7 +50647,7 @@
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
-      "symbol": "DOT/USDT",
+      "symbol": "RIVER/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
@@ -50659,11 +50659,11 @@
       "rsi": 41.0,
       "htf_bull": false,
       "in_kz": false,
-      "score_trend": 0,
-      "score_smc": 0,
+      "score_trend": 6,
+      "score_smc": 2,
       "score_osc": 2,
-      "score_liq": 8,
-      "score_fund": 1,
+      "score_liq": 3,
+      "score_fund": 2,
       "in_discount": true,
       "trail_bull": false,
       "bull_sweep": false,
@@ -50710,7 +50710,7 @@
       "score_short": 7,
       "best_score": 7,
       "score_pct": 15.6,
-      "price": 6.669,
+      "price": 6.671,
       "rsi": 42.2,
       "htf_bull": false,
       "in_kz": false,
@@ -51798,9 +51798,9 @@
     "btc_rsi": 63.2
   },
   "altcoin_season": {
-    "value": 50,
-    "label": "Neutral",
-    "outperform": 18,
+    "value": 56,
+    "label": "Altcoins Leading",
+    "outperform": 20,
     "total": 36,
     "btc_24h": 0.42,
     "timeframe": "24h"
@@ -69201,8 +69201,8 @@
         "avg_pnl": 3.38
       },
       "POSITIONS_FULL (10/10)": {
-        "n": 124,
-        "wr": 38.7,
+        "n": 125,
+        "wr": 38.4,
         "avg_pnl": -0.79
       },
       "PYRAMID_BLOCKED": {
@@ -69526,6 +69526,19 @@
         "tp1_hit": 0,
         "outcome": "LOSS",
         "pnl": -3.81,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
+        "sym": "TRUMP/USDT",
+        "side": "SHORT",
+        "score": 15,
+        "ep": 1.577,
+        "entry_ts": "2026-07-24T19:18:50.862480+00:00",
+        "exit_type": "TIMEOUT",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -1.32,
         "in_kz": false,
         "regime": "TRENDING"
       },
@@ -71216,17 +71229,31 @@
         "sym": "RAVE/USDT"
       },
       {
-        "n": 9,
-        "n_win": 3,
-        "n_lose": 6,
-        "wr": 33.3,
-        "tp1r": 22.2,
-        "total_pnl": -26.32,
-        "avg_pnl": -2.92,
-        "dd": -25.7,
-        "sharpe": -14.26,
+        "n": 22,
+        "n_win": 11,
+        "n_lose": 11,
+        "wr": 50.0,
+        "tp1r": 50.0,
+        "total_pnl": -26.6,
+        "avg_pnl": -1.21,
+        "dd": -16.6,
+        "sharpe": -4.29,
         "kz_wr": null,
-        "profit_factor": 0.11,
+        "profit_factor": 0.5,
+        "sym": "FIL/USDT"
+      },
+      {
+        "n": 10,
+        "n_win": 3,
+        "n_lose": 7,
+        "wr": 30.0,
+        "tp1r": 20.0,
+        "total_pnl": -27.64,
+        "avg_pnl": -2.76,
+        "dd": -24.5,
+        "sharpe": -14.1,
+        "kz_wr": null,
+        "profit_factor": 0.1,
         "sym": "TRUMP/USDT"
       },
       {
@@ -71282,10 +71309,10 @@
       },
       {
         "exit_type": "TIMEOUT",
-        "n": 17,
+        "n": 18,
         "wins": 14,
-        "wr": 82.4,
-        "avg_pnl": 2.34
+        "wr": 77.8,
+        "avg_pnl": 2.14
       }
     ],
     "by_score": [
