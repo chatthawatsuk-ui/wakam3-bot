@@ -32,7 +32,7 @@
       "side": "SHORT",
       "score": 19,
       "entry_price": 2.7e-06,
-      "current_price": 2.75e-06,
+      "current_price": 2.74e-06,
       "sl_price": 2.787e-06,
       "tp_price": 2.6066e-06,
       "tp2_price": 2.541e-06,
@@ -42,8 +42,8 @@
       "leverage": 20.0,
       "margin_usd": 13.39,
       "risk_usd": 8.12,
-      "pnl_pct": -1.66,
-      "pnl": -4.45,
+      "pnl_pct": -1.29,
+      "pnl": -3.46,
       "open_time": "2026-07-29T20:19:12.325048+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 3.031
@@ -51562,7 +51562,7 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.0001,
+      "funding_rate": 0.0001,
       "regime": "RANGING",
       "ts": "2026-07-30T09:48:34.269877+00:00",
       "claude_reason": "score20 overextension outside TRENDING (WR 36% in backtest)"
@@ -51932,7 +51932,7 @@
       "score_short": 15,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 54.12,
+      "price": 54.05,
       "rsi": 54.1,
       "htf_bull": false,
       "in_kz": true,
@@ -51980,7 +51980,7 @@
     {
       "symbol": "XLM/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 14,
       "score_short": 7,
@@ -52394,7 +52394,7 @@
       "score_short": 10,
       "best_score": 10,
       "score_pct": 22.2,
-      "price": 2.748e-06,
+      "price": 2.749e-06,
       "rsi": 53.0,
       "htf_bull": true,
       "in_kz": true,
@@ -53787,15 +53787,15 @@
     }
   ],
   "btc_fg": {
-    "value": 58,
+    "value": 57,
     "label": "Neutral",
     "btc_24h": 0.09,
     "btc_rsi": 62.1
   },
   "altcoin_season": {
-    "value": 31,
+    "value": 33,
     "label": "Bitcoin Leading",
-    "outperform": 11,
+    "outperform": 12,
     "total": 36,
     "btc_24h": 0.09,
     "timeframe": "24h"
@@ -74758,11 +74758,11 @@
   },
   "shadow_stats": {
     "total": 594,
-    "pending": 58,
-    "win": 268,
+    "pending": 57,
+    "win": 269,
     "loss": 268,
-    "win_rate": 50.0,
-    "win_tp2": 183,
+    "win_rate": 50.1,
+    "win_tp2": 184,
     "win_slbe": 77,
     "loss_sl": 266,
     "timeout": 10,
@@ -75473,21 +75473,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "ONDO/USDT",
-        "side": "LONG",
-        "score": 13,
-        "entry_px": 0.4005,
-        "sl_pct": 2.347,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-07-29T18:18:41.504226+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "BTC/USDT",
         "side": "SHORT",
         "score": 16,
@@ -75639,6 +75624,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "ONDO/USDT",
+        "side": "LONG",
+        "score": 13,
+        "entry_px": 0.4005,
+        "sl_pct": 2.347,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
+        "outcome": "WIN",
+        "exit_px": 0.4196,
+        "exit_reason": "TP2",
+        "tp1_hit": 1,
+        "created_at": "2026-07-29T18:18:41.504226+00:00",
+        "resolved_at": "2026-07-30T09:52:24.513070+00:00"
+      },
       {
         "symbol": "BTC/USDT",
         "side": "LONG",
