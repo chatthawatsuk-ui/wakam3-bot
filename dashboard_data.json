@@ -164,7 +164,7 @@
       "side": "SHORT",
       "score": 18,
       "entry_price": 0.0871,
-      "current_price": 0.08742,
+      "current_price": 0.08747,
       "sl_price": 0.0878,
       "tp_price": 0.08626,
       "tp2_price": 0.0857,
@@ -174,8 +174,8 @@
       "leverage": 20.0,
       "margin_usd": 13.19,
       "risk_usd": 2.12,
-      "pnl_pct": -0.37,
-      "pnl": -0.97,
+      "pnl_pct": -0.42,
+      "pnl": -1.12,
       "open_time": "2026-08-08T13:34:28.809470+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 0.804
@@ -56695,7 +56695,7 @@
       "score_osc": 1,
       "score_liq": 8,
       "score_fund": 1,
-      "funding_rate": 0.0051,
+      "funding_rate": 0.005,
       "bull_sweep": true,
       "bear_sweep": true,
       "ts": "2026-08-08T17:49:06.739852+00:00",
@@ -56711,6 +56711,33 @@
     }
   ],
   "scan_results": [
+    {
+      "symbol": "SHIB/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "LONG",
+      "score_long": 22,
+      "score_short": 11,
+      "best_score": 22,
+      "score_pct": 48.9,
+      "price": 4.639e-06,
+      "rsi": 50.2,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 11,
+      "score_smc": 2,
+      "score_osc": 0,
+      "score_liq": 8,
+      "score_fund": 2,
+      "in_discount": true,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.0064,
+      "regime": "TRENDING",
+      "ts": "2026-08-08T17:53:11.838789+00:00",
+      "claude_reason": "SL 0.39% too tight (<0.5%) — noise stop-out risk"
+    },
     {
       "symbol": "ETH/USDT",
       "market_type": "FUTURES",
@@ -56912,7 +56939,7 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 19,
-      "score_short": 10,
+      "score_short": 12,
       "best_score": 19,
       "score_pct": 42.2,
       "price": 1.5,
@@ -56987,6 +57014,34 @@
       "funding_rate": 0.0099,
       "regime": "TRENDING",
       "ts": "2026-08-08T17:48:40.469249+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 6.2× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 6.2× > 3× ATR"
+    },
+    {
+      "symbol": "SOL/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 18,
+      "score_short": 8,
+      "best_score": 18,
+      "score_pct": 40.0,
+      "price": 76.41,
+      "rsi": 78.4,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 9,
+      "score_smc": 2,
+      "score_osc": 2,
+      "score_liq": 5,
+      "score_fund": 2,
+      "in_discount": true,
+      "trail_bull": true,
+      "bull_sweep": false,
+      "bear_sweep": true,
+      "funding_rate": 0.0097,
+      "regime": "TRENDING",
+      "ts": "2026-08-08T17:53:02.757211+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 6.2× > 3× ATR",
       "claude_reason": "SL กว้างเกิน ATR — 6.2× > 3× ATR"
     },
@@ -57491,7 +57546,7 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0051,
+      "funding_rate": 0.005,
       "regime": "TRENDING",
       "ts": "2026-08-08T17:49:06.739852+00:00",
       "entry_price": 3.002,
@@ -57727,7 +57782,7 @@
       "score_short": 8,
       "best_score": 8,
       "score_pct": 17.8,
-      "price": 0.04984,
+      "price": 0.0497,
       "rsi": 59.8,
       "htf_bull": true,
       "in_kz": false,
@@ -76290,9 +76345,9 @@
         "avg_pnl": -0.5
       },
       "POSITIONS_FULL (10/10)": {
-        "n": 68,
-        "wr": 30.9,
-        "avg_pnl": -1.13
+        "n": 69,
+        "wr": 30.4,
+        "avg_pnl": -1.26
       },
       "PYRAMID_BLOCKED": {
         "n": 26,
@@ -78276,20 +78331,6 @@
         "sym": "BCH/USDT"
       },
       {
-        "n": 7,
-        "n_win": 1,
-        "n_lose": 6,
-        "wr": 14.3,
-        "tp1r": 0.0,
-        "total_pnl": -21.52,
-        "avg_pnl": -3.07,
-        "dd": -35.9,
-        "sharpe": -10.77,
-        "kz_wr": null,
-        "profit_factor": 0.24,
-        "sym": "RIVER/USDT"
-      },
-      {
         "n": 10,
         "n_win": 3,
         "n_lose": 7,
@@ -78330,6 +78371,20 @@
         "kz_wr": null,
         "profit_factor": 0.28,
         "sym": "ADA/USDT"
+      },
+      {
+        "n": 8,
+        "n_win": 1,
+        "n_lose": 7,
+        "wr": 12.5,
+        "tp1r": 0.0,
+        "total_pnl": -32.0,
+        "avg_pnl": -4.0,
+        "dd": -44.5,
+        "sharpe": -12.85,
+        "kz_wr": null,
+        "profit_factor": 0.18,
+        "sym": "RIVER/USDT"
       }
     ],
     "by_exit": [
@@ -78338,7 +78393,7 @@
         "n": 203,
         "wins": 0,
         "wr": 0.0,
-        "avg_pnl": -3.77
+        "avg_pnl": -3.8
       },
       {
         "exit_type": "SL_BE",
@@ -78395,9 +78450,9 @@
       },
       {
         "band": "18-20",
-        "n": 135,
-        "wr": 30.4,
-        "avg_pnl": -1.16
+        "n": 136,
+        "wr": 30.1,
+        "avg_pnl": -1.23
       },
       {
         "band": "21+",
