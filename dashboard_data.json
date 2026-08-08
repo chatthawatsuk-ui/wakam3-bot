@@ -76,7 +76,7 @@
       "side": "LONG",
       "score": 19,
       "entry_price": 215.5,
-      "current_price": 216.9,
+      "current_price": 216.8,
       "sl_price": 212.9,
       "tp_price": 218.62,
       "tp2_price": 220.7,
@@ -86,8 +86,8 @@
       "leverage": 20.0,
       "margin_usd": 13.07,
       "risk_usd": 3.15,
-      "pnl_pct": 0.65,
-      "pnl": 1.7,
+      "pnl_pct": 0.6,
+      "pnl": 1.58,
       "open_time": "2026-08-07T15:19:50.708043+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 1.206
@@ -56977,7 +56977,7 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 18,
-      "score_short": 10,
+      "score_short": 12,
       "best_score": 18,
       "score_pct": 40.0,
       "price": 1.401,
@@ -57028,7 +57028,7 @@
       "claude_reason": "SL กว้างเกิน ATR — 5.3× > 3× ATR"
     },
     {
-      "symbol": "CRO/USDT",
+      "symbol": "AAVE/USDT",
       "market_type": "FUTURES",
       "status": "SIGNAL",
       "side": "SHORT",
@@ -57040,11 +57040,11 @@
       "rsi": 50.0,
       "htf_bull": false,
       "in_kz": true,
-      "score_trend": 8,
-      "score_smc": 0,
-      "score_osc": 3,
-      "score_liq": 8,
-      "score_fund": 1,
+      "score_trend": 9,
+      "score_smc": 2,
+      "score_osc": 2,
+      "score_liq": 5,
+      "score_fund": 2,
       "in_discount": true,
       "trail_bull": true,
       "bull_sweep": false,
@@ -57195,9 +57195,9 @@
       "claude_reason": "score17 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
-      "symbol": "ENA/USDT",
+      "symbol": "RENDER/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "SHORT",
       "score_long": 12,
       "score_short": 17,
@@ -58886,15 +58886,15 @@
     }
   ],
   "btc_fg": {
-    "value": 48,
+    "value": 49,
     "label": "Neutral",
     "btc_24h": 0.26,
     "btc_rsi": 56.0
   },
   "altcoin_season": {
-    "value": 69,
+    "value": 67,
     "label": "Altcoins Leading",
-    "outperform": 25,
+    "outperform": 24,
     "total": 36,
     "btc_24h": 0.26,
     "timeframe": "24h"
@@ -79479,11 +79479,11 @@
     "total": 573,
     "pending": 36,
     "win": 243,
-    "loss": 294,
-    "win_rate": 45.3,
+    "loss": 295,
+    "win_rate": 45.2,
     "win_tp2": 150,
     "win_slbe": 83,
-    "loss_sl": 291,
+    "loss_sl": 292,
     "timeout": 13,
     "pending_trades": [
       {
@@ -79589,21 +79589,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-08T07:04:00.893477+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "LTC/USDT",
-        "side": "SHORT",
-        "score": 9,
-        "entry_px": 45.54,
-        "sl_pct": 0.264,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-08T04:33:49.222410+00:00",
         "resolved_at": null
       },
       {
@@ -80028,6 +80013,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "LTC/USDT",
+        "side": "SHORT",
+        "score": 9,
+        "entry_px": 45.54,
+        "sl_pct": 0.264,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 45.66,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-08T04:33:49.222410+00:00",
+        "resolved_at": "2026-08-08T14:07:59.253094+00:00"
+      },
       {
         "symbol": "HBAR/USDT",
         "side": "SHORT",
