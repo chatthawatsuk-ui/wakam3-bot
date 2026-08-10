@@ -58591,7 +58591,7 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0075,
+      "funding_rate": 0.0076,
       "regime": "RANGING",
       "ts": "2026-08-10T15:03:57.193592+00:00",
       "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
@@ -77512,6 +77512,11 @@
         "wr": 0.0,
         "avg_pnl": -3.44
       },
+      "PYRAMID_BLOCKED trend=9/13 pnl=+0.7%": {
+        "n": 1,
+        "wr": 0.0,
+        "avg_pnl": -6.18
+      },
       "PYRAMID_BLOCKED trend=9/13 pnl=-0.3%": {
         "n": 1,
         "wr": 100.0,
@@ -77529,7 +77534,7 @@
       }
     },
     "summary": {
-      "n": 308,
+      "n": 310,
       "n_win": 136,
       "n_lose": 172,
       "wr": 44.2,
@@ -77539,7 +77544,7 @@
       "dd": -2.4,
       "sharpe": -0.34,
       "kz_wr": null,
-      "profit_factor": 0.94
+      "profit_factor": 0.93
     },
     "summary_traded": {
       "n": 151,
@@ -78752,6 +78757,19 @@
         "regime": "VOLATILE"
       },
       {
+        "sym": "UNI/USDT",
+        "side": "LONG",
+        "score": 21,
+        "ep": 4.073,
+        "entry_ts": "2026-08-10T03:04:24.991046+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -6.1,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "RIVER/USDT",
         "side": "SHORT",
         "score": 21,
@@ -78787,6 +78805,19 @@
         "tp1_hit": 0,
         "outcome": "LOSS",
         "pnl": -2.91,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
+        "sym": "UNI/USDT",
+        "side": "LONG",
+        "score": 20,
+        "ep": 4.074,
+        "entry_ts": "2026-08-10T07:04:38.928495+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -6.18,
         "in_kz": false,
         "regime": "TRENDING"
       },
@@ -79179,6 +79210,20 @@
         "sym": "DOGE/USDT"
       },
       {
+        "n": 11,
+        "n_win": 4,
+        "n_lose": 7,
+        "wr": 36.4,
+        "tp1r": 36.4,
+        "total_pnl": -7.4,
+        "avg_pnl": -0.67,
+        "dd": -17.8,
+        "sharpe": -1.39,
+        "kz_wr": null,
+        "profit_factor": 0.81,
+        "sym": "UNI/USDT"
+      },
+      {
         "n": 14,
         "n_win": 8,
         "n_lose": 6,
@@ -79364,10 +79409,10 @@
     "by_exit": [
       {
         "exit_type": "SL",
-        "n": 166,
+        "n": 168,
         "wins": 0,
         "wr": 0.0,
-        "avg_pnl": -3.82
+        "avg_pnl": -3.85
       },
       {
         "exit_type": "SL_BE",
@@ -79424,23 +79469,23 @@
       },
       {
         "band": "18-20",
-        "n": 124,
-        "wr": 39.5,
-        "avg_pnl": -0.62
+        "n": 125,
+        "wr": 39.2,
+        "avg_pnl": -0.67
       },
       {
         "band": "21+",
-        "n": 52,
-        "wr": 42.3,
-        "avg_pnl": 0.08
+        "n": 53,
+        "wr": 41.5,
+        "avg_pnl": -0.03
       }
     ],
     "by_regime": [
       {
         "regime": "TRENDING",
-        "n": 305,
-        "wr": 44.3,
-        "avg_pnl": -0.12
+        "n": 307,
+        "wr": 44.0,
+        "avg_pnl": -0.16
       },
       {
         "regime": "RANGING",
@@ -80886,21 +80931,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-10T03:03:40.423636+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "UNI/USDT",
-        "side": "LONG",
-        "score": 16,
-        "entry_px": 4.076,
-        "sl_pct": 2.355,
-        "regime": "VOLATILE",
-        "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-10T02:48:39.706374+00:00",
         "resolved_at": null
       },
       {
