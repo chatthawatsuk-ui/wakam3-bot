@@ -60113,7 +60113,7 @@
     {
       "symbol": "ETH/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 16,
       "score_short": 7,
@@ -60281,7 +60281,7 @@
       "tp2_price": 1.45
     },
     {
-      "symbol": "DOGE/USDT",
+      "symbol": "AVAX/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
@@ -60727,12 +60727,12 @@
       "claude_reason": "SL กว้างเกิน ATR — 3.1× > 3× ATR"
     },
     {
-      "symbol": "ADA/USDT",
+      "symbol": "SOL/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 9,
-      "score_short": 7,
+      "score_short": 6,
       "best_score": 9,
       "score_pct": 20.0,
       "price": 0.1815,
@@ -60740,15 +60740,15 @@
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
-      "score_smc": 2,
+      "score_smc": 0,
       "score_osc": 2,
       "score_liq": 5,
-      "score_fund": 1,
-      "in_discount": true,
+      "score_fund": 2,
+      "in_discount": false,
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.01,
+      "funding_rate": 0.003,
       "regime": "RANGING",
       "ts": "2026-08-15T03:00:00.543478+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR",
@@ -60864,7 +60864,7 @@
       "ts": "2026-08-15T02:59:57.488963+00:00"
     },
     {
-      "symbol": "SOL/USDT",
+      "symbol": "ADA/USDT",
       "market_type": "FUTURES",
       "status": "WATCH",
       "side": "LONG",
@@ -60877,11 +60877,11 @@
       "htf_bull": true,
       "in_kz": false,
       "score_trend": 0,
-      "score_smc": 0,
+      "score_smc": 2,
       "score_osc": 1,
       "score_liq": 5,
-      "score_fund": 2,
-      "in_discount": false,
+      "score_fund": 1,
+      "in_discount": true,
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
@@ -80054,6 +80054,19 @@
         "regime": "TRENDING"
       },
       {
+        "sym": "ETC/USDT",
+        "side": "SHORT",
+        "score": 17,
+        "ep": 6.275,
+        "entry_ts": "2026-08-13T03:05:22.947201+00:00",
+        "exit_type": "TIMEOUT",
+        "tp1_hit": 1,
+        "outcome": "WIN",
+        "pnl": 1.14,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "ENA/USDT",
         "side": "SHORT",
         "score": 12,
@@ -81495,6 +81508,34 @@
         "sym": "SUI/USDT"
       },
       {
+        "n": 16,
+        "n_win": 7,
+        "n_lose": 9,
+        "wr": 43.8,
+        "tp1r": 43.8,
+        "total_pnl": -5.61,
+        "avg_pnl": -0.35,
+        "dd": -7.4,
+        "sharpe": -1.68,
+        "kz_wr": null,
+        "profit_factor": 0.78,
+        "sym": "ETC/USDT"
+      },
+      {
+        "n": 13,
+        "n_win": 7,
+        "n_lose": 6,
+        "wr": 53.8,
+        "tp1r": 53.8,
+        "total_pnl": -5.78,
+        "avg_pnl": -0.44,
+        "dd": -12.3,
+        "sharpe": -1.41,
+        "kz_wr": null,
+        "profit_factor": 0.79,
+        "sym": "ONDO/USDT"
+      },
+      {
         "n": 13,
         "n_win": 7,
         "n_lose": 6,
@@ -81535,20 +81576,6 @@
         "kz_wr": null,
         "profit_factor": 0.47,
         "sym": "ETH/USDT"
-      },
-      {
-        "n": 15,
-        "n_win": 6,
-        "n_lose": 9,
-        "wr": 40.0,
-        "tp1r": 40.0,
-        "total_pnl": -6.75,
-        "avg_pnl": -0.45,
-        "dd": -7.9,
-        "sharpe": -2.1,
-        "kz_wr": null,
-        "profit_factor": 0.73,
-        "sym": "ETC/USDT"
       },
       {
         "n": 9,
@@ -81715,10 +81742,10 @@
       },
       {
         "exit_type": "TIMEOUT",
-        "n": 13,
-        "wins": 10,
-        "wr": 76.9,
-        "avg_pnl": 1.98
+        "n": 14,
+        "wins": 11,
+        "wr": 78.6,
+        "avg_pnl": 1.92
       }
     ],
     "by_score": [
@@ -83303,21 +83330,6 @@
         "exit_reason": "",
         "tp1_hit": 1,
         "created_at": "2026-08-13T12:34:22.101305+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "XRP/USDT",
-        "side": "SHORT",
-        "score": 15,
-        "entry_px": 1.0066,
-        "sl_pct": 0.874,
-        "regime": "RANGING",
-        "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-08-13T12:34:21.151783+00:00",
         "resolved_at": null
       },
       {
