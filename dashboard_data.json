@@ -60123,7 +60123,7 @@
     {
       "symbol": "ATOM/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "SHORT",
       "score_long": 11,
       "score_short": 19,
@@ -62280,9 +62280,9 @@
     "btc_rsi": 45.7
   },
   "altcoin_season": {
-    "value": 50,
+    "value": 53,
     "label": "Neutral",
-    "outperform": 18,
+    "outperform": 19,
     "total": 36,
     "btc_24h": 0.27,
     "timeframe": "24h"
@@ -82969,11 +82969,11 @@
     "total": 605,
     "pending": 40,
     "win": 255,
-    "loss": 310,
+    "loss": 311,
     "win_rate": 45.1,
     "win_tp2": 154,
     "win_slbe": 81,
-    "loss_sl": 308,
+    "loss_sl": 309,
     "timeout": 22,
     "pending_trades": [
       {
@@ -83094,21 +83094,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-15T07:48:05.865649+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "AAVE/USDT",
-        "side": "SHORT",
-        "score": 11,
-        "entry_px": 86.87,
-        "sl_pct": 0.414,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-15T07:34:11.445482+00:00",
         "resolved_at": null
       },
       {
@@ -83578,6 +83563,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "AAVE/USDT",
+        "side": "SHORT",
+        "score": 11,
+        "entry_px": 86.87,
+        "sl_pct": 0.414,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 87.26,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-15T07:34:11.445482+00:00",
+        "resolved_at": "2026-08-15T09:38:32.093729+00:00"
+      },
       {
         "symbol": "TRUMP/USDT",
         "side": "LONG",
