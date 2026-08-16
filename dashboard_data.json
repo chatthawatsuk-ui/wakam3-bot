@@ -60691,7 +60691,7 @@
     {
       "symbol": "UNI/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "LONG",
       "score_long": 16,
       "score_short": 9,
@@ -60710,7 +60710,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.005,
+      "funding_rate": 0.0049,
       "regime": "RANGING",
       "ts": "2026-08-16T10:03:58.918597+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR",
@@ -60775,7 +60775,7 @@
     {
       "symbol": "RAVE/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "SHORT",
       "score_long": 14,
       "score_short": 15,
@@ -61013,7 +61013,7 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": -0.0027,
+      "funding_rate": -0.0026,
       "regime": "RANGING",
       "ts": "2026-08-16T10:03:48.284230+00:00",
       "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
@@ -61438,7 +61438,7 @@
       "volBase": 1272386.0
     },
     "ATOM/USDT": {
-      "price": 1.494,
+      "price": 1.493,
       "change": 0.34,
       "high": 1.502,
       "low": 1.461,
@@ -62183,7 +62183,7 @@
     },
     {
       "sym": "ATOM",
-      "price": 1.494,
+      "price": 1.493,
       "change": 0.34,
       "vol": 1941596.42
     },
@@ -79908,19 +79908,6 @@
     },
     "trades": [
       {
-        "sym": "BNB/USDT",
-        "side": "SHORT",
-        "score": 18,
-        "ep": 609.3,
-        "entry_ts": "2026-08-13T19:05:32.827111+00:00",
-        "exit_type": "SL_BE",
-        "tp1_hit": 1,
-        "outcome": "WIN",
-        "pnl": -0.65,
-        "in_kz": false,
-        "regime": "TRENDING"
-      },
-      {
         "sym": "PEPE/USDT",
         "side": "SHORT",
         "score": 17,
@@ -80294,6 +80281,19 @@
         "tp1_hit": 1,
         "outcome": "WIN",
         "pnl": 3.45,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
+        "sym": "ETH/USDT",
+        "side": "SHORT",
+        "score": 22,
+        "ep": 1875.95,
+        "entry_ts": "2026-08-14T10:05:43.062204+00:00",
+        "exit_type": "TIMEOUT",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -0.56,
         "in_kz": false,
         "regime": "TRENDING"
       },
@@ -81518,20 +81518,6 @@
         "sym": "SOL/USDT"
       },
       {
-        "n": 7,
-        "n_win": 2,
-        "n_lose": 5,
-        "wr": 28.6,
-        "tp1r": 28.6,
-        "total_pnl": -6.58,
-        "avg_pnl": -0.94,
-        "dd": -17.9,
-        "sharpe": -4.7,
-        "kz_wr": null,
-        "profit_factor": 0.47,
-        "sym": "ETH/USDT"
-      },
-      {
         "n": 8,
         "n_win": 2,
         "n_lose": 6,
@@ -81544,6 +81530,20 @@
         "kz_wr": null,
         "profit_factor": 0.68,
         "sym": "ALGO/USDT"
+      },
+      {
+        "n": 8,
+        "n_win": 2,
+        "n_lose": 6,
+        "wr": 25.0,
+        "tp1r": 25.0,
+        "total_pnl": -7.14,
+        "avg_pnl": -0.89,
+        "dd": -16.3,
+        "sharpe": -4.81,
+        "kz_wr": null,
+        "profit_factor": 0.45,
+        "sym": "ETH/USDT"
       },
       {
         "n": 9,
@@ -81738,10 +81738,10 @@
       },
       {
         "exit_type": "TIMEOUT",
-        "n": 16,
+        "n": 17,
         "wins": 14,
-        "wr": 87.5,
-        "avg_pnl": 2.19
+        "wr": 82.4,
+        "avg_pnl": 2.03
       }
     ],
     "by_score": [
@@ -81783,9 +81783,9 @@
       },
       {
         "band": "21+",
-        "n": 37,
-        "wr": 37.8,
-        "avg_pnl": -1.06
+        "n": 38,
+        "wr": 36.8,
+        "avg_pnl": -1.05
       }
     ],
     "by_regime": [
