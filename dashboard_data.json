@@ -76,7 +76,7 @@
       "side": "SHORT",
       "score": 17,
       "entry_price": 0.0791028,
-      "current_price": 0.07834,
+      "current_price": 0.07832,
       "sl_price": 0.0791028,
       "tp_price": 0.078544,
       "tp2_price": 0.07808,
@@ -86,8 +86,8 @@
       "leverage": 20.0,
       "margin_usd": 19.91,
       "risk_usd": 1.94,
-      "pnl_pct": 0.96,
-      "pnl": 3.84,
+      "pnl_pct": 0.99,
+      "pnl": 3.94,
       "open_time": "2026-08-16T10:04:34.415008+00:00",
       "pyramid_count": 2,
       "sl_pct_orig": 0.732
@@ -61264,7 +61264,7 @@
       "in_kz": false,
       "score_trend": 8,
       "score_smc": 2,
-      "score_osc": 2,
+      "score_osc": 0,
       "score_liq": 5,
       "score_fund": 1,
       "in_discount": false,
@@ -83289,7 +83289,7 @@
     "win_rate": 45.2,
     "win_tp2": 163,
     "win_slbe": 96,
-    "loss_sl": 340,
+    "loss_sl": 342,
     "timeout": 27,
     "pending_trades": [
       {
@@ -83455,21 +83455,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-16T17:34:46.032603+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "BNB/USDT",
-        "side": "LONG",
-        "score": 9,
-        "entry_px": 607.2,
-        "sl_pct": 0.412,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-16T17:04:20.661627+00:00",
         "resolved_at": null
       },
       {
@@ -83758,21 +83743,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "SOL/USDT",
-        "side": "LONG",
-        "score": 9,
-        "entry_px": 75.39,
-        "sl_pct": 0.544,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-15T07:04:11.691373+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "BTC/USDT",
         "side": "LONG",
         "score": 13,
@@ -83804,6 +83774,51 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "SOL/USDT",
+        "side": "LONG",
+        "score": 9,
+        "entry_px": 75.39,
+        "sl_pct": 0.544,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 74.98,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-15T07:04:11.691373+00:00",
+        "resolved_at": "2026-08-16T21:38:00.371199+00:00"
+      },
+      {
+        "symbol": "APT/USDT",
+        "side": "SHORT",
+        "score": 13,
+        "entry_px": 0.5341,
+        "sl_pct": 0.824,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
+        "outcome": "WIN",
+        "exit_px": 0.5236,
+        "exit_reason": "TP2",
+        "tp1_hit": 1,
+        "created_at": "2026-08-16T11:33:56.402136+00:00",
+        "resolved_at": "2026-08-16T21:38:00.371199+00:00"
+      },
+      {
+        "symbol": "BNB/USDT",
+        "side": "LONG",
+        "score": 9,
+        "entry_px": 607.2,
+        "sl_pct": 0.412,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 604.5,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-16T17:04:20.661627+00:00",
+        "resolved_at": "2026-08-16T21:38:00.371199+00:00"
+      },
       {
         "symbol": "APT/USDT",
         "side": "SHORT",
