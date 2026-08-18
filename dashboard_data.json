@@ -54,7 +54,7 @@
       "side": "SHORT",
       "score": 18,
       "entry_price": 0.1547,
-      "current_price": 0.15526,
+      "current_price": 0.15519,
       "sl_price": 0.1555,
       "tp_price": 0.1537,
       "tp2_price": 0.1531,
@@ -64,8 +64,8 @@
       "leverage": 20.0,
       "margin_usd": 13.24,
       "risk_usd": 1.37,
-      "pnl_pct": -0.36,
-      "pnl": -0.96,
+      "pnl_pct": -0.32,
+      "pnl": -0.84,
       "open_time": "2026-08-18T14:49:15.559938+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 0.517
@@ -62068,13 +62068,13 @@
     {
       "symbol": "ADA/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 18,
       "score_short": 10,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 0.1755,
+      "price": 0.1757,
       "rsi": 64.1,
       "htf_bull": true,
       "in_kz": true,
@@ -62318,6 +62318,33 @@
       "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
+      "symbol": "LTC/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "LONG",
+      "score_long": 16,
+      "score_short": 8,
+      "best_score": 16,
+      "score_pct": 35.6,
+      "price": 44.21,
+      "rsi": 45.4,
+      "htf_bull": true,
+      "in_kz": true,
+      "score_trend": 8,
+      "score_smc": 0,
+      "score_osc": 3,
+      "score_liq": 6,
+      "score_fund": 2,
+      "in_discount": false,
+      "trail_bull": false,
+      "bull_sweep": true,
+      "bear_sweep": false,
+      "funding_rate": 0.0038,
+      "regime": "RANGING",
+      "ts": "2026-08-18T15:56:19.753221+00:00",
+      "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)"
+    },
+    {
       "symbol": "LINK/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
@@ -62375,7 +62402,7 @@
     {
       "symbol": "AAVE/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 16,
       "score_short": 8,
@@ -62574,7 +62601,7 @@
       "score_short": 8,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 1.403,
+      "price": 1.406,
       "rsi": 51.6,
       "htf_bull": true,
       "in_kz": true,
@@ -64099,9 +64126,9 @@
     "btc_rsi": 63.6
   },
   "altcoin_season": {
-    "value": 14,
+    "value": 11,
     "label": "Bitcoin Season ₿",
-    "outperform": 5,
+    "outperform": 4,
     "total": 36,
     "btc_24h": 0.96,
     "timeframe": "24h"
@@ -84649,13 +84676,13 @@
   },
   "shadow_stats": {
     "total": 621,
-    "pending": 34,
+    "pending": 33,
     "win": 258,
-    "loss": 329,
-    "win_rate": 44.0,
+    "loss": 330,
+    "win_rate": 43.9,
     "win_tp2": 159,
     "win_slbe": 84,
-    "loss_sl": 324,
+    "loss_sl": 325,
     "timeout": 20,
     "pending_trades": [
       {
@@ -84671,21 +84698,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-18T15:18:57.576474+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "CRO/USDT",
-        "side": "SHORT",
-        "score": 16,
-        "entry_px": 0.0465,
-        "sl_pct": 0.309,
-        "regime": "TRENDING",
-        "claude_reason": "SL 0.31% too tight (<0.5%) — noise stop-out risk",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-18T14:35:50.781574+00:00",
         "resolved_at": null
       },
       {
@@ -85170,6 +85182,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "CRO/USDT",
+        "side": "SHORT",
+        "score": 16,
+        "entry_px": 0.0465,
+        "sl_pct": 0.309,
+        "regime": "TRENDING",
+        "claude_reason": "SL 0.31% too tight (<0.5%) — noise stop-out risk",
+        "outcome": "LOSS",
+        "exit_px": 0.04672,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-18T14:35:50.781574+00:00",
+        "resolved_at": "2026-08-18T15:56:49.392279+00:00"
+      },
       {
         "symbol": "BTC/USDT",
         "side": "LONG",
