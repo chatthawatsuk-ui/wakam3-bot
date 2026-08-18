@@ -208,7 +208,7 @@
       "side": "SHORT",
       "score": 15,
       "entry_price": 1.42233133,
-      "current_price": 1.39,
+      "current_price": 1.392,
       "sl_price": 1.42233133,
       "tp_price": 1.3962,
       "tp2_price": 1.377,
@@ -218,8 +218,8 @@
       "leverage": 20.0,
       "margin_usd": 19.92,
       "risk_usd": 4.48,
-      "pnl_pct": 2.27,
-      "pnl": 9.06,
+      "pnl_pct": 2.13,
+      "pnl": 8.5,
       "open_time": "2026-08-17T21:16:17.732393+00:00",
       "pyramid_count": 2,
       "sl_pct_orig": 1.684
@@ -61863,7 +61863,7 @@
       "score_fund": 1,
       "in_discount": false,
       "trail_bull": false,
-      "bull_sweep": false,
+      "bull_sweep": true,
       "bear_sweep": false,
       "funding_rate": 0.0051,
       "regime": "TRENDING",
@@ -62642,7 +62642,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.01,
+      "funding_rate": 0.005,
       "regime": "RANGING",
       "ts": "2026-08-18T14:02:10.696523+00:00",
       "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
@@ -62932,8 +62932,8 @@
       "volBase": 8410317.0
     },
     "ATOM/USDT": {
-      "price": 1.39,
-      "change": -2.25,
+      "price": 1.392,
+      "change": -2.04,
       "high": 1.426,
       "low": 1.376,
       "vol": 4302136.18,
@@ -64025,9 +64025,9 @@
     "btc_rsi": 50.2
   },
   "altcoin_season": {
-    "value": 11,
+    "value": 8,
     "label": "Bitcoin Season ₿",
-    "outperform": 4,
+    "outperform": 3,
     "total": 36,
     "btc_24h": 1.08,
     "timeframe": "24h"
@@ -83027,6 +83027,20 @@
         "sym": "PEPE/USDT"
       },
       {
+        "n": 7,
+        "n_win": 6,
+        "n_lose": 1,
+        "wr": 85.7,
+        "tp1r": 71.4,
+        "total_pnl": 15.37,
+        "avg_pnl": 2.2,
+        "dd": -0.8,
+        "sharpe": 8.63,
+        "kz_wr": null,
+        "profit_factor": 4.56,
+        "sym": "POL/USDT"
+      },
+      {
         "n": 5,
         "n_win": 4,
         "n_lose": 1,
@@ -83495,7 +83509,7 @@
         "n": 71,
         "wins": 71,
         "wr": 100.0,
-        "avg_pnl": 6.87
+        "avg_pnl": 6.88
       },
       {
         "exit_type": "TIMEOUT",
@@ -84561,13 +84575,13 @@
   },
   "shadow_stats": {
     "total": 616,
-    "pending": 43,
+    "pending": 41,
     "win": 251,
-    "loss": 322,
-    "win_rate": 43.8,
+    "loss": 324,
+    "win_rate": 43.7,
     "win_tp2": 153,
     "win_slbe": 83,
-    "loss_sl": 317,
+    "loss_sl": 319,
     "timeout": 20,
     "pending_trades": [
       {
@@ -84598,21 +84612,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-18T13:35:23.729946+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "CRO/USDT",
-        "side": "SHORT",
-        "score": 18,
-        "entry_px": 0.04621,
-        "sl_pct": 0.307,
-        "regime": "TRENDING",
-        "claude_reason": "SL 0.31% too tight (<0.5%) — noise stop-out risk",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-18T13:35:22.850847+00:00",
         "resolved_at": null
       },
       {
@@ -84883,21 +84882,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-18T04:35:35.361506+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "ADA/USDT",
-        "side": "SHORT",
-        "score": 17,
-        "entry_px": 0.1731,
-        "sl_pct": 1.213,
-        "regime": "RANGING",
-        "claude_reason": "score17 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-18T04:19:57.696205+00:00",
         "resolved_at": null
       },
       {
@@ -85217,6 +85201,36 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "ADA/USDT",
+        "side": "SHORT",
+        "score": 17,
+        "entry_px": 0.1731,
+        "sl_pct": 1.213,
+        "regime": "RANGING",
+        "claude_reason": "score17 overextension outside TRENDING (WR 36% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 0.1754,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-18T04:19:57.696205+00:00",
+        "resolved_at": "2026-08-18T14:09:14.156059+00:00"
+      },
+      {
+        "symbol": "CRO/USDT",
+        "side": "SHORT",
+        "score": 18,
+        "entry_px": 0.04621,
+        "sl_pct": 0.307,
+        "regime": "TRENDING",
+        "claude_reason": "SL 0.31% too tight (<0.5%) — noise stop-out risk",
+        "outcome": "LOSS",
+        "exit_px": 0.04639,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-08-18T13:35:22.850847+00:00",
+        "resolved_at": "2026-08-18T14:09:14.156059+00:00"
+      },
       {
         "symbol": "UNI/USDT",
         "side": "LONG",
