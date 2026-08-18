@@ -61417,7 +61417,7 @@
     {
       "symbol": "ENA/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "SHORT",
       "score_long": 10,
       "score_short": 17,
@@ -61660,7 +61660,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0027,
+      "funding_rate": 0.0026,
       "regime": "RANGING",
       "ts": "2026-08-18T01:50:12.577777+00:00",
       "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
@@ -61770,7 +61770,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0048,
+      "funding_rate": 0.0049,
       "regime": "RANGING",
       "ts": "2026-08-18T01:50:10.550719+00:00",
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
@@ -62001,7 +62001,7 @@
     {
       "symbol": "HYPE/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "LONG",
       "score_long": 14,
       "score_short": 9,
@@ -62167,9 +62167,9 @@
     {
       "symbol": "TRUMP/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 10,
+      "score_long": 8,
       "score_short": 12,
       "best_score": 12,
       "score_pct": 26.7,
@@ -62192,7 +62192,7 @@
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
-      "symbol": "DOT/USDT",
+      "symbol": "UNI/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
@@ -62250,9 +62250,9 @@
     {
       "symbol": "SHIB/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "WATCH",
       "side": "LONG",
-      "score_long": 9,
+      "score_long": 7,
       "score_short": 7,
       "best_score": 9,
       "score_pct": 20.0,
@@ -62263,7 +62263,7 @@
       "score_trend": 0,
       "score_smc": 2,
       "score_osc": 1,
-      "score_liq": 5,
+      "score_liq": 3,
       "score_fund": 2,
       "in_discount": true,
       "trail_bull": true,
@@ -63661,9 +63661,9 @@
     "btc_rsi": 56.8
   },
   "altcoin_season": {
-    "value": 8,
+    "value": 6,
     "label": "Bitcoin Season ₿",
-    "outperform": 3,
+    "outperform": 2,
     "total": 36,
     "btc_24h": 1.66,
     "timeframe": "24h"
@@ -82275,6 +82275,19 @@
         "regime": "TRENDING"
       },
       {
+        "sym": "TRUMP/USDT",
+        "side": "LONG",
+        "score": 13,
+        "ep": 1.409,
+        "entry_ts": "2026-08-16T21:04:12.688566+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -4.13,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "ONDO/USDT",
         "side": "LONG",
         "score": 16,
@@ -82859,20 +82872,6 @@
         "n_lose": 4,
         "wr": 50.0,
         "tp1r": 50.0,
-        "total_pnl": -3.41,
-        "avg_pnl": -0.43,
-        "dd": -17.0,
-        "sharpe": -1.01,
-        "kz_wr": null,
-        "profit_factor": 0.82,
-        "sym": "TRUMP/USDT"
-      },
-      {
-        "n": 8,
-        "n_win": 4,
-        "n_lose": 4,
-        "wr": 50.0,
-        "tp1r": 50.0,
         "total_pnl": -4.39,
         "avg_pnl": -0.55,
         "dd": -9.2,
@@ -82922,6 +82921,20 @@
         "kz_wr": null,
         "profit_factor": 0.35,
         "sym": "BNB/USDT"
+      },
+      {
+        "n": 9,
+        "n_win": 4,
+        "n_lose": 5,
+        "wr": 44.4,
+        "tp1r": 44.4,
+        "total_pnl": -7.54,
+        "avg_pnl": -0.84,
+        "dd": -19.7,
+        "sharpe": -2.08,
+        "kz_wr": null,
+        "profit_factor": 0.67,
+        "sym": "TRUMP/USDT"
       },
       {
         "n": 9,
@@ -82978,20 +82991,6 @@
         "kz_wr": null,
         "profit_factor": 0.52,
         "sym": "ATOM/USDT"
-      },
-      {
-        "n": 12,
-        "n_win": 5,
-        "n_lose": 7,
-        "wr": 41.7,
-        "tp1r": 41.7,
-        "total_pnl": -14.75,
-        "avg_pnl": -1.23,
-        "dd": -12.9,
-        "sharpe": -10.52,
-        "kz_wr": null,
-        "profit_factor": 0.18,
-        "sym": "DOT/USDT"
       },
       {
         "n": 10,
@@ -83112,7 +83111,7 @@
         "n": 163,
         "wins": 0,
         "wr": 0.0,
-        "avg_pnl": -3.75
+        "avg_pnl": -3.76
       },
       {
         "exit_type": "SL_BE",
@@ -83157,9 +83156,9 @@
       },
       {
         "band": "12-14",
-        "n": 26,
-        "wr": 57.7,
-        "avg_pnl": 0.3
+        "n": 28,
+        "wr": 53.6,
+        "avg_pnl": 0.01
       },
       {
         "band": "15-17",
@@ -84253,6 +84252,21 @@
     "timeout": 20,
     "pending_trades": [
       {
+        "symbol": "HYPE/USDT",
+        "side": "LONG",
+        "score": 14,
+        "entry_px": 59.15,
+        "sl_pct": 1.183,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
+        "outcome": "PENDING",
+        "exit_px": null,
+        "exit_reason": "",
+        "tp1_hit": 0,
+        "created_at": "2026-08-18T01:58:25.045650+00:00",
+        "resolved_at": null
+      },
+      {
         "symbol": "FIL/USDT",
         "side": "SHORT",
         "score": 9,
@@ -84475,21 +84489,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-17T15:05:15.518703+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "XRP/USDT",
-        "side": "LONG",
-        "score": 11,
-        "entry_px": 1.004,
-        "sl_pct": 0.737,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-17T15:04:54.257652+00:00",
         "resolved_at": null
       },
       {
@@ -84748,36 +84747,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "DOT/USDT",
-        "side": "LONG",
-        "score": 10,
-        "entry_px": 0.7613,
-        "sl_pct": 1.103,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-17T07:19:54.283123+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "DOT/USDT",
-        "side": "SHORT",
-        "score": 9,
-        "entry_px": 0.7641,
-        "sl_pct": 0.707,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-08-17T06:35:22.035224+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "LINK/USDT",
         "side": "SHORT",
         "score": 13,
@@ -84848,7 +84817,7 @@
         "outcome": "PENDING",
         "exit_px": null,
         "exit_reason": "",
-        "tp1_hit": 0,
+        "tp1_hit": 1,
         "created_at": "2026-08-17T02:04:53.404254+00:00",
         "resolved_at": null
       },
@@ -84865,36 +84834,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-08-17T02:04:39.933129+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "TRUMP/USDT",
-        "side": "LONG",
-        "score": 10,
-        "entry_px": 1.409,
-        "sl_pct": 1.278,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-17T01:35:12.546932+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "RIVER/USDT",
-        "side": "LONG",
-        "score": 16,
-        "entry_px": 2.73,
-        "sl_pct": 2.857,
-        "regime": "VOLATILE",
-        "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-08-16T23:05:06.394708+00:00",
         "resolved_at": null
       },
       {
