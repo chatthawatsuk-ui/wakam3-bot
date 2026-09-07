@@ -72478,7 +72478,7 @@
     {
       "symbol": "ICP/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 14,
       "score_short": 11,
@@ -94982,14 +94982,14 @@
   },
   "shadow_stats": {
     "total": 588,
-    "pending": 42,
-    "win": 244,
+    "pending": 41,
+    "win": 245,
     "loss": 302,
-    "win_rate": 44.7,
+    "win_rate": 44.8,
     "win_tp2": 162,
     "win_slbe": 77,
     "loss_sl": 301,
-    "timeout": 6,
+    "timeout": 7,
     "pending_trades": [
       {
         "symbol": "ICP/USDT",
@@ -95592,21 +95592,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "DOGE/USDT",
-        "side": "LONG",
-        "score": 16,
-        "entry_px": 0.08991,
-        "sl_pct": 3.214,
-        "regime": "VOLATILE",
-        "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-09-05T23:49:32.440053+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "TON/USDT",
         "side": "LONG",
         "score": 13,
@@ -95623,6 +95608,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "DOGE/USDT",
+        "side": "LONG",
+        "score": 16,
+        "entry_px": 0.08991,
+        "sl_pct": 3.214,
+        "regime": "VOLATILE",
+        "claude_reason": "score16 overextension outside TRENDING (WR 36% in backtest)",
+        "outcome": "WIN",
+        "exit_px": 0.09076,
+        "exit_reason": "TIMEOUT",
+        "tp1_hit": 0,
+        "created_at": "2026-09-05T23:49:32.440053+00:00",
+        "resolved_at": "2026-09-07T23:49:42.404268+00:00"
+      },
       {
         "symbol": "TRUMP/USDT",
         "side": "SHORT",
