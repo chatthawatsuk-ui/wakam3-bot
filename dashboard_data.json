@@ -1,8 +1,8 @@
 {
-  "balance": 2147.43,
-  "pnl": 1147.43,
+  "balance": 2147.95,
+  "pnl": 1147.95,
   "win_rate": 41.9,
-  "total_trades": 3373,
+  "total_trades": 3374,
   "open_trades": [
     {
       "id": 3490,
@@ -69,28 +69,6 @@
       "open_time": "2026-09-16T23:35:56.818067+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 3.859
-    },
-    {
-      "id": 3498,
-      "symbol": "SHIB/USDT",
-      "side": "SHORT",
-      "score": 13,
-      "entry_price": 4.99e-06,
-      "current_price": 5.01e-06,
-      "sl_price": 5.0342e-06,
-      "tp_price": 4.9436e-06,
-      "tp2_price": 4.9106e-06,
-      "tp1_hit": false,
-      "rsi": 62.0,
-      "notional": 429.49,
-      "leverage": 20.0,
-      "margin_usd": 21.47,
-      "risk_usd": 3.54,
-      "pnl_pct": -0.34,
-      "pnl": -1.46,
-      "open_time": "2026-09-17T05:05:49.129111+00:00",
-      "pyramid_count": 1,
-      "sl_pct_orig": 0.825
     }
   ],
   "closed_trades": [
@@ -71514,14 +71492,35 @@
       "close_time": "2026-09-17T04:49:57.311540+00:00",
       "exit_type": "SL",
       "regime": "TRENDING"
+    },
+    {
+      "id": 3498,
+      "symbol": "SHIB/USDT",
+      "side": "SHORT",
+      "score": 13,
+      "entry_price": 4.993e-06,
+      "exit_price": 4.987e-06,
+      "sl_price": 5.0342e-06,
+      "tp_price": 4.9436e-06,
+      "tp2_price": 4.9106e-06,
+      "tp1_hit": 0,
+      "outcome": "WIN",
+      "pnl": 0.52,
+      "pnl_pct": 0.12,
+      "leverage": 20.0,
+      "notional": 429.49,
+      "open_time": "2026-09-17T05:05:49.129111+00:00",
+      "close_time": "2026-09-17T05:15:26.033235+00:00",
+      "exit_type": "HTF_REVERSAL",
+      "regime": "TRENDING"
     }
   ],
   "sessions": [
     {
       "session": "ASIA",
-      "total": 1061,
-      "wins": 469,
-      "win_rate": 44.2
+      "total": 1062,
+      "wins": 470,
+      "win_rate": 44.3
     },
     {
       "session": "EUROPE",
@@ -74944,20 +74943,21 @@
     2154.44,
     2155.05,
     2152.02,
-    2147.43
+    2147.43,
+    2147.95
   ],
   "signals": [
     {
       "symbol": "SHIB/USDT",
       "side": "SHORT",
       "score": 13,
-      "price": 4.993e-06,
-      "signal_price": 4.993e-06,
+      "price": 4.987e-06,
+      "signal_price": 4.987e-06,
       "atr": 4.1194437053188986e-08,
-      "sl": 5.0342e-06,
-      "tp1": 4.9436e-06,
-      "tp2": 4.9106e-06,
-      "sl_pct": 0.825,
+      "sl": 5.031e-06,
+      "tp1": 4.9342e-06,
+      "tp2": 4.899e-06,
+      "sl_pct": 0.882,
       "rsi": 62.0,
       "in_kz": false,
       "regime": "TRENDING",
@@ -74969,9 +74969,9 @@
       "funding_rate": 0.01,
       "bull_sweep": true,
       "bear_sweep": true,
-      "ts": "2026-09-17T05:05:18.765898+00:00",
-      "execution_allowed": true,
-      "execution_block_reason": "",
+      "ts": "2026-09-17T05:14:44.901698+00:00",
+      "execution_allowed": false,
+      "execution_block_reason": "PYRAMID_BLOCKED trend=0/13 pnl=+0.1%",
       "ai_filter_bypassed": true,
       "bypass_reason": "credit_exhausted",
       "claude_approved": true,
@@ -74991,7 +74991,7 @@
       "score_short": 8,
       "best_score": 21,
       "score_pct": 46.7,
-      "price": 7.543,
+      "price": 7.532,
       "rsi": 68.1,
       "htf_bull": true,
       "in_kz": false,
@@ -75004,11 +75004,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0059,
+      "funding_rate": 0.0053,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:16.165972+00:00",
-      "reject_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:41.861035+00:00",
+      "reject_reason": "SL กว้างเกิน 4.4% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.4% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "SUI/USDT",
@@ -75016,10 +75016,10 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 21,
-      "score_short": 8,
+      "score_short": 11,
       "best_score": 21,
       "score_pct": 46.7,
-      "price": 0.7237,
+      "price": 0.7221,
       "rsi": 66.2,
       "htf_bull": true,
       "in_kz": false,
@@ -75031,12 +75031,12 @@
       "in_discount": false,
       "trail_bull": true,
       "bull_sweep": true,
-      "bear_sweep": false,
+      "bear_sweep": true,
       "funding_rate": 0.0048,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:17.156184+00:00",
-      "reject_reason": "SL กว้างเกิน 5.7% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 5.7% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:42.895018+00:00",
+      "reject_reason": "SL กว้างเกิน 5.4% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 5.4% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "RENDER/USDT",
@@ -75047,7 +75047,7 @@
       "score_short": 7,
       "best_score": 21,
       "score_pct": 46.7,
-      "price": 1.39,
+      "price": 1.388,
       "rsi": 73.8,
       "htf_bull": true,
       "in_kz": false,
@@ -75062,9 +75062,9 @@
       "bear_sweep": false,
       "funding_rate": 0.005,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:27.148118+00:00",
-      "reject_reason": "SL กว้างเกิน 6.8% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 6.8% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:55.329051+00:00",
+      "reject_reason": "SL กว้างเกิน 6.6% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 6.6% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "TRUMP/USDT",
@@ -75075,7 +75075,7 @@
       "score_short": 11,
       "best_score": 21,
       "score_pct": 46.7,
-      "price": 1.945,
+      "price": 1.938,
       "rsi": 63.4,
       "htf_bull": true,
       "in_kz": false,
@@ -75088,11 +75088,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0012,
+      "funding_rate": 0.001,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:34.319512+00:00",
-      "reject_reason": "SL กว้างเกิน 6.3% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 6.3% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:15:04.513456+00:00",
+      "reject_reason": "SL กว้างเกิน 5.9% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 5.9% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "UNI/USDT",
@@ -75103,7 +75103,7 @@
       "score_short": 11,
       "best_score": 20,
       "score_pct": 44.4,
-      "price": 6.814,
+      "price": 6.807,
       "rsi": 68.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75116,9 +75116,9 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0014,
+      "funding_rate": 0.0008,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:22.478367+00:00",
+      "ts": "2026-09-17T05:14:49.120247+00:00",
       "reject_reason": "SL กว้างเกิน 8.7% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 8.7% > 4% — swing level ไกลเกิน entry"
     },
@@ -75131,7 +75131,7 @@
       "score_short": 9,
       "best_score": 20,
       "score_pct": 44.4,
-      "price": 0.09694,
+      "price": 0.09667,
       "rsi": 62.9,
       "htf_bull": true,
       "in_kz": false,
@@ -75146,9 +75146,9 @@
       "bear_sweep": false,
       "funding_rate": 0.005,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:28.775555+00:00",
-      "reject_reason": "SL กว้างเกิน 5.5% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 5.5% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:57.401520+00:00",
+      "reject_reason": "SL กว้างเกิน 5.2% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 5.2% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "NEAR/USDT",
@@ -75159,7 +75159,7 @@
       "score_short": 12,
       "best_score": 19,
       "score_pct": 42.2,
-      "price": 2.66,
+      "price": 2.656,
       "rsi": 63.1,
       "htf_bull": true,
       "in_kz": false,
@@ -75174,9 +75174,9 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:23.253163+00:00",
-      "reject_reason": "SL กว้างเกิน 7.1% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 7.1% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:50.150113+00:00",
+      "reject_reason": "SL กว้างเกิน 7.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 7.0% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "ICP/USDT",
@@ -75187,7 +75187,7 @@
       "score_short": 13,
       "best_score": 19,
       "score_pct": 42.2,
-      "price": 2.575,
+      "price": 2.565,
       "rsi": 62.6,
       "htf_bull": true,
       "in_kz": false,
@@ -75202,9 +75202,9 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:25.611450+00:00",
-      "reject_reason": "SL กว้างเกิน 5.0% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 5.0% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:53.269309+00:00",
+      "reject_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "ENA/USDT",
@@ -75215,7 +75215,7 @@
       "score_short": 10,
       "best_score": 19,
       "score_pct": 42.2,
-      "price": 0.151,
+      "price": 0.1514,
       "rsi": 59.7,
       "htf_bull": true,
       "in_kz": false,
@@ -75228,11 +75228,11 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.0034,
+      "funding_rate": -0.0039,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:31.106627+00:00",
-      "reject_reason": "SL กว้างเกิน 4.8% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.8% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:15:00.435514+00:00",
+      "reject_reason": "SL กว้างเกิน 5.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 5.0% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "BNB/USDT",
@@ -75243,7 +75243,7 @@
       "score_short": 8,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 726.2,
+      "price": 726.3,
       "rsi": 58.2,
       "htf_bull": true,
       "in_kz": false,
@@ -75256,9 +75256,37 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0092,
+      "funding_rate": 0.0093,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:09.117273+00:00",
+      "ts": "2026-09-17T05:14:32.687423+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR"
+    },
+    {
+      "symbol": "BCH/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 18,
+      "score_short": 11,
+      "best_score": 18,
+      "score_pct": 40.0,
+      "price": 221.1,
+      "rsi": 59.5,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 8,
+      "score_smc": 0,
+      "score_osc": 4,
+      "score_liq": 8,
+      "score_fund": 2,
+      "in_discount": false,
+      "trail_bull": true,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.0099,
+      "regime": "RANGING",
+      "ts": "2026-09-17T05:14:38.843371+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR",
       "claude_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR"
     },
@@ -75268,10 +75296,10 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 18,
-      "score_short": 9,
+      "score_short": 11,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 11.16,
+      "price": 11.14,
       "rsi": 63.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75284,11 +75312,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0031,
+      "funding_rate": 0.0026,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:15.411272+00:00",
-      "reject_reason": "SL กว้างเกิน 4.2% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.2% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:40.847826+00:00",
+      "reject_reason": "SL กว้างเกิน 4.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.0% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "DOT/USDT",
@@ -75299,7 +75327,7 @@
       "score_short": 11,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 1.0139,
+      "price": 1.0132,
       "rsi": 57.1,
       "htf_bull": true,
       "in_kz": false,
@@ -75312,11 +75340,11 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0063,
+      "funding_rate": 0.0066,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:17.927834+00:00",
-      "reject_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:43.925915+00:00",
+      "reject_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "PEPE/USDT",
@@ -75327,7 +75355,7 @@
       "score_short": 11,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 3.458e-06,
+      "price": 3.454e-06,
       "rsi": 66.6,
       "htf_bull": true,
       "in_kz": false,
@@ -75340,11 +75368,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0042,
+      "funding_rate": 0.0034,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:24.024037+00:00",
-      "reject_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 4.6% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:51.177250+00:00",
+      "reject_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.5% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "ETC/USDT",
@@ -75355,7 +75383,7 @@
       "score_short": 11,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 7.418,
+      "price": 7.415,
       "rsi": 65.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75368,9 +75396,9 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0074,
+      "funding_rate": 0.0063,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:26.363356+00:00",
+      "ts": "2026-09-17T05:14:54.308270+00:00",
       "reject_reason": "SL กว้างเกิน 4.3% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 4.3% > 4% — swing level ไกลเกิน entry"
     },
@@ -75383,7 +75411,7 @@
       "score_short": 12,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 0.3723,
+      "price": 0.3721,
       "rsi": 57.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75398,7 +75426,7 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:30.303232+00:00",
+      "ts": "2026-09-17T05:14:59.422064+00:00",
       "reject_reason": "SL กว้างเกิน 4.1% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 4.1% > 4% — swing level ไกลเกิน entry"
     },
@@ -75411,7 +75439,7 @@
       "score_short": 10,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 0.566,
+      "price": 0.5662,
       "rsi": 70.7,
       "htf_bull": true,
       "in_kz": false,
@@ -75424,11 +75452,11 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0025,
+      "funding_rate": 0.0027,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:32.764576+00:00",
-      "reject_reason": "SL กว้างเกิน 7.1% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 7.1% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:15:02.463222+00:00",
+      "reject_reason": "SL กว้างเกิน 7.2% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 7.2% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "CRO/USDT",
@@ -75436,10 +75464,10 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 18,
-      "score_short": 9,
+      "score_short": 11,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 0.05862,
+      "price": 0.05835,
       "rsi": 73.2,
       "htf_bull": true,
       "in_kz": false,
@@ -75454,9 +75482,9 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:33.537538+00:00",
-      "reject_reason": "SL กว้างเกิน 5.6% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 5.6% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:15:03.531647+00:00",
+      "reject_reason": "SL กว้างเกิน 5.2% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 5.2% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "ONDO/USDT",
@@ -75467,7 +75495,7 @@
       "score_short": 11,
       "best_score": 18,
       "score_pct": 40.0,
-      "price": 0.3506,
+      "price": 0.3505,
       "rsi": 64.8,
       "htf_bull": true,
       "in_kz": false,
@@ -75482,37 +75510,36 @@
       "bear_sweep": true,
       "funding_rate": 0.005,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:35.105297+00:00",
+      "ts": "2026-09-17T05:15:05.509007+00:00",
       "reject_reason": "SL กว้างเกิน 6.1% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 6.1% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "BCH/USDT",
+      "symbol": "TRX/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "LONG",
       "score_long": 17,
-      "score_short": 12,
+      "score_short": 6,
       "best_score": 17,
       "score_pct": 37.8,
-      "price": 221.4,
-      "rsi": 59.5,
+      "price": 0.3358,
+      "rsi": 50.4,
       "htf_bull": true,
       "in_kz": false,
-      "score_trend": 8,
-      "score_smc": 0,
-      "score_osc": 4,
-      "score_liq": 8,
-      "score_fund": 1,
-      "in_discount": false,
+      "score_trend": 10,
+      "score_smc": 2,
+      "score_osc": 2,
+      "score_liq": 5,
+      "score_fund": 2,
+      "in_discount": true,
       "trail_bull": true,
-      "bull_sweep": true,
-      "bear_sweep": true,
-      "funding_rate": 0.01,
+      "bull_sweep": false,
+      "bear_sweep": false,
+      "funding_rate": -0.01,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:13.862248+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR"
+      "ts": "2026-09-17T05:14:35.752385+00:00",
+      "claude_reason": "score17 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
       "symbol": "ETH/USDT",
@@ -75523,7 +75550,7 @@
       "score_short": 9,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 2443.16,
+      "price": 2441.47,
       "rsi": 61.9,
       "htf_bull": true,
       "in_kz": false,
@@ -75536,11 +75563,11 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0022,
+      "funding_rate": 0.002,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:08.355139+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.8× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.8× > 3× ATR"
+      "ts": "2026-09-17T05:14:31.655970+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.7× > 3× ATR"
     },
     {
       "symbol": "SOL/USDT",
@@ -75548,10 +75575,10 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 15,
-      "score_short": 9,
+      "score_short": 11,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 99.89,
+      "price": 99.71,
       "rsi": 63.3,
       "htf_bull": true,
       "in_kz": false,
@@ -75564,38 +75591,11 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0028,
+      "funding_rate": 0.0029,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:10.739742+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.6× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.6× > 3× ATR"
-    },
-    {
-      "symbol": "TRX/USDT",
-      "market_type": "FUTURES",
-      "status": "REJECTED",
-      "side": "LONG",
-      "score_long": 15,
-      "score_short": 6,
-      "best_score": 15,
-      "score_pct": 33.3,
-      "price": 0.3357,
-      "rsi": 50.4,
-      "htf_bull": true,
-      "in_kz": false,
-      "score_trend": 10,
-      "score_smc": 2,
-      "score_osc": 2,
-      "score_liq": 3,
-      "score_fund": 2,
-      "in_discount": true,
-      "trail_bull": true,
-      "bull_sweep": false,
-      "bear_sweep": false,
-      "funding_rate": -0.0096,
-      "regime": "RANGING",
-      "ts": "2026-09-17T05:05:11.558906+00:00",
-      "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
+      "ts": "2026-09-17T05:14:34.709942+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.3× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.3× > 3× ATR"
     },
     {
       "symbol": "LTC/USDT",
@@ -75619,9 +75619,9 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.003,
+      "funding_rate": -0.0035,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:14.636393+00:00",
+      "ts": "2026-09-17T05:14:39.847355+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 6.3× > 3× ATR",
       "claude_reason": "SL กว้างเกิน ATR — 6.3× > 3× ATR"
     },
@@ -75634,7 +75634,7 @@
       "score_short": 9,
       "best_score": 15,
       "score_pct": 33.3,
-      "price": 79.1,
+      "price": 78.97,
       "rsi": 55.6,
       "htf_bull": true,
       "in_kz": false,
@@ -75647,9 +75647,9 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": 0.0079,
+      "funding_rate": 0.0078,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:35.883733+00:00",
+      "ts": "2026-09-17T05:15:06.493805+00:00",
       "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)"
     },
     {
@@ -75661,7 +75661,7 @@
       "score_short": 11,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 76493.1,
+      "price": 76442.6,
       "rsi": 57.8,
       "htf_bull": true,
       "in_kz": false,
@@ -75676,9 +75676,9 @@
       "bear_sweep": true,
       "funding_rate": 0.0068,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:07.594538+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.3× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.3× > 3× ATR"
+      "ts": "2026-09-17T05:14:30.665648+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.2× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.2× > 3× ATR"
     },
     {
       "symbol": "XRP/USDT",
@@ -75689,7 +75689,7 @@
       "score_short": 11,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 1.2995,
+      "price": 1.2973,
       "rsi": 54.2,
       "htf_bull": true,
       "in_kz": false,
@@ -75702,11 +75702,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0036,
+      "funding_rate": 0.0042,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:09.935195+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR"
+      "ts": "2026-09-17T05:14:33.705051+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR"
     },
     {
       "symbol": "ADA/USDT",
@@ -75717,7 +75717,7 @@
       "score_short": 11,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 0.1966,
+      "price": 0.1964,
       "rsi": 57.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75730,11 +75730,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": -0.0166,
+      "funding_rate": -0.017,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:13.092515+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR"
+      "ts": "2026-09-17T05:14:37.836827+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.8× > 3× ATR"
     },
     {
       "symbol": "SHIB/USDT",
@@ -75745,7 +75745,7 @@
       "score_short": 13,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 4.993e-06,
+      "price": 4.987e-06,
       "rsi": 62.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75760,11 +75760,11 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:18.765898+00:00",
-      "entry_price": 4.993e-06,
-      "sl_price": 5.0342e-06,
-      "tp_price": 4.9436e-06,
-      "tp2_price": 4.9106e-06
+      "ts": "2026-09-17T05:14:44.901698+00:00",
+      "entry_price": 4.987e-06,
+      "sl_price": 5.031e-06,
+      "tp_price": 4.9342e-06,
+      "tp2_price": 4.899e-06
     },
     {
       "symbol": "ATOM/USDT",
@@ -75775,7 +75775,7 @@
       "score_short": 8,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 1.521,
+      "price": 1.52,
       "rsi": 58.3,
       "htf_bull": true,
       "in_kz": false,
@@ -75788,11 +75788,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.023,
+      "funding_rate": -0.0241,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:29.543557+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.5× > 3× ATR"
+      "ts": "2026-09-17T05:14:58.418922+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.4× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.4× > 3× ATR"
     },
     {
       "symbol": "FIL/USDT",
@@ -75803,7 +75803,7 @@
       "score_short": 8,
       "best_score": 13,
       "score_pct": 28.9,
-      "price": 0.8019,
+      "price": 0.8005,
       "rsi": 50.9,
       "htf_bull": true,
       "in_kz": false,
@@ -75816,11 +75816,11 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": -0.001,
+      "funding_rate": -0.0011,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:31.926189+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR"
+      "ts": "2026-09-17T05:15:01.461139+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.5× > 3× ATR"
     },
     {
       "symbol": "DOGE/USDT",
@@ -75831,7 +75831,7 @@
       "score_short": 12,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 0.08106,
+      "price": 0.08091,
       "rsi": 58.6,
       "htf_bull": true,
       "in_kz": false,
@@ -75844,22 +75844,22 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": true,
-      "funding_rate": 0.0015,
+      "funding_rate": 0.0016,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:12.343082+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 4.1× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 4.1× > 3× ATR"
+      "ts": "2026-09-17T05:14:36.798501+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR"
     },
     {
       "symbol": "HBAR/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "LONG",
       "score_long": 12,
       "score_short": 12,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 0.07417,
+      "price": 0.07387,
       "rsi": 56.0,
       "htf_bull": true,
       "in_kz": false,
@@ -75874,9 +75874,8 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:20.959345+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.2× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.2× > 3× ATR"
+      "ts": "2026-09-17T05:14:47.140607+00:00",
+      "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
       "symbol": "ALGO/USDT",
@@ -75887,7 +75886,7 @@
       "score_short": 12,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 0.08984,
+      "price": 0.08972,
       "rsi": 57.8,
       "htf_bull": true,
       "in_kz": false,
@@ -75902,7 +75901,7 @@
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:28.010104+00:00",
+      "ts": "2026-09-17T05:14:56.403145+00:00",
       "claude_reason": "RANGING regime — skip Claude (low WR regime)"
     },
     {
@@ -75914,7 +75913,7 @@
       "score_short": 8,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 0.1657,
+      "price": 0.1658,
       "rsi": 53.8,
       "htf_bull": true,
       "in_kz": false,
@@ -75929,9 +75928,9 @@
       "bear_sweep": false,
       "funding_rate": 0.005,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:36.659883+00:00",
-      "reject_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR",
-      "claude_reason": "SL กว้างเกิน ATR — 3.4× > 3× ATR"
+      "ts": "2026-09-17T05:15:07.473134+00:00",
+      "reject_reason": "SL กว้างเกิน 4.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 4.0% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "RIVER/USDT",
@@ -75942,7 +75941,7 @@
       "score_short": 7,
       "best_score": 12,
       "score_pct": 26.7,
-      "price": 1.223,
+      "price": 1.222,
       "rsi": 61.8,
       "htf_bull": false,
       "in_kz": false,
@@ -75957,7 +75956,7 @@
       "bear_sweep": false,
       "funding_rate": 0.005,
       "regime": "RANGING",
-      "ts": "2026-09-17T05:05:37.421389+00:00",
+      "ts": "2026-09-17T05:15:08.482862+00:00",
       "reject_reason": "SL กว้างเกิน 5.2% > 4% — swing level ไกลเกิน entry",
       "claude_reason": "SL กว้างเกิน 5.2% > 4% — swing level ไกลเกิน entry"
     },
@@ -75983,9 +75982,9 @@
       "trail_bull": true,
       "bull_sweep": true,
       "bear_sweep": false,
-      "funding_rate": 0.0053,
+      "funding_rate": 0.0044,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:21.714053+00:00",
+      "ts": "2026-09-17T05:14:48.136033+00:00",
       "reject_reason": "SL กว้างเกิน ATR — 3.3× > 3× ATR",
       "claude_reason": "SL กว้างเกิน ATR — 3.3× > 3× ATR"
     },
@@ -75998,7 +75997,7 @@
       "score_short": 9,
       "best_score": 9,
       "score_pct": 20.0,
-      "price": 122.34,
+      "price": 122.6,
       "rsi": 64.5,
       "htf_bull": true,
       "in_kz": false,
@@ -76011,11 +76010,11 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": true,
-      "funding_rate": -0.001,
+      "funding_rate": -0.0013,
       "regime": "TRENDING",
-      "ts": "2026-09-17T05:05:24.781590+00:00",
-      "reject_reason": "SL กว้างเกิน 6.1% > 4% — swing level ไกลเกิน entry",
-      "claude_reason": "SL กว้างเกิน 6.1% > 4% — swing level ไกลเกิน entry"
+      "ts": "2026-09-17T05:14:52.263349+00:00",
+      "reject_reason": "SL กว้างเกิน 6.3% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 6.3% > 4% — swing level ไกลเกิน entry"
     },
     {
       "symbol": "TON/USDT",
@@ -76034,7 +76033,7 @@
       "in_kz": false,
       "in_discount": false,
       "trail_bull": false,
-      "ts": "2026-09-17T05:05:17.663167+00:00"
+      "ts": "2026-09-17T05:14:43.469453+00:00"
     }
   ],
   "live_prices": {
@@ -76348,21 +76347,21 @@
     "outperform": 0,
     "total": 0
   },
-  "last_scan": "2026-09-17T05:05:49.708288+00:00",
-  "generated": "2026-09-17T05:05:49.708288+00:00",
+  "last_scan": "2026-09-17T05:15:26.580875+00:00",
+  "generated": "2026-09-17T05:15:26.580875+00:00",
   "specialist_wr": {
     "trend": {
-      "trades": 3373,
-      "wins": 1412,
+      "trades": 3374,
+      "wins": 1413,
       "losses": 1961,
       "winrate": 41.9,
-      "avg_score_win": 6.3,
+      "avg_score_win": 6.2,
       "avg_score_loss": 6.8,
       "buckets": [
         {
           "label": "Low 0-3",
-          "trades": 948,
-          "winrate": 46.9
+          "trades": 949,
+          "winrate": 47.0
         },
         {
           "label": "Mid 4-6",
@@ -76377,8 +76376,8 @@
       ]
     },
     "smc": {
-      "trades": 3373,
-      "wins": 1412,
+      "trades": 3374,
+      "wins": 1413,
       "losses": 1961,
       "winrate": 41.9,
       "avg_score_win": 1.2,
@@ -76386,7 +76385,7 @@
       "buckets": [
         {
           "label": "Low 0-3",
-          "trades": 3372,
+          "trades": 3373,
           "winrate": 41.9
         },
         {
@@ -76397,8 +76396,8 @@
       ]
     },
     "osc": {
-      "trades": 3373,
-      "wins": 1412,
+      "trades": 3374,
+      "wins": 1413,
       "losses": 1961,
       "winrate": 41.9,
       "avg_score_win": 2.0,
@@ -76406,7 +76405,7 @@
       "buckets": [
         {
           "label": "Low 0-3",
-          "trades": 2975,
+          "trades": 2976,
           "winrate": 42.3
         },
         {
@@ -76421,25 +76420,25 @@
         }
       ]
     },
-    "total_closed": 3373
+    "total_closed": 3374
   },
   "dyn_weights": {
     "trend": 0.3333,
     "smc": 0.3333,
     "osc": 0.3333,
     "locked": false,
-    "reason": "Adapted from 3373 closed trades (smoothing=0.4)",
-    "total_closed": 3373,
+    "reason": "Adapted from 3374 closed trades (smoothing=0.4)",
+    "total_closed": 3374,
     "wr_trend": 41.9,
     "wr_smc": 41.9,
     "wr_osc": 41.9,
-    "generated": "2026-09-17T05:05:51.422280+00:00"
+    "generated": "2026-09-17T05:15:28.464494+00:00"
   },
   "backtest": {
     "available": true,
     "source": "mtf",
     "source_file": "backtest_mtf.csv",
-    "generated": "2026-09-17T05:04:39.627766+00:00",
+    "generated": "2026-09-17T05:14:07.977068+00:00",
     "date_from": "2024-04-18",
     "date_to": "2026-02-28",
     "total_rows": 2161,
@@ -85082,7 +85081,7 @@
     "label": "backtest_3y",
     "source": "mtf",
     "source_file": "backtest_mtf.csv",
-    "generated": "2026-09-17T05:04:39.627766+00:00",
+    "generated": "2026-09-17T05:14:07.977068+00:00",
     "date_from": "2024-04-18",
     "date_to": "2026-02-28",
     "period": "2023-01-01 → 2026-09-17",
@@ -93725,10 +93724,10 @@
     "available": true,
     "label": "live_perf",
     "source": "signal_log",
-    "generated": "2026-09-17T05:05:51.945820+00:00",
+    "generated": "2026-09-17T05:15:28.973484+00:00",
     "date_from": "2026-09-10",
     "date_to": "2026-09-17",
-    "period": "All Signals · since 2026-09-10 05:05 UTC (2026-09-10 → 2026-09-17)",
+    "period": "All Signals · since 2026-09-10 05:15 UTC (2026-09-10 → 2026-09-17)",
     "total_rows": 430,
     "n_traded": 117,
     "n_skipped": 313,
@@ -97268,8 +97267,8 @@
     ]
   },
   "shadow_stats": {
-    "total": 437,
-    "pending": 35,
+    "total": 438,
+    "pending": 36,
     "win": 200,
     "loss": 202,
     "win_rate": 49.8,
@@ -97278,6 +97277,21 @@
     "loss_sl": 186,
     "timeout": 46,
     "pending_trades": [
+      {
+        "symbol": "HBAR/USDT",
+        "side": "LONG",
+        "score": 12,
+        "entry_px": 0.07387,
+        "sl_pct": 2.044,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
+        "outcome": "PENDING",
+        "exit_px": null,
+        "exit_reason": "",
+        "tp1_hit": 0,
+        "created_at": "2026-09-17T05:14:47.414906+00:00",
+        "resolved_at": null
+      },
       {
         "symbol": "WLD/USDT",
         "side": "SHORT",
