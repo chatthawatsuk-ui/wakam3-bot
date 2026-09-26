@@ -49,6 +49,28 @@
       "sl_pct_orig": 3.535
     },
     {
+      "id": 3666,
+      "symbol": "XRP/USDT",
+      "side": "SHORT",
+      "score": 18,
+      "entry_price": 1.5298,
+      "current_price": 1.5288,
+      "sl_price": 1.5543,
+      "tp_price": 1.5004,
+      "tp2_price": 1.4808,
+      "tp1_hit": false,
+      "rsi": 44.9,
+      "notional": 628.15,
+      "leverage": 20.0,
+      "margin_usd": 31.41,
+      "risk_usd": 10.06,
+      "pnl_pct": 0.07,
+      "pnl": 0.41,
+      "open_time": "2026-09-26T23:38:25.784443+00:00",
+      "pyramid_count": 1,
+      "sl_pct_orig": 1.602
+    },
+    {
       "id": 3662,
       "symbol": "PEPE/USDT",
       "side": "SHORT",
@@ -78796,7 +78818,7 @@
       "claude_reason": "SL กว้างเกิน 4.9% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "XRP/USDT",
+      "symbol": "PEPE/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
@@ -78812,7 +78834,7 @@
       "score_smc": 2,
       "score_osc": 2,
       "score_liq": 5,
-      "score_fund": 1,
+      "score_fund": 2,
       "in_discount": false,
       "trail_bull": false,
       "bull_sweep": true,
@@ -78970,7 +78992,7 @@
       "score_short": 17,
       "best_score": 17,
       "score_pct": 37.8,
-      "price": 0.3341,
+      "price": 0.3344,
       "rsi": 18.6,
       "htf_bull": false,
       "in_kz": false,
@@ -78992,7 +79014,7 @@
     {
       "symbol": "RAVE/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "SHORT",
       "score_long": 11,
       "score_short": 17,
@@ -79982,8 +80004,8 @@
       "volBase": 10685105.0
     },
     "RAVE/USDT": {
-      "price": 0.2023,
-      "change": -0.78,
+      "price": 0.2024,
+      "change": -0.39,
       "high": 0.2075,
       "low": 0.1976,
       "vol": 195272.5,
@@ -80799,9 +80821,9 @@
     "btc_rsi": 63.1
   },
   "altcoin_season": {
-    "value": 36,
+    "value": 39,
     "label": "Bitcoin Leading",
-    "outperform": 13,
+    "outperform": 14,
     "total": 36,
     "btc_24h": 0.31,
     "timeframe": "24h"
@@ -101542,11 +101564,11 @@
     "pending": 41,
     "win": 230,
     "loss": 259,
-    "win_rate": 47.0,
+    "win_rate": 47.1,
     "win_tp2": 157,
     "win_slbe": 62,
     "loss_sl": 257,
-    "timeout": 13,
+    "timeout": 14,
     "pending_trades": [
       {
         "symbol": "ONDO/USDT",
@@ -102134,21 +102156,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "HBAR/USDT",
-        "side": "LONG",
-        "score": 10,
-        "entry_px": 0.09328,
-        "sl_pct": 2.798,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-09-24T23:34:20.629653+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "TON/USDT",
         "side": "LONG",
         "score": 13,
@@ -102165,6 +102172,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "HBAR/USDT",
+        "side": "LONG",
+        "score": 10,
+        "entry_px": 0.09328,
+        "sl_pct": 2.798,
+        "regime": "RANGING",
+        "claude_reason": "RANGING regime score10<12 (noise filter, WR 46.5% in backtest)",
+        "outcome": "WIN",
+        "exit_px": 0.09357,
+        "exit_reason": "TIMEOUT",
+        "tp1_hit": 0,
+        "created_at": "2026-09-24T23:34:20.629653+00:00",
+        "resolved_at": "2026-09-26T23:38:09.051705+00:00"
+      },
       {
         "symbol": "BTC/USDT",
         "side": "LONG",
