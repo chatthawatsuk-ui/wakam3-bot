@@ -98,7 +98,7 @@
       "side": "LONG",
       "score": 19,
       "entry_price": 788.9,
-      "current_price": 789.3,
+      "current_price": 789.2,
       "sl_price": 782.1,
       "tp_price": 797.06,
       "tp2_price": 802.5,
@@ -108,8 +108,8 @@
       "leverage": 20.0,
       "margin_usd": 27.77,
       "risk_usd": 4.79,
-      "pnl_pct": 0.05,
-      "pnl": 0.28,
+      "pnl_pct": 0.04,
+      "pnl": 0.21,
       "open_time": "2026-10-04T10:51:24.361656+00:00",
       "pyramid_count": 1,
       "sl_pct_orig": 0.862
@@ -81780,7 +81780,7 @@
       "bear_sweep": false,
       "ts": "2026-10-04T20:03:01.836589+00:00",
       "execution_allowed": false,
-      "execution_block_reason": "PYRAMID_BLOCKED trend=8/13 pnl=-0.1%",
+      "execution_block_reason": "PYRAMID_BLOCKED trend=8/13 pnl=-0.0%",
       "ai_filter_bypassed": true,
       "bypass_reason": "credit_exhausted",
       "claude_approved": true,
@@ -82578,7 +82578,7 @@
     {
       "symbol": "APT/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "LONG",
       "score_long": 13,
       "score_short": 11,
@@ -82713,7 +82713,7 @@
       "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)"
     },
     {
-      "symbol": "BCH/USDT",
+      "symbol": "RIVER/USDT",
       "market_type": "FUTURES",
       "status": "REJECTED",
       "side": "SHORT",
@@ -101309,7 +101309,7 @@
     "period": "All Signals · since 2026-09-27 20:04 UTC (2026-09-27 → 2026-10-04)",
     "total_rows": 278,
     "n_traded": 102,
-    "n_skipped": 176,
+    "n_skipped": 178,
     "skip_breakdown": {
       "CORR_LIMIT": {
         "n": 19,
@@ -101327,9 +101327,9 @@
         "avg_pnl": 3.28
       },
       "POSITIONS_FULL (10/10)": {
-        "n": 39,
-        "wr": 30.8,
-        "avg_pnl": -6.79
+        "n": 41,
+        "wr": 29.3,
+        "avg_pnl": -6.66
       },
       "PYRAMID_BLOCKED": {
         "n": 14,
@@ -101478,14 +101478,14 @@
       }
     },
     "summary": {
-      "n": 278,
+      "n": 280,
       "n_win": 87,
-      "n_lose": 191,
-      "wr": 31.3,
-      "tp1r": 28.8,
-      "total_pnl": -1907.61,
-      "avg_pnl": -6.86,
-      "dd": -70.7,
+      "n_lose": 193,
+      "wr": 31.1,
+      "tp1r": 28.6,
+      "total_pnl": -1916.01,
+      "avg_pnl": -6.84,
+      "dd": -70.2,
       "sharpe": -6.91,
       "kz_wr": null,
       "profit_factor": 0.35
@@ -101504,45 +101504,19 @@
       "profit_factor": 0.46
     },
     "summary_skipped": {
-      "n": 176,
+      "n": 178,
       "n_win": 45,
-      "n_lose": 131,
-      "wr": 25.6,
-      "tp1r": 23.9,
-      "total_pnl": -1300.09,
-      "avg_pnl": -7.39,
-      "dd": -76.0,
+      "n_lose": 133,
+      "wr": 25.3,
+      "tp1r": 23.6,
+      "total_pnl": -1308.49,
+      "avg_pnl": -7.35,
+      "dd": -75.1,
       "sharpe": -8.32,
       "kz_wr": null,
       "profit_factor": 0.28
     },
     "trades": [
-      {
-        "sym": "DOT/USDT",
-        "side": "SHORT",
-        "score": 22,
-        "ep": 1.1807,
-        "entry_ts": "2026-10-02T00:21:28.549473+00:00",
-        "exit_type": "SL",
-        "tp1_hit": 0,
-        "outcome": "LOSS",
-        "pnl": -10.62,
-        "in_kz": false,
-        "regime": "TRENDING"
-      },
-      {
-        "sym": "NEAR/USDT",
-        "side": "SHORT",
-        "score": 18,
-        "ep": 4.825,
-        "entry_ts": "2026-10-02T00:21:28.553410+00:00",
-        "exit_type": "SL",
-        "tp1_hit": 0,
-        "outcome": "LOSS",
-        "pnl": -22.93,
-        "in_kz": false,
-        "regime": "TRENDING"
-      },
       {
         "sym": "ICP/USDT",
         "side": "SHORT",
@@ -102753,6 +102727,19 @@
         "regime": "TRENDING"
       },
       {
+        "sym": "WLD/USDT",
+        "side": "LONG",
+        "score": 11,
+        "ep": 0.5837,
+        "entry_ts": "2026-10-04T11:50:36.006904+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -5.33,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
         "sym": "ENA/USDT",
         "side": "LONG",
         "score": 10,
@@ -102814,6 +102801,19 @@
         "tp1_hit": 1,
         "outcome": "WIN",
         "pnl": 21.14,
+        "in_kz": false,
+        "regime": "TRENDING"
+      },
+      {
+        "sym": "SOL/USDT",
+        "side": "LONG",
+        "score": 18,
+        "ep": 121.41,
+        "entry_ts": "2026-10-04T18:21:32.923920+00:00",
+        "exit_type": "SL",
+        "tp1_hit": 0,
+        "outcome": "LOSS",
+        "pnl": -3.07,
         "in_kz": false,
         "regime": "TRENDING"
       }
@@ -102918,20 +102918,6 @@
         "sym": "BCH/USDT"
       },
       {
-        "n": 4,
-        "n_win": 2,
-        "n_lose": 2,
-        "wr": 50.0,
-        "tp1r": 50.0,
-        "total_pnl": -12.17,
-        "avg_pnl": -3.04,
-        "dd": -45.5,
-        "sharpe": -5.85,
-        "kz_wr": null,
-        "profit_factor": 0.39,
-        "sym": "SOL/USDT"
-      },
-      {
         "n": 7,
         "n_win": 3,
         "n_lose": 4,
@@ -102944,6 +102930,20 @@
         "kz_wr": null,
         "profit_factor": 0.82,
         "sym": "NEAR/USDT"
+      },
+      {
+        "n": 5,
+        "n_win": 2,
+        "n_lose": 3,
+        "wr": 40.0,
+        "tp1r": 40.0,
+        "total_pnl": -15.24,
+        "avg_pnl": -3.05,
+        "dd": -36.4,
+        "sharpe": -6.77,
+        "kz_wr": null,
+        "profit_factor": 0.34,
+        "sym": "SOL/USDT"
       },
       {
         "n": 7,
@@ -103002,20 +103002,6 @@
         "sym": "ALGO/USDT"
       },
       {
-        "n": 10,
-        "n_win": 4,
-        "n_lose": 6,
-        "wr": 40.0,
-        "tp1r": 40.0,
-        "total_pnl": -34.86,
-        "avg_pnl": -3.49,
-        "dd": -76.3,
-        "sharpe": -2.33,
-        "kz_wr": null,
-        "profit_factor": 0.68,
-        "sym": "WLD/USDT"
-      },
-      {
         "n": 4,
         "n_win": 1,
         "n_lose": 3,
@@ -103042,6 +103028,20 @@
         "kz_wr": null,
         "profit_factor": 0.57,
         "sym": "RAVE/USDT"
+      },
+      {
+        "n": 11,
+        "n_win": 4,
+        "n_lose": 7,
+        "wr": 36.4,
+        "tp1r": 36.4,
+        "total_pnl": -40.19,
+        "avg_pnl": -3.65,
+        "dd": -69.3,
+        "sharpe": -2.56,
+        "kz_wr": null,
+        "profit_factor": 0.65,
+        "sym": "WLD/USDT"
       },
       {
         "n": 3,
@@ -103313,10 +103313,10 @@
     "by_exit": [
       {
         "exit_type": "SL",
-        "n": 184,
+        "n": 186,
         "wins": 0,
         "wr": 0.0,
-        "avg_pnl": -15.17
+        "avg_pnl": -15.05
       },
       {
         "exit_type": "SL_BE",
@@ -103355,9 +103355,9 @@
       },
       {
         "band": "9-11",
-        "n": 25,
-        "wr": 44.0,
-        "avg_pnl": -1.38
+        "n": 26,
+        "wr": 42.3,
+        "avg_pnl": -1.53
       },
       {
         "band": "12-14",
@@ -103373,9 +103373,9 @@
       },
       {
         "band": "18-20",
-        "n": 102,
-        "wr": 25.5,
-        "avg_pnl": -7.67
+        "n": 103,
+        "wr": 25.2,
+        "avg_pnl": -7.63
       },
       {
         "band": "21+",
@@ -103387,9 +103387,9 @@
     "by_regime": [
       {
         "regime": "TRENDING",
-        "n": 275,
-        "wr": 30.9,
-        "avg_pnl": -7.02
+        "n": 277,
+        "wr": 30.7,
+        "avg_pnl": -7.0
       },
       {
         "regime": "RANGING",
@@ -103407,12 +103407,12 @@
     "by_year": [
       {
         "year": 2026,
-        "n": 278,
-        "wr": 31.3,
-        "total_pnl": -1907.61,
-        "avg_pnl": -6.86,
-        "sharpe": -7.26,
-        "dd": -70.7,
+        "n": 280,
+        "wr": 31.1,
+        "total_pnl": -1916.01,
+        "avg_pnl": -6.84,
+        "sharpe": -7.29,
+        "dd": -70.2,
         "equity": [
           0,
           -13.28,
@@ -103688,23 +103688,25 @@
           -1941.87,
           -1932.46,
           -1939.58,
-          -1930.31,
-          -1934.96,
-          -1925.51,
-          -1928.75,
-          -1907.61
+          -1944.91,
+          -1935.64,
+          -1940.29,
+          -1930.84,
+          -1934.08,
+          -1912.94,
+          -1916.01
         ]
       }
     ],
     "by_tf": [
       {
         "tf": "30M",
-        "n": 278,
-        "wr": 31.3,
-        "total_pnl": -1907.61,
-        "avg_pnl": -6.86,
+        "n": 280,
+        "wr": 31.1,
+        "total_pnl": -1916.01,
+        "avg_pnl": -6.84,
         "sharpe": -6.91,
-        "dd": -70.7,
+        "dd": -70.2,
         "profit_factor": 0.35,
         "equity": [
           0,
@@ -103981,11 +103983,13 @@
           -1941.87,
           -1932.46,
           -1939.58,
-          -1930.31,
-          -1934.96,
-          -1925.51,
-          -1928.75,
-          -1907.61
+          -1944.91,
+          -1935.64,
+          -1940.29,
+          -1930.84,
+          -1934.08,
+          -1912.94,
+          -1916.01
         ]
       }
     ],
@@ -104264,22 +104268,24 @@
       -1941.87,
       -1932.46,
       -1939.58,
-      -1930.31,
-      -1934.96,
-      -1925.51,
-      -1928.75,
-      -1907.61
+      -1944.91,
+      -1935.64,
+      -1940.29,
+      -1930.84,
+      -1934.08,
+      -1912.94,
+      -1916.01
     ]
   },
   "shadow_stats": {
     "total": 611,
     "pending": 46,
     "win": 249,
-    "loss": 316,
-    "win_rate": 44.1,
+    "loss": 317,
+    "win_rate": 44.0,
     "win_tp2": 138,
     "win_slbe": 92,
-    "loss_sl": 308,
+    "loss_sl": 309,
     "timeout": 27,
     "pending_trades": [
       {
@@ -104340,21 +104346,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-10-04T18:36:23.630808+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "SOL/USDT",
-        "side": "LONG",
-        "score": 18,
-        "entry_px": 121.37,
-        "sl_pct": 0.47,
-        "regime": "TRENDING",
-        "claude_reason": "SL 0.47% too tight (<0.5%) — noise stop-out risk",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-10-04T18:05:59.289684+00:00",
         "resolved_at": null
       },
       {
@@ -104974,6 +104965,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "SOL/USDT",
+        "side": "LONG",
+        "score": 18,
+        "entry_px": 121.37,
+        "sl_pct": 0.47,
+        "regime": "TRENDING",
+        "claude_reason": "SL 0.47% too tight (<0.5%) — noise stop-out risk",
+        "outcome": "LOSS",
+        "exit_px": 120.75,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-10-04T18:05:59.289684+00:00",
+        "resolved_at": "2026-10-04T20:09:00.841548+00:00"
+      },
       {
         "symbol": "ADA/USDT",
         "side": "LONG",
