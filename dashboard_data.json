@@ -84342,9 +84342,9 @@
       "rsi": 61.8,
       "htf_bull": true,
       "in_kz": false,
-      "score_trend": 9,
+      "score_trend": 8,
       "score_smc": 2,
-      "score_osc": 2,
+      "score_osc": 4,
       "score_liq": 5,
       "score_fund": 2,
       "in_discount": true,
@@ -84370,7 +84370,7 @@
       "rsi": 56.9,
       "htf_bull": true,
       "in_kz": false,
-      "score_trend": 9,
+      "score_trend": 8,
       "score_smc": 2,
       "score_osc": 2,
       "score_liq": 5,
@@ -84444,7 +84444,7 @@
     {
       "symbol": "RENDER/USDT",
       "market_type": "FUTURES",
-      "status": "SL_REJECT",
+      "status": "REJECTED",
       "side": "LONG",
       "score_long": 18,
       "score_short": 4,
@@ -84488,8 +84488,8 @@
       "score_liq": 5,
       "score_fund": 1,
       "in_discount": true,
-      "trail_bull": true,
-      "bull_sweep": false,
+      "trail_bull": false,
+      "bull_sweep": true,
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "TRENDING",
@@ -84554,7 +84554,7 @@
       "claude_reason": "SL กว้างเกิน 5.5% > 4% — swing level ไกลเกิน entry"
     },
     {
-      "symbol": "XRP/USDT",
+      "symbol": "SOL/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "LONG",
@@ -84566,13 +84566,13 @@
       "rsi": 54.2,
       "htf_bull": true,
       "in_kz": false,
-      "score_trend": 8,
+      "score_trend": 9,
       "score_smc": 2,
-      "score_osc": 2,
+      "score_osc": 0,
       "score_liq": 5,
-      "score_fund": 2,
+      "score_fund": 1,
       "in_discount": true,
-      "trail_bull": false,
+      "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
       "funding_rate": 0.0035,
@@ -85005,7 +85005,7 @@
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
-      "score_long": 5,
+      "score_long": 7,
       "score_short": 14,
       "best_score": 14,
       "score_pct": 31.1,
@@ -85413,8 +85413,8 @@
       "volBase": 11534116.0
     },
     "RAVE/USDT": {
-      "price": 0.178,
-      "change": -0.11,
+      "price": 0.1782,
+      "change": -0.06,
       "high": 0.1813,
       "low": 0.1754,
       "vol": 101998.05,
@@ -85780,7 +85780,7 @@
     },
     {
       "sym": "BZ",
-      "price": 102.38,
+      "price": 102.4,
       "change": 0.42,
       "vol": 950678975.44
     },
@@ -86206,7 +86206,7 @@
     }
   ],
   "btc_fg": {
-    "value": 54,
+    "value": 55,
     "label": "Neutral",
     "btc_24h": 0.78,
     "btc_rsi": 62.4
@@ -106985,12 +106985,12 @@
   },
   "shadow_stats": {
     "total": 558,
-    "pending": 12,
-    "win": 259,
+    "pending": 11,
+    "win": 260,
     "loss": 287,
-    "win_rate": 47.4,
+    "win_rate": 47.5,
     "win_tp2": 167,
-    "win_slbe": 69,
+    "win_slbe": 70,
     "loss_sl": 276,
     "timeout": 34,
     "pending_trades": [
@@ -107052,21 +107052,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-10-11T19:06:09.081882+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "AAVE/USDT",
-        "side": "SHORT",
-        "score": 12,
-        "entry_px": 170.36,
-        "sl_pct": 0.493,
-        "regime": "TRENDING",
-        "claude_reason": "SL 0.49% too tight (<0.5%) — noise stop-out risk",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-10-11T16:21:11.611401+00:00",
         "resolved_at": null
       },
       {
@@ -107176,6 +107161,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "AAVE/USDT",
+        "side": "SHORT",
+        "score": 12,
+        "entry_px": 170.36,
+        "sl_pct": 0.493,
+        "regime": "TRENDING",
+        "claude_reason": "SL 0.49% too tight (<0.5%) — noise stop-out risk",
+        "outcome": "WIN",
+        "exit_px": 170.46,
+        "exit_reason": "SL_BE",
+        "tp1_hit": 1,
+        "created_at": "2026-10-11T16:21:11.611401+00:00",
+        "resolved_at": "2026-10-11T19:37:45.984005+00:00"
+      },
       {
         "symbol": "TRX/USDT",
         "side": "LONG",
