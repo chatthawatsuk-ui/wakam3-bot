@@ -93170,7 +93170,7 @@
     {
       "symbol": "XRP/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 16,
       "score_short": 6,
@@ -93592,9 +93592,9 @@
       "in_kz": false,
       "score_trend": 7,
       "score_smc": 0,
-      "score_osc": 0,
+      "score_osc": 3,
       "score_liq": 8,
-      "score_fund": 1,
+      "score_fund": 2,
       "in_discount": true,
       "trail_bull": true,
       "bull_sweep": false,
@@ -93716,6 +93716,34 @@
       "claude_reason": "SL กว้างเกิน ATR — 3.9× > 3× ATR"
     },
     {
+      "symbol": "SUI/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "LONG",
+      "score_long": 11,
+      "score_short": 5,
+      "best_score": 11,
+      "score_pct": 24.4,
+      "price": 0.8841,
+      "rsi": 63.2,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 0,
+      "score_smc": 2,
+      "score_osc": 4,
+      "score_liq": 5,
+      "score_fund": 1,
+      "in_discount": true,
+      "trail_bull": true,
+      "bull_sweep": false,
+      "bear_sweep": false,
+      "funding_rate": 0.01,
+      "regime": "RANGING",
+      "ts": "2026-11-03T12:10:33.270363+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 4.3× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 4.3× > 3× ATR"
+    },
+    {
       "symbol": "HYPE/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
@@ -93749,7 +93777,7 @@
       "status": "REJECTED",
       "side": "LONG",
       "score_long": 10,
-      "score_short": 6,
+      "score_short": 4,
       "best_score": 10,
       "score_pct": 22.2,
       "price": 2266.18,
@@ -93803,7 +93831,7 @@
       "status": "SL_REJECT",
       "side": "LONG",
       "score_long": 10,
-      "score_short": 6,
+      "score_short": 4,
       "best_score": 10,
       "score_pct": 22.2,
       "price": 54.28,
@@ -94042,7 +94070,7 @@
       "trail_bull": true,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.0022,
+      "funding_rate": 0.0024,
       "regime": "RANGING",
       "ts": "2026-11-03T12:04:01.018163+00:00",
       "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)"
@@ -95541,9 +95569,9 @@
     "btc_rsi": 53.4
   },
   "altcoin_season": {
-    "value": 33,
+    "value": 36,
     "label": "Bitcoin Leading",
-    "outperform": 12,
+    "outperform": 13,
     "total": 36,
     "btc_24h": -1.04,
     "timeframe": "24h"
@@ -116158,11 +116186,11 @@
     "total": 590,
     "pending": 52,
     "win": 234,
-    "loss": 304,
-    "win_rate": 43.5,
+    "loss": 305,
+    "win_rate": 43.4,
     "win_tp2": 127,
     "win_slbe": 68,
-    "loss_sl": 292,
+    "loss_sl": 293,
     "timeout": 51,
     "pending_trades": [
       {
@@ -116418,21 +116446,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-11-03T07:37:20.390134+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "HYPE/USDT",
-        "side": "SHORT",
-        "score": 19,
-        "entry_px": 83.12,
-        "sl_pct": 2.014,
-        "regime": "RANGING",
-        "claude_reason": "score19 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-11-03T04:05:00.569984+00:00",
         "resolved_at": null
       },
       {
@@ -116947,6 +116960,21 @@
       }
     ],
     "resolved_trades": [
+      {
+        "symbol": "HYPE/USDT",
+        "side": "SHORT",
+        "score": 19,
+        "entry_px": 83.12,
+        "sl_pct": 2.014,
+        "regime": "RANGING",
+        "claude_reason": "score19 overextension outside TRENDING (WR 36% in backtest)",
+        "outcome": "LOSS",
+        "exit_px": 84.916,
+        "exit_reason": "SL",
+        "tp1_hit": 0,
+        "created_at": "2026-11-03T04:05:00.569984+00:00",
+        "resolved_at": "2026-11-03T12:10:55.347185+00:00"
+      },
       {
         "symbol": "UNI/USDT",
         "side": "SHORT",
