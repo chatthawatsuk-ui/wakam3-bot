@@ -148,14 +148,14 @@
       "tp2_price": 58.12,
       "tp1_hit": false,
       "rsi": 56.2,
-      "notional": 507.19,
+      "notional": 760.78,
       "leverage": 20.0,
-      "margin_usd": 25.36,
+      "margin_usd": 38.04,
       "risk_usd": 9.6,
       "pnl_pct": 0.27,
       "pnl": 1.36,
       "open_time": "2026-11-05T01:20:00.947074+00:00",
-      "pyramid_count": 1,
+      "pyramid_count": 2,
       "sl_pct_orig": 1.893
     },
     {
@@ -94859,6 +94859,34 @@
       "in_discount": true,
       "trail_bull": false,
       "bull_sweep": true,
+      "bear_sweep": false,
+      "funding_rate": -0.0142,
+      "regime": "TRENDING",
+      "ts": "2026-11-05T01:43:25.002275+00:00",
+      "reject_reason": "SL กว้างเกิน 18.0% > 4% — swing level ไกลเกิน entry",
+      "claude_reason": "SL กว้างเกิน 18.0% > 4% — swing level ไกลเกิน entry"
+    },
+    {
+      "symbol": "ONDO/USDT",
+      "market_type": "FUTURES",
+      "status": "REJECTED",
+      "side": "LONG",
+      "score_long": 16,
+      "score_short": 10,
+      "best_score": 16,
+      "score_pct": 35.6,
+      "price": 0.4099,
+      "rsi": 48.7,
+      "htf_bull": true,
+      "in_kz": false,
+      "score_trend": 10,
+      "score_smc": 2,
+      "score_osc": 1,
+      "score_liq": 5,
+      "score_fund": 2,
+      "in_discount": true,
+      "trail_bull": true,
+      "bull_sweep": false,
       "bear_sweep": true,
       "funding_rate": 0.01,
       "regime": "RANGING",
@@ -96764,9 +96792,9 @@
     "btc_rsi": 58.6
   },
   "altcoin_season": {
-    "value": 53,
-    "label": "Neutral",
-    "outperform": 19,
+    "value": 58,
+    "label": "Altcoins Leading",
+    "outperform": 21,
     "total": 36,
     "btc_24h": 4.6,
     "timeframe": "24h"
@@ -114172,9 +114200,9 @@
         "avg_pnl": 1.22
       },
       "POSITIONS_FULL (10/10)": {
-        "n": 80,
-        "wr": 20.0,
-        "avg_pnl": -6.22
+        "n": 77,
+        "wr": 20.8,
+        "avg_pnl": -6.24
       },
       "PYRAMID_BLOCKED": {
         "n": 14,
@@ -114303,7 +114331,7 @@
       "dd": -35.7,
       "sharpe": -4.13,
       "kz_wr": null,
-      "profit_factor": 0.51
+      "profit_factor": 0.53
     },
     "summary_traded": {
       "n": 119,
@@ -115707,16 +115735,30 @@
       {
         "n": 12,
         "n_win": 6,
-        "n_lose": 6,
-        "wr": 50.0,
-        "tp1r": 33.3,
-        "total_pnl": 13.73,
-        "avg_pnl": 1.14,
-        "dd": -16.3,
-        "sharpe": 2.03,
+        "n_lose": 5,
+        "wr": 54.5,
+        "tp1r": 36.4,
+        "total_pnl": 18.45,
+        "avg_pnl": 1.68,
+        "dd": -17.8,
+        "sharpe": 2.92,
         "kz_wr": null,
-        "profit_factor": 1.35,
+        "profit_factor": 1.54,
         "sym": "SOL/USDT"
+      },
+      {
+        "n": 5,
+        "n_win": 3,
+        "n_lose": 2,
+        "wr": 60.0,
+        "tp1r": 60.0,
+        "total_pnl": 14.47,
+        "avg_pnl": 2.89,
+        "dd": -8.8,
+        "sharpe": 3.8,
+        "kz_wr": null,
+        "profit_factor": 1.75,
+        "sym": "ATOM/USDT"
       },
       {
         "n": 5,
@@ -115985,17 +116027,31 @@
         "sym": "AVAX/USDT"
       },
       {
-        "n": 8,
-        "n_win": 2,
-        "n_lose": 6,
-        "wr": 25.0,
-        "tp1r": 12.5,
-        "total_pnl": -45.46,
-        "avg_pnl": -5.68,
-        "dd": -50.5,
-        "sharpe": -21.05,
+        "n": 6,
+        "n_win": 1,
+        "n_lose": 5,
+        "wr": 16.7,
+        "tp1r": 16.7,
+        "total_pnl": -40.25,
+        "avg_pnl": -6.71,
+        "dd": -56.4,
+        "sharpe": -35.65,
         "kz_wr": null,
-        "profit_factor": 0.04,
+        "profit_factor": 0.0,
+        "sym": "ICP/USDT"
+      },
+      {
+        "n": 7,
+        "n_win": 2,
+        "n_lose": 5,
+        "wr": 28.6,
+        "tp1r": 14.3,
+        "total_pnl": -40.42,
+        "avg_pnl": -5.77,
+        "dd": -51.8,
+        "sharpe": -19.83,
+        "kz_wr": null,
+        "profit_factor": 0.05,
         "sym": "SHIB/USDT"
       },
       {
@@ -116027,31 +116083,17 @@
         "sym": "DOT/USDT"
       },
       {
-        "n": 7,
-        "n_win": 1,
-        "n_lose": 6,
-        "wr": 14.3,
-        "tp1r": 14.3,
-        "total_pnl": -50.65,
-        "avg_pnl": -7.24,
-        "dd": -57.5,
-        "sharpe": -37.52,
-        "kz_wr": null,
-        "profit_factor": 0.0,
-        "sym": "ICP/USDT"
-      },
-      {
-        "n": 10,
+        "n": 9,
         "n_win": 2,
-        "n_lose": 8,
-        "wr": 20.0,
-        "tp1r": 10.0,
-        "total_pnl": -63.16,
-        "avg_pnl": -6.32,
-        "dd": -50.7,
-        "sharpe": -18.22,
+        "n_lose": 7,
+        "wr": 22.2,
+        "tp1r": 11.1,
+        "total_pnl": -50.69,
+        "avg_pnl": -5.63,
+        "dd": -44.8,
+        "sharpe": -16.64,
         "kz_wr": null,
-        "profit_factor": 0.04,
+        "profit_factor": 0.05,
         "sym": "LTC/USDT"
       },
       {
@@ -116069,18 +116111,32 @@
         "sym": "RENDER/USDT"
       },
       {
-        "n": 10,
+        "n": 9,
         "n_win": 1,
-        "n_lose": 9,
-        "wr": 10.0,
-        "tp1r": 10.0,
-        "total_pnl": -79.63,
-        "avg_pnl": -7.96,
-        "dd": -77.8,
-        "sharpe": -6.58,
+        "n_lose": 8,
+        "wr": 11.1,
+        "tp1r": 11.1,
+        "total_pnl": -72.7,
+        "avg_pnl": -8.08,
+        "dd": -86.4,
+        "sharpe": -6.3,
         "kz_wr": null,
-        "profit_factor": 0.36,
+        "profit_factor": 0.38,
         "sym": "NEAR/USDT"
+      },
+      {
+        "n": 5,
+        "n_win": 1,
+        "n_lose": 4,
+        "wr": 20.0,
+        "tp1r": 20.0,
+        "total_pnl": -79.01,
+        "avg_pnl": -15.8,
+        "dd": -121.9,
+        "sharpe": -36.74,
+        "kz_wr": null,
+        "profit_factor": 0.0,
+        "sym": "UNI/USDT"
       },
       {
         "n": 9,
@@ -116109,20 +116165,6 @@
         "kz_wr": null,
         "profit_factor": 0.0,
         "sym": "BCH/USDT"
-      },
-      {
-        "n": 6,
-        "n_win": 1,
-        "n_lose": 5,
-        "wr": 16.7,
-        "tp1r": 16.7,
-        "total_pnl": -90.19,
-        "avg_pnl": -15.03,
-        "dd": -131.7,
-        "sharpe": -37.33,
-        "kz_wr": null,
-        "profit_factor": 0.0,
-        "sym": "UNI/USDT"
       },
       {
         "n": 10,
@@ -116204,9 +116246,9 @@
       },
       {
         "band": "12-14",
-        "n": 42,
-        "wr": 26.2,
-        "avg_pnl": -6.27
+        "n": 40,
+        "wr": 27.5,
+        "avg_pnl": -6.29
       },
       {
         "band": "15-17",
@@ -117406,7 +117448,7 @@
         "outcome": "PENDING",
         "exit_px": null,
         "exit_reason": "",
-        "tp1_hit": 0,
+        "tp1_hit": 1,
         "created_at": "2026-11-04T20:08:44.473483+00:00",
         "resolved_at": null
       },
