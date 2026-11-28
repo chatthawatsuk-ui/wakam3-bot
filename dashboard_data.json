@@ -38,14 +38,14 @@
       "tp2_price": 0.9213,
       "tp1_hit": false,
       "rsi": 45.8,
-      "notional": 618.81,
+      "notional": 927.62,
       "leverage": 20.0,
-      "margin_usd": 30.94,
+      "margin_usd": 46.38,
       "risk_usd": 9.44,
       "pnl_pct": 0.32,
       "pnl": 1.95,
       "open_time": "2026-11-28T01:07:07.884664+00:00",
-      "pyramid_count": 1,
+      "pyramid_count": 2,
       "sl_pct_orig": 1.526
     },
     {
@@ -168,7 +168,7 @@
       "sl_price": 60264.9,
       "tp_price": 59813.46,
       "tp2_price": 59547.3,
-      "tp1_hit": false,
+      "tp1_hit": true,
       "rsi": 49.9,
       "notional": 926.67,
       "leverage": 20.0,
@@ -103163,7 +103163,7 @@
       "claude_reason": "SL กว้างเกิน ATR — 3.0× > 3× ATR"
     },
     {
-      "symbol": "AVAX/USDT",
+      "symbol": "ONDO/USDT",
       "market_type": "FUTURES",
       "status": "SL_REJECT",
       "side": "SHORT",
@@ -103180,6 +103180,34 @@
       "score_osc": 4,
       "score_liq": 8,
       "score_fund": 1,
+      "in_discount": false,
+      "trail_bull": false,
+      "bull_sweep": true,
+      "bear_sweep": true,
+      "funding_rate": 0.0013,
+      "regime": "TRENDING",
+      "ts": "2026-11-28T05:13:13.474829+00:00",
+      "reject_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR",
+      "claude_reason": "SL กว้างเกิน ATR — 3.7× > 3× ATR"
+    },
+    {
+      "symbol": "SOL/USDT",
+      "market_type": "FUTURES",
+      "status": "SL_REJECT",
+      "side": "SHORT",
+      "score_long": 6,
+      "score_short": 21,
+      "best_score": 21,
+      "score_pct": 46.7,
+      "price": 71.33,
+      "rsi": 43.2,
+      "htf_bull": false,
+      "in_kz": false,
+      "score_trend": 10,
+      "score_smc": 0,
+      "score_osc": 3,
+      "score_liq": 8,
+      "score_fund": 2,
       "in_discount": true,
       "trail_bull": false,
       "bull_sweep": true,
@@ -103276,7 +103304,7 @@
     {
       "symbol": "SUI/USDT",
       "market_type": "FUTURES",
-      "status": "REJECTED",
+      "status": "SL_REJECT",
       "side": "SHORT",
       "score_long": 9,
       "score_short": 20,
@@ -104080,7 +104108,7 @@
       "trail_bull": false,
       "bull_sweep": false,
       "bear_sweep": false,
-      "funding_rate": 0.01,
+      "funding_rate": 0.0082,
       "regime": "RANGING",
       "ts": "2026-11-28T05:05:31.446917+00:00",
       "claude_reason": "RANGING regime score9<12 (noise filter, WR 46.5% in backtest)"
@@ -123105,20 +123133,20 @@
       "dd": -32.8,
       "sharpe": -2.17,
       "kz_wr": null,
-      "profit_factor": 0.71
+      "profit_factor": 0.72
     },
     "summary_traded": {
-      "n": 154,
+      "n": 155,
       "n_win": 61,
-      "n_lose": 93,
-      "wr": 39.6,
-      "tp1r": 39.6,
-      "total_pnl": -541.26,
-      "avg_pnl": -3.51,
-      "dd": -52.0,
-      "sharpe": -2.98,
+      "n_lose": 94,
+      "wr": 39.4,
+      "tp1r": 39.4,
+      "total_pnl": -549.29,
+      "avg_pnl": -3.54,
+      "dd": -52.2,
+      "sharpe": -3.01,
       "kz_wr": null,
-      "profit_factor": 0.63
+      "profit_factor": 0.62
     },
     "summary_skipped": {
       "n": 367,
@@ -123131,7 +123159,7 @@
       "dd": -27.1,
       "sharpe": -1.84,
       "kz_wr": null,
-      "profit_factor": 0.75
+      "profit_factor": 0.76
     },
     "trades": [
       {
@@ -124507,20 +124535,6 @@
         "sym": "RENDER/USDT"
       },
       {
-        "n": 15,
-        "n_win": 8,
-        "n_lose": 7,
-        "wr": 53.3,
-        "tp1r": 53.3,
-        "total_pnl": 39.51,
-        "avg_pnl": 2.63,
-        "dd": -17.6,
-        "sharpe": 2.26,
-        "kz_wr": null,
-        "profit_factor": 1.38,
-        "sym": "DOGE/USDT"
-      },
-      {
         "n": 20,
         "n_win": 12,
         "n_lose": 8,
@@ -124533,6 +124547,20 @@
         "kz_wr": null,
         "profit_factor": 1.29,
         "sym": "ONDO/USDT"
+      },
+      {
+        "n": 16,
+        "n_win": 8,
+        "n_lose": 8,
+        "wr": 50.0,
+        "tp1r": 50.0,
+        "total_pnl": 31.48,
+        "avg_pnl": 1.97,
+        "dd": -16.5,
+        "sharpe": 1.73,
+        "kz_wr": null,
+        "profit_factor": 1.28,
+        "sym": "DOGE/USDT"
       },
       {
         "n": 17,
@@ -124829,6 +124857,20 @@
         "sym": "RAVE/USDT"
       },
       {
+        "n": 14,
+        "n_win": 8,
+        "n_lose": 6,
+        "wr": 57.1,
+        "tp1r": 57.1,
+        "total_pnl": -90.46,
+        "avg_pnl": -6.46,
+        "dd": -55.3,
+        "sharpe": -7.43,
+        "kz_wr": null,
+        "profit_factor": 0.33,
+        "sym": "DOT/USDT"
+      },
+      {
         "n": 11,
         "n_win": 2,
         "n_lose": 9,
@@ -124841,20 +124883,6 @@
         "kz_wr": null,
         "profit_factor": 0.25,
         "sym": "AAVE/USDT"
-      },
-      {
-        "n": 13,
-        "n_win": 7,
-        "n_lose": 6,
-        "wr": 53.8,
-        "tp1r": 53.8,
-        "total_pnl": -99.92,
-        "avg_pnl": -7.69,
-        "dd": -59.5,
-        "sharpe": -9.01,
-        "kz_wr": null,
-        "profit_factor": 0.26,
-        "sym": "DOT/USDT"
       },
       {
         "n": 18,
@@ -124958,10 +124986,10 @@
     "by_exit": [
       {
         "exit_type": "SL",
-        "n": 294,
+        "n": 295,
         "wins": 0,
         "wr": 0.0,
-        "avg_pnl": -15.31
+        "avg_pnl": -15.29
       },
       {
         "exit_type": "SL_BE",
@@ -125018,9 +125046,9 @@
       },
       {
         "band": "18-20",
-        "n": 193,
+        "n": 195,
         "wr": 48.2,
-        "avg_pnl": -0.75
+        "avg_pnl": -0.74
       },
       {
         "band": "21+",
@@ -126697,7 +126725,7 @@
         "outcome": "PENDING",
         "exit_px": null,
         "exit_reason": "",
-        "tp1_hit": 0,
+        "tp1_hit": 1,
         "created_at": "2026-11-28T04:23:25.371799+00:00",
         "resolved_at": null
       },
@@ -126819,21 +126847,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-11-28T02:36:29.828241+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "AAVE/USDT",
-        "side": "LONG",
-        "score": 15,
-        "entry_px": 95.21,
-        "sl_pct": 1.859,
-        "regime": "RANGING",
-        "claude_reason": "score15 overextension outside TRENDING (WR 36% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-11-28T02:20:25.009656+00:00",
         "resolved_at": null
       },
       {
@@ -126972,21 +126985,6 @@
         "resolved_at": null
       },
       {
-        "symbol": "AAVE/USDT",
-        "side": "SHORT",
-        "score": 11,
-        "entry_px": 95.48,
-        "sl_pct": 0.995,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime score11<12 (noise filter, WR 46.5% in backtest)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 1,
-        "created_at": "2026-11-28T01:06:39.843171+00:00",
-        "resolved_at": null
-      },
-      {
         "symbol": "PEPE/USDT",
         "side": "SHORT",
         "score": 13,
@@ -127012,7 +127010,7 @@
         "outcome": "PENDING",
         "exit_px": null,
         "exit_reason": "",
-        "tp1_hit": 0,
+        "tp1_hit": 1,
         "created_at": "2026-11-27T23:39:02.005888+00:00",
         "resolved_at": null
       },
@@ -127044,21 +127042,6 @@
         "exit_reason": "",
         "tp1_hit": 0,
         "created_at": "2026-11-27T19:52:01.888877+00:00",
-        "resolved_at": null
-      },
-      {
-        "symbol": "RIVER/USDT",
-        "side": "LONG",
-        "score": 13,
-        "entry_px": 0.5406,
-        "sl_pct": 2.849,
-        "regime": "RANGING",
-        "claude_reason": "RANGING regime — skip Claude (low WR regime)",
-        "outcome": "PENDING",
-        "exit_px": null,
-        "exit_reason": "",
-        "tp1_hit": 0,
-        "created_at": "2026-11-27T19:09:08.049031+00:00",
         "resolved_at": null
       },
       {
